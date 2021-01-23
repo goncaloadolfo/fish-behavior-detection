@@ -12,6 +12,7 @@ from trajectories_reader import produce_trajectories
 from visualization import draw_trajectory, draw_position_plots, simple_line_plot
 
 
+# region interpolation methodologies
 class NewtonInterpolation:
     """
     Object that allows the trajectory interpolation using a Newton polynomial.  
@@ -112,6 +113,29 @@ class NewtonInterpolation:
         return divided_differences[0]
 
 
+def linear_interpolation(starting_point, ending_point):
+    """
+    Returns the predicted position points of the gap, applying a linear interpolation. 
+
+    Args:
+        starting_point (tuple (t, x, y)): starting point of the gap (left edge)
+        ending_point (tuple (t, x, y)): ending point of the gap (right edge)
+
+    Returns:
+        list of tuples (t, x, y): predicted gap positions 
+    """
+    nr_missing_points = (ending_point[0] - starting_point[0]) - 1
+    x_step = (ending_point[1] - starting_point[1]) / (nr_missing_points + 1)
+    y_step = (ending_point[2] - starting_point[2]) / (nr_missing_points + 1)
+    gap_points = [(starting_point[0]+i,
+                   int(starting_point[1] + (i*x_step)),
+                   int(starting_point[2] + (i*y_step)))
+                  for i in range(1, nr_missing_points+1)]
+    return gap_points
+# endregion
+
+
+# region ways to choose sample points
 def near_interpolation_points(trajectory, gap_starting_index, n):
     """
     The returned sample points using this method are the nearest points to the gap, 
@@ -177,29 +201,10 @@ def equidistant_interpolation_points(trajectory, n):
     sampling_step = int(len(trajectory) / n)
     points = [trajectory[i] for i in range(0, len(trajectory), sampling_step)]
     return points
+# endregion
 
 
-def linear_interpolation(starting_point, ending_point):
-    """
-    Returns the predicted position points of the gap, applying a linear interpolation. 
-
-    Args:
-        starting_point (tuple (t, x, y)): starting point of the gap (left edge)
-        ending_point (tuple (t, x, y)): ending point of the gap (right edge)
-
-    Returns:
-        list of tuples (t, x, y): predicted gap positions 
-    """
-    nr_missing_points = (ending_point[0] - starting_point[0]) - 1
-    x_step = (ending_point[1] - starting_point[1]) / (nr_missing_points + 1)
-    y_step = (ending_point[2] - starting_point[2]) / (nr_missing_points + 1)
-    gap_points = [(starting_point[0]+i,
-                   int(starting_point[1] + (i*x_step)),
-                   int(starting_point[2] + (i*y_step)))
-                  for i in range(1, nr_missing_points+1)]
-    return gap_points
-
-
+# region generate and fill gaps
 def fill_gaps_linear(trajectory):
     """
     Detects gaps on the trajectory and fills them using a linear interpolation (on place). 
@@ -231,9 +236,8 @@ def fill_gaps_newton(trajectory, n):
         trajectory (list of tuples (t, x, y)): list of positions
         n (int): polynomial degree
     """
-    newton_method = NewtonInterpolation()
     example_points = equidistant_interpolation_points(trajectory, n)
-    newton_method.reset(example_points)
+    newton_method = NewtonInterpolation(example_points)
     i = 0
     while(i < len(trajectory)):
         if i == 0:
@@ -269,20 +273,36 @@ def simulate_gap(trajectory, gap_size):
     gap_start_index = randint(1, len(trajectory_copy)-gap_size-2)
     del trajectory_copy[gap_start_index:gap_start_index+gap_size]
     return trajectory_copy, (trajectory[gap_start_index-1][0], trajectory[gap_start_index+gap_size][0])
+# endregion
 
 
-if __name__ == "__main__":
-    # read trajectories and get one of them
+# region test cases
+def __linear_interpolation_example(gap_size):
     trajectories = produce_trajectories("../data/Dsc 0029-lowres_gt.txt")
     example_trajectory = list(trajectories.values())[0].trajectory
-    # generate a gap in the trajectory
-    trajectory_with_gap, gap_interval = simulate_gap(example_trajectory, 20)
-    # visualize
+    trajectory_with_gap, gap_interval = simulate_gap(
+        example_trajectory, gap_size)
     draw_trajectory(example_trajectory, (480, 720), (0, 0, 0))
-    fill_gaps_newton(trajectory_with_gap, 5)
-    # fill_gaps_linear(trajectory_with_gap)
+    fill_gaps_linear(trajectory_with_gap)
     draw_position_plots(trajectory_with_gap, gap_interval, with_gap=False)
-    # show plots
     plt.show()
     cv2.waitKey(0)
     cv2.destroyAllWindows()
+
+
+def __newton_interpolation_example(n, gap_size):
+    trajectories = produce_trajectories("../data/Dsc 0029-lowres_gt.txt")
+    example_trajectory = list(trajectories.values())[0].trajectory
+    trajectory_with_gap, gap_interval = simulate_gap(example_trajectory, 20)
+    draw_trajectory(example_trajectory, (480, 720), (0, 0, 0))
+    fill_gaps_newton(trajectory_with_gap, 5)
+    draw_position_plots(trajectory_with_gap, gap_interval, with_gap=False)
+    plt.show()
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+# endregion
+
+
+if __name__ == "__main__":
+    # __linear_interpolation_example(20)
+    __newton_interpolation_example(5, 20)
