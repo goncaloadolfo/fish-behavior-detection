@@ -153,13 +153,16 @@ def near_interpolation_points(trajectory, gap_starting_index, n):
         list of tuples (t, x, y): list with the chosen data points
     """
     points = []
-    gap_center = trajectory[gap_starting_index+1][0] - \
-        trajectory[gap_starting_index][0] / 2
+    current_temporal_sum = 0
+    gap_center = (trajectory[gap_starting_index+1][0] +
+                  trajectory[gap_starting_index][0]) / 2
     # add both edge points
     points.extend([trajectory[gap_starting_index],
                    trajectory[gap_starting_index+1]])
+    current_temporal_sum += (trajectory[gap_starting_index]
+                             [0] + trajectory[gap_starting_index+1][0])
     edge_indexes = [gap_starting_index-1, gap_starting_index+2]
-    for _ in range(2, n+2):
+    for _ in range(n-1):
         # no more edge points to add
         if edge_indexes[0] < 0 and edge_indexes[1] >= len(trajectory):
             break
@@ -175,14 +178,18 @@ def near_interpolation_points(trajectory, gap_starting_index, n):
         else:
             previous_edge_point = trajectory[edge_indexes[0]]
             posterior_edge_point = trajectory[edge_indexes[1]]
-            aux1 = points[-1][0] - previous_edge_point[0]
-            aux2 = posterior_edge_point[0] - points[0][0]
-            if abs(aux1-gap_center) < abs(aux2-gap_center):
+            new_average1 = (current_temporal_sum +
+                            previous_edge_point[0]) / (len(points)+1)
+            new_average2 = (current_temporal_sum +
+                            posterior_edge_point[0]) / (len(points)+1)
+            if abs(new_average1-gap_center) < abs(new_average2-gap_center):
                 points.insert(0, trajectory[edge_indexes[0]])
                 edge_indexes[0] -= 1
+                current_temporal_sum += previous_edge_point[0]
             else:
                 points.append(trajectory[edge_indexes[1]])
                 edge_indexes[1] += 1
+                current_temporal_sum += posterior_edge_point[0]
     return points
 
 
@@ -228,16 +235,20 @@ def fill_gaps_linear(trajectory):
             i += 1
 
 
-def fill_gaps_newton(trajectory, n):
+def fill_gaps_newton(trajectory, n, example_points_methodology):
     """
     Detects gaps on the trajectory and fills them using a newton interpolation (on place).
 
     Args:
         trajectory (list of tuples (t, x, y)): list of positions
         n (int): polynomial degree
+        example_points_methodology (function): function that receives as input
+            the same two args of this function (and in the same order), and returns
+            a list of sample points to be used in the interpolation
+
+    Returns:
+        list of tuples (t, x, y): list of example points used in the interpolation
     """
-    example_points = equidistant_interpolation_points(trajectory, n)
-    newton_method = NewtonInterpolation(example_points)
     i = 0
     while(i < len(trajectory)):
         if i == 0:
@@ -246,6 +257,11 @@ def fill_gaps_newton(trajectory, n):
         current_point = trajectory[i]
         previous_point = trajectory[i-1]
         if current_point[0] - previous_point[0] > 1:  # gap
+            if example_points_methodology.__name__ == near_interpolation_points.__name__:
+                example_points = example_points_methodology(trajectory, i-1, n)
+            else:
+                example_points = example_points_methodology(trajectory, n)
+            newton_method = NewtonInterpolation(example_points)
             # obtain near example data points and calculate newton polynomial
             predicted_points = [newton_method.predict(t) for t in range(
                 previous_point[0]+1, current_point[0])]
@@ -253,6 +269,7 @@ def fill_gaps_newton(trajectory, n):
             i += len(predicted_points) + 1
         else:
             i += 1
+    return example_points
 
 
 def simulate_gap(trajectory, gap_size):
@@ -284,19 +301,22 @@ def __linear_interpolation_example(gap_size):
         example_trajectory, gap_size)
     draw_trajectory(example_trajectory, (480, 720), (0, 0, 0))
     fill_gaps_linear(trajectory_with_gap)
-    draw_position_plots(trajectory_with_gap, gap_interval, with_gap=False)
+    draw_position_plots(trajectory_with_gap, gap_interval,
+                        None, with_gap=False)
     plt.show()
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 
 
-def __newton_interpolation_example(n, gap_size):
+def __newton_interpolation_example(example_points_methodology, n, gap_size):
     trajectories = produce_trajectories("../data/Dsc 0029-lowres_gt.txt")
     example_trajectory = list(trajectories.values())[0].trajectory
     trajectory_with_gap, gap_interval = simulate_gap(example_trajectory, 20)
     draw_trajectory(example_trajectory, (480, 720), (0, 0, 0))
-    fill_gaps_newton(trajectory_with_gap, 5)
-    draw_position_plots(trajectory_with_gap, gap_interval, with_gap=False)
+    interpolation_points = fill_gaps_newton(
+        trajectory_with_gap, 5, example_points_methodology)
+    draw_position_plots(trajectory_with_gap, gap_interval,
+                        interpolation_points, with_gap=False)
     plt.show()
     cv2.waitKey(0)
     cv2.destroyAllWindows()
@@ -304,5 +324,6 @@ def __newton_interpolation_example(n, gap_size):
 
 
 if __name__ == "__main__":
-    # __linear_interpolation_example(20)
-    __newton_interpolation_example(5, 20)
+    # __linear_interpolation_example(gap_size=20)
+    __newton_interpolation_example(
+        example_points_methodology=near_interpolation_points, n=5, gap_size=20)
