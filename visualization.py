@@ -41,28 +41,39 @@ def draw_trajectory(trajectory, frame_size, color):
     cv2.imshow("trajectory", frame)
 
 
-def draw_position_plots(trajectory, gap_interval, with_gap=True):
+def draw_position_plots(trajectory, gap_interval, interpolation_points, with_gap=True):
     """
     Draws the x and y position variation over time (in different figures).
 
     Args:
         trajectory (list of tuples (t, x, y)): list of positions
         gap_interval (tuple (t_initial, t_final)): initial and final instant of the gap
+        interpolation_points(list of tuples (t, x, y)): list of example points used in the interpolation
         with_gap (bool, optional): specifies if the received trajectory still has the 
             missing points of the gap. Defaults to True.
 
     Returns:
         matplotlib.axes, matplotlib.axes: axes of the x variation plot and axes of the y variation plot
     """
-    def plot_variation(xs, ys, title, ylabel, xlabel):
+    def plot_variation(xs, ys, title, ylabel, xlabel, interpolation_points):
         plt.figure()
         ax = plt.gca()
         simple_line_plot(ax, xs, ys, title, ylabel, xlabel)
+        # example points highliting
+        if interpolation_points is not None:
+            ts, values = [], []
+            for data_point in interpolation_points:
+                value_index = 1 if title == "X Position" else 2
+                ts.append(data_point[0])
+                values.append(data_point[value_index])
+            ax.scatter(ts, values, s=10, c="g", marker="o",
+                       label="interpolation point")
         # circles in the gap edges
         ax.scatter(gap_interval[0], ys[xs.index(
-            gap_interval[0])], s=10, c="r", marker="o")
+            gap_interval[0])], s=10, c="r", marker="o", label="gap edge")
         ax.scatter(gap_interval[1], ys[xs.index(
             gap_interval[1])], s=10, c="r", marker="o")
+        ax.legend()
         return ax
     ts, xs, ys = [], [], []
     for data_point in trajectory:
@@ -74,5 +85,6 @@ def draw_position_plots(trajectory, gap_interval, with_gap=True):
         ts.insert(gap_interval[0]+1, np.nan)
         xs.insert(gap_interval[0]+1, np.nan)
         ys.insert(gap_interval[0]+1, np.nan)
-    return plot_variation(ts, xs, "X Position", "x value", "frame"), \
-        plot_variation(ts, ys, "Y Position", "y value", "frame")
+    return plot_variation(ts, xs, "X Position", "x value", "frame", interpolation_points), \
+        plot_variation(ts, ys, "Y Position", "y value",
+                       "frame", interpolation_points)
