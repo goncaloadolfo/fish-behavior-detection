@@ -294,7 +294,7 @@ def simulate_gap(trajectory, gap_size):
 
 
 # region test cases
-def __linear_interpolation_example(gap_size):
+def linear_interpolation_example(gap_size):
     trajectories = produce_trajectories("../data/Dsc 0029-lowres_gt.txt")
     example_trajectory = list(trajectories.values())[0].trajectory
     trajectory_with_gap, gap_interval = simulate_gap(
@@ -308,7 +308,7 @@ def __linear_interpolation_example(gap_size):
     cv2.destroyAllWindows()
 
 
-def __newton_interpolation_example(example_points_methodology, n, gap_size):
+def newton_interpolation_example(example_points_methodology, n, gap_size):
     trajectories = produce_trajectories("../data/Dsc 0029-lowres_gt.txt")
     example_trajectory = list(trajectories.values())[0].trajectory
     trajectory_with_gap, gap_interval = simulate_gap(example_trajectory, 20)
@@ -323,7 +323,24 @@ def __newton_interpolation_example(example_points_methodology, n, gap_size):
 # endregion
 
 
+# region performance
+def mse(true_trajectory, output_trajectory):
+    # todo
+    pass
+
+
+def newton_performance(degrees, gap_sizes):
+    # todo
+    pass
+
+
+def linear_performance(gap_sizes):
+    # todo
+    pass
+# endregion
+
+
 if __name__ == "__main__":
-    # __linear_interpolation_example(gap_size=20)
-    __newton_interpolation_example(
-        example_points_methodology=near_interpolation_points, n=5, gap_size=20)
+    # linear_interpolation_example(gap_size=20)
+    newton_interpolation_example(
+        example_points_methodology=near_interpolation_points, n=3, gap_size=20)
