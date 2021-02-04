@@ -7,7 +7,6 @@ import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 from random import randint
-
 from trajectories_reader import produce_trajectories
 from visualization import draw_trajectory, draw_position_plots, simple_line_plot
 
@@ -21,8 +20,7 @@ class NewtonInterpolation:
     def __init__(self, example_points):
         """
         Assigns sample points and calculates newton coefficients independently for x and y positions.   
-
-        Args:
+label   Args:
             example_points (list of tuples (t, x, y)): list of trajectory' sample points to interpolate 
         """
         self.__example_points = example_points
@@ -152,6 +150,7 @@ def near_interpolation_points(trajectory, gap_starting_index, n):
     Returns:
         list of tuples (t, x, y): list with the chosen data points
     """
+    # todo: refractor, implement in a recursive way
     points = []
     current_temporal_sum = 0
     gap_center = (trajectory[gap_starting_index+1][0] +
@@ -250,6 +249,7 @@ def fill_gaps_newton(trajectory, n, example_points_methodology):
         list of tuples (t, x, y): list of example points used in the interpolation
     """
     i = 0
+    example_points = None
     while(i < len(trajectory)):
         if i == 0:
             i += 1
@@ -294,9 +294,10 @@ def simulate_gap(trajectory, gap_size):
 
 
 # region test cases
-def linear_interpolation_example(gap_size):
-    trajectories = produce_trajectories("../data/Dsc 0029-lowres_gt.txt")
-    example_trajectory = list(trajectories.values())[0].trajectory
+def linear_interpolation_example(trajectories_file_path, trajectory_index, gap_size):
+    trajectories = produce_trajectories(trajectories_file_path)
+    example_trajectory = list(trajectories.values())[
+        trajectory_index].trajectory
     trajectory_with_gap, gap_interval = simulate_gap(
         example_trajectory, gap_size)
     draw_trajectory(example_trajectory, (480, 720), (0, 0, 0))
@@ -308,9 +309,10 @@ def linear_interpolation_example(gap_size):
     cv2.destroyAllWindows()
 
 
-def newton_interpolation_example(example_points_methodology, n, gap_size):
-    trajectories = produce_trajectories("../data/Dsc 0029-lowres_gt.txt")
-    example_trajectory = list(trajectories.values())[0].trajectory
+def newton_interpolation_example(trajectories_file_path, trajectory_index, example_points_methodology, n, gap_size):
+    trajectories = produce_trajectories(trajectories_file_path)
+    example_trajectory = list(trajectories.values())[
+        trajectory_index].trajectory
     trajectory_with_gap, gap_interval = simulate_gap(example_trajectory, 20)
     draw_trajectory(example_trajectory, (480, 720), (0, 0, 0))
     interpolation_points = fill_gaps_newton(
@@ -324,23 +326,83 @@ def newton_interpolation_example(example_points_methodology, n, gap_size):
 
 
 # region performance
-def mse(true_trajectory, output_trajectory):
-    # todo
-    pass
+def mse(true_trajectory, output_trajectory, gaps):
+    square_errors = 0
+    nr_gap_points = 0
+    for t_initial, t_final in gaps:
+        # get the portion of the trajectory relative to this gap
+        true_gap_values = list(filter(
+            lambda x: x[0] >= t_initial and x[0] <= t_final, true_trajectory))
+        output_values = list(filter(
+            lambda x: x[0] >= t_initial and x[0] <= t_final, output_trajectory))
+        gap_size = len(true_gap_values)
+        # calculate the square error for each of the missing positions
+        for i in range(gap_size):
+            square_errors += (true_gap_values[i][1] - output_values[i][1])**2 + (
+                true_gap_values[i][2] - output_values[i][2])**2
+        nr_gap_points += gap_size
+    return 0 if nr_gap_points == 0 else square_errors / nr_gap_points
 
 
-def newton_performance(degrees, gap_sizes):
-    # todo
-    pass
+def newton_performance(trajectories_file_path, degrees, gap_sizes):
+    fishes = produce_trajectories(trajectories_file_path)
+    plt.figure()
+    for degree in degrees:
+        results = []
+        for gap_size in gap_sizes:
+            total_mse = 0
+            for fish in fishes.values():
+                trajectory = fish.trajectory
+                # simulate gap and fill the gaps with newton interpolation
+                trajectory_with_gap, gap_interval = simulate_gap(
+                    trajectory, gap_size)
+                fill_gaps_newton(trajectory, degree,
+                                 equidistant_interpolation_points)
+                # calculate error
+                total_mse += mse(trajectory,
+                                 trajectory_with_gap, [gap_interval])
+        results.append(total_mse / len(fishes))
+        simple_line_plot(plt.gca(), gap_sizes, results,
+                         "Newton Interpolation Performance", "average MSE", "gap size", marker="o:", label=f"degree={degree}")
+    plt.gca().legend()
+    plt.show()
 
 
-def linear_performance(gap_sizes):
-    # todo
-    pass
+def linear_performance(trajectories_file_path, gap_sizes):
+    fishes = produce_trajectories(trajectories_file_path)
+    results = []
+    for gap_size in gap_sizes:
+        total_mse = 0
+        for fish in fishes.values():
+            trajectory = fish.trajectory
+            # simulate gap and fill the gaps with linear interpolation
+            trajectory_with_gap, gap_interval = simulate_gap(
+                trajectory, gap_size)
+            fill_gaps_linear(trajectory_with_gap)
+            # calculate error
+            total_mse += mse(trajectory, trajectory_with_gap, [gap_interval])
+        results.append(total_mse / len(fishes))
+    # plot results
+    plt.figure()
+    simple_line_plot(plt.gca(), gap_sizes, results,
+                     "Linear Interpolation Performance", "average MSE", "gap size", "o:r")
+    plt.show()
 # endregion
 
 
 if __name__ == "__main__":
-    # linear_interpolation_example(gap_size=20)
-    newton_interpolation_example(
-        example_points_methodology=near_interpolation_points, n=3, gap_size=20)
+    # example of linear interpolation
+    # linear_interpolation_example(
+    #     trajectories_file_path="../data/Dsc 0029-lowres_gt.txt", trajectory_index=0, gap_size=20)
+
+    # example of newton interpolation
+    # newton_interpolation_example(trajectories_file_path="../data/Dsc 0029-lowres_gt.txt", trajectory_index=0,
+    #                              example_points_methodology=near_interpolation_points, n=3, gap_size=20)
+
+    # linear interpolation performance
+    # linear_performance(
+    #     trajectories_file_path="../data/Dsc 0029-lowres_gt.txt", gap_sizes=range(1, 50, 3))
+
+    # newton interpolation performance
+    newton_performance(
+        trajectories_file_path="../data/Dsc 0029-lowres_gt.txt", degrees=range(1, 9, 2), gap_sizes=range(1, 50, 3))

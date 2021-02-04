@@ -7,7 +7,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-def simple_line_plot(ax, xs, ys, title, ylabel, xlabel):
+def simple_line_plot(ax, xs, ys, title, ylabel, xlabel, marker='-', label=None):
     """
     Draws a line plot on the received axes.
 
@@ -22,7 +22,7 @@ def simple_line_plot(ax, xs, ys, title, ylabel, xlabel):
     ax.set_title(title)
     ax.set_ylabel(ylabel)
     ax.set_xlabel(xlabel)
-    ax.plot(xs, ys)
+    ax.plot(xs, ys, marker, label=label)
 
 
 def draw_trajectory(trajectory, frame_size, color):
