@@ -1,5 +1,5 @@
 """
-High-level information visualization methods. 
+High-level information visualization methods.
 """
 
 import cv2
@@ -49,7 +49,7 @@ def draw_position_plots(trajectory, gap_interval, interpolation_points, with_gap
         trajectory (list of tuples (t, x, y)): list of positions
         gap_interval (tuple (t_initial, t_final)): initial and final instant of the gap
         interpolation_points(list of tuples (t, x, y)): list of example points used in the interpolation
-        with_gap (bool, optional): specifies if the received trajectory still has the 
+        with_gap (bool, optional): specifies if the received trajectory still has the
             missing points of the gap. Defaults to True.
 
     Returns:
@@ -88,3 +88,56 @@ def draw_position_plots(trajectory, gap_interval, interpolation_points, with_gap
     return plot_variation(ts, xs, "X Position", "x value", "frame", interpolation_points), \
         plot_variation(ts, ys, "Y Position", "y value",
                        "frame", interpolation_points)
+
+
+def show_trajectory(video_path, fish, estimated_trajectory, simulated_gaps, record=None):
+    # record and read settings
+    cap = cv2.VideoCapture(video_path)
+    waitkey_value = 75
+    out = None
+    if record is not None:
+        codec = cv2.VideoWriter_fourcc(*"mp4v")
+        out = cv2.VideoWriter(record, apiPreference=cv2.CAP_FFMPEG, fourcc=codec, fps=15,
+                              frameSize=(int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)), int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))))
+        waitkey_value = 1
+        print("recording...")
+    # set next frame to be read to the initial timestamp index of the trajectory
+    t = estimated_trajectory[0][0]
+    cap.set(cv2.CAP_PROP_POS_FRAMES, t)
+    while(t < estimated_trajectory[-1][0]):
+        _, frame = cap.read()
+        t = cap.get(cv2.CAP_PROP_POS_FRAMES)
+        # check if it is part of a generated gap
+        is_simulated_gap = False
+        for gap in simulated_gaps:
+            if t >= gap[0] and t <= gap[1]:
+                is_simulated_gap = True
+                break
+        # and if it exists in the true trajectory
+        true_data_point = fish.get_position(t)
+        if not is_simulated_gap and true_data_point is not None:
+            centroid = (true_data_point[1], true_data_point[2])
+            bounding_box_size = fish.get_bounding_box_size(t)
+            cv2.circle(frame, centroid, 5, (0, 255, 0), -1)
+            cv2.rectangle(frame,
+                          (int(centroid[0] - (bounding_box_size.width/2)),
+                           int(centroid[1] - bounding_box_size.height/2)),
+                          (int(centroid[0] + (bounding_box_size.width/2)),
+                           int(centroid[1] + bounding_box_size.height/2)),
+                          (0, 255, 0), 2)
+        else:
+            data_point = list(
+                filter(lambda x: x[0] == t, estimated_trajectory))
+            cv2.circle(
+                frame, (data_point[0][1], data_point[0][2]), 5, (0, 0, 255), -1)
+        # show or write frame
+        if record is None:
+            cv2.imshow("gap estimation", frame)
+        else:
+            out.write(frame)
+        if cv2.waitKey(waitkey_value) & 0xFF == ord('q'):
+            break
+    cap.release()
+    if out is not None:
+        print("done!")
+        out.release()
