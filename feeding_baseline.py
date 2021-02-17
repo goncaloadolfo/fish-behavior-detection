@@ -6,9 +6,13 @@ Module that implements the ability to detect feeding periods and fish with lack 
 import logging
 import numpy as np
 import cv2
+import matplotlib.pyplot as plt
 from random import randint
 from scipy.spatial import Delaunay
 from scipy.spatial.qhull import QhullError
+
+from trajectories_reader import *
+from visualization import *
 
 logger = logging.getLogger(__name__)
 
@@ -40,8 +44,9 @@ class Triangle():
 
 class FeedingBaseline():
 
-    def __init__(self):
+    def __init__(self, mesh_thr):
         self.reset()
+        self.__mesh_thr = mesh_thr
 
     def set_positions(self, positions):
         self.__positions = np.array(positions)
@@ -49,15 +54,23 @@ class FeedingBaseline():
     def reset(self):
         self.__positions = []
         self.__outliers = []
-        self.__triangles = []
+        self.__center_of_mass = []
+        self.__mesh = []
         self.__flocking_index = -1
 
     def predict(self):
-        # self.__detect_outliers()
+        self.__detect_outliers()
         self.__calculate_flocking_index()
 
     def results_frame(self, frame_width, frame_height):
-        frame = np.full((frame_width, frame_height, 3), 255, dtype=np.uint8)
+        frame = np.full((frame_height, frame_width, 3), 255, dtype=np.uint8)
+        # center of mass
+        cv2.circle(frame,
+                   (int(self.__center_of_mass[0]),
+                    int(self.__center_of_mass[1])),
+                   radius=4,
+                   color=(0, 255, 0),
+                   thickness=-1)
         # draw outliers
         for outlier in self.__outliers:
             cv2.circle(frame,
@@ -65,18 +78,27 @@ class FeedingBaseline():
                        radius=2,
                        color=(0, 0, 255),
                        thickness=-1)
-        # draw triangles:
-        for triangle in self.__triangles:
-            for point in triangle.points:
-                cv2.circle(frame,
-                           (point[0], point[1]),
-                           radius=3,
-                           color=(255, 0, 0),
-                           thickness=-1)
-            for edge in triangle.edges:
+        # triangular mesh
+        if isinstance(self.__mesh[0], Triangle):
+            for triangle in self.__mesh:
+                for point in triangle.points:
+                    cv2.circle(frame,
+                               (point[0], point[1]),
+                               radius=3,
+                               color=(255, 0, 0),
+                               thickness=-1)
+                for edge in triangle.edges:
+                    cv2.line(frame,
+                             pt1=(edge[0][0], edge[0][1]),
+                             pt2=(edge[1][0], edge[1][1]),
+                             color=(175, 0, 0),
+                             thickness=2)
+        # line mesh
+        else:
+            for i in range(len(self.__mesh) - 1):
                 cv2.line(frame,
-                         pt1=(edge[0][0], edge[0][1]),
-                         pt2=(edge[1][0], edge[1][1]),
+                         pt1=(self.__mesh[i][0], self.__mesh[i][1]),
+                         pt2=(self.__mesh[i+1][0], self.__mesh[i+1][1]),
                          color=(175, 0, 0),
                          thickness=2)
         return frame
@@ -95,22 +117,21 @@ class FeedingBaseline():
 
     def __detect_outliers(self):
         # median centroid (feeding center of mass)
-        median_centroid = np.median(self.__positions, axis=0)
+        self.__center_of_mass = np.median(self.__positions, axis=0)
         # distance from every point to the center of mass
-        distances = [np.linalg.norm(position - median_centroid)
+        distances = [np.linalg.norm(position - self.__center_of_mass)
                      for position in self.__positions]
-        # first and third quartiles
-        q1 = np.percentile(distances, 25)
+        # distances third quartile
         q3 = np.percentile(distances, 75)
         # detect outlier positions
-        non_outlier_mask = np.ones((len(self.__positions),), dtype=int)
+        non_outlier_mask = np.ones((len(self.__positions),), dtype=bool)
         for i in range(len(self.__positions)):
             if distances[i] > 1.5 * q3:
                 self.__outliers.append(self.__positions[i])
-                non_outlier_mask[i] = 0
+                non_outlier_mask[i] = False
         self.__positions = self.__positions[non_outlier_mask]
 
-    def __calculate_flocking_index(self):
+    def __triangular_mesh(self):
         try:
             # calculate triangles
             delaunay_result = Delaunay(
@@ -118,38 +139,68 @@ class FeedingBaseline():
                 qhull_options="QJ Qc")
             # get triangles and calculate flocking index
             self.__flocking_index = 0
+            logger.debug(f"delaunay mesh:\n {delaunay_result.simplices}")
             for p1_i, p2_i, p3_i in delaunay_result.simplices:
                 triangle = Triangle(
                     self.__positions[p1_i],
                     self.__positions[p2_i],
                     self.__positions[p3_i])
-                self.__triangles.append(triangle)
+                self.__mesh.append(triangle)
                 self.__flocking_index += triangle.perimeter
         except QhullError as e:
             logger.warning(
                 f"not able to calculate delaunay triangulation: {e}")
 
+    def __line_mesh(self):
+        sorted_positions = sorted(self.__positions, key=lambda x: x[0])
+        self.__mesh.append(sorted_positions[0])
+        self.__flocking_index = 0
+        for i in range(1, len(sorted_positions)):
+            self.__mesh.append(sorted_positions[i])
+            self.__flocking_index += np.linalg.norm(
+                sorted_positions[i-1] - sorted_positions[i]
+            )
 
-def delaunay_test():
-    # generate positions
+    def __calculate_flocking_index(self):
+        min_y = self.__positions.min(axis=0)[1]
+        max_y = self.__positions.max(axis=0)[1]
+        vertical_distance = max_y - min_y
+        if vertical_distance < self.__mesh_thr:
+            self.__line_mesh()
+        else:
+            self.__triangular_mesh()
+
+
+def detections_at_t(fishes, t):
+    fishes_at_t = []
     positions = []
-    for _ in range(7):
-        positions.append((randint(1, 720), randint(1, 480)))
-    feeding_baseline_obj = FeedingBaseline()
-    feeding_baseline_obj.set_positions(positions)
-    # calculate flocking index
-    feeding_baseline_obj.predict()
-    logger.debug(f"positions: {positions}")
-    logger.debug(f"outliers: {feeding_baseline_obj.outlier_positions}")
-    logger.debug(f"flocking index: {feeding_baseline_obj.flocking_index}")
-    # draw frame
-    cv2.imshow("triangulation results",
-               feeding_baseline_obj.results_frame(480, 720))
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
+    for fish in fishes:
+        position = fish.get_position(t)
+        if position is not None:
+            fishes_at_t.append(fish)
+            positions.append((position[1], position[2]))
+    return fishes_at_t, positions
 
 
-if __name__ == "__main__":
-    logger.addHandler(logging.StreamHandler())
-    logger.setLevel(logging.DEBUG)
-    delaunay_test()
+def analyze_fiffb(gt_path, initial_t, final_t):
+    fishes = produce_trajectories(gt_path).values()
+    ts = range(initial_t, final_t+1)
+    fiffbs = []
+    feeding_baseline_obj = FeedingBaseline(mesh_thr=50)
+    for t in ts:
+        # get positions of the fishes at that instant
+        fishes_at_t, positions = detections_at_t(fishes, t)
+        # calculate aggregation index
+        feeding_baseline_obj.reset()
+        feeding_baseline_obj.set_positions(positions)
+        feeding_baseline_obj.predict()
+        fiffbs.append(feeding_baseline_obj.flocking_index
+                      if feeding_baseline_obj.flocking_index != -1
+                      else np.nan
+                      )
+        if t % 500 == 0:
+            logger.info(f"Calculating FIFFB frame {t}/{final_t}")
+    logger.info(f"Calculating FIFFB frame {final_t}/{final_t}")
+    # plot results
+    plt.figure()
+    simple_line_plot(plt.gca(), ts, fiffbs, "Aggregation Index", "FIFFB", "t")
