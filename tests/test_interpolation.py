@@ -1,3 +1,7 @@
+"""
+Set of tests to the interpolation module.
+"""
+
 from interpolation import *
 
 
