@@ -141,3 +141,17 @@ def show_trajectory(video_path, fish, estimated_trajectory, simulated_gaps, reco
     if out is not None:
         print("done!")
         out.release()
+
+
+def draw_fishes(frame, fishes, t):
+    for fish in fishes:
+        bounding_box_size = fish.get_bounding_box_size(t)
+        centroid = fish.get_position(t)
+        centroid = (centroid[1], centroid[2])
+        cv2.rectangle(frame,
+                      (int(centroid[0] - (bounding_box_size.width/2)),
+                       int(centroid[1] - bounding_box_size.height/2)),
+                      (int(centroid[0] + (bounding_box_size.width/2)),
+                       int(centroid[1] + bounding_box_size.height/2)),
+                      (0, 255, 0), 2)
+    return frame
