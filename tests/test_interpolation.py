@@ -2,7 +2,13 @@
 Set of tests to the interpolation module.
 """
 
-from interpolation import *
+import cv2
+import matplotlib.pyplot as plt
+
+from trajectories_reader import produce_trajectories
+from interpolation import simulate_gap, fill_gaps_linear, fill_gaps_newton, \
+    equidistant_interpolation_points, near_interpolation_points
+from visualization import draw_position_plots, draw_trajectory, show_trajectory
 
 
 def linear_interpolation_test():
@@ -52,7 +58,7 @@ def draw_estimation_test():
     fill_gaps_linear(trajectory_with_gap)
     # visualize video, showing interpolation results
     show_trajectory("../data/Dsc 0029-lowres.m4v",
-                    example_fish, trajectory_with_gap, [gap_interval], "../data/interpolation-example1.mp4")
+                    example_fish, trajectory_with_gap, [gap_interval])  #, "../data/interpolation-example1.mp4")
     plt.show()
     cv2.waitKey(0)
     cv2.destroyAllWindows()
