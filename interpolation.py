@@ -8,6 +8,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from random import randint
 from collections import defaultdict
+
 from trajectories_reader import produce_trajectories
 from visualization import draw_trajectory, draw_position_plots, simple_line_plot, show_trajectory
 
@@ -48,7 +49,7 @@ class NewtonInterpolation:
         Args:
             example_points (list of tuples (t, x, y)): list of trajectory' sample points to interpolate 
         """
-        self.__init__(self, example_points)
+        self.__init__(example_points)
 
     def predict(self, t):
         """
