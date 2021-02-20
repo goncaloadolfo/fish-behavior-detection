@@ -11,11 +11,11 @@ from random import randint
 from scipy.spatial import Delaunay
 from scipy.spatial.qhull import QhullError
 
-from trajectories_reader import *
-from visualization import *
+from trajectories_reader import produce_trajectories
+from visualization import simple_line_plot
 
-logger = logging.getLogger(__name__)
-
+feeding_baseline_logger = logging.getLogger(__name__)
+feeding_baseline_logger.addHandler(logging.StreamHandler())
 
 class Triangle():
 
@@ -139,7 +139,7 @@ class FeedingBaseline():
                 qhull_options="QJ Qc")
             # get triangles and calculate flocking index
             self.__flocking_index = 0
-            logger.debug(f"delaunay mesh:\n {delaunay_result.simplices}")
+            feeding_baseline_logger.debug(f"delaunay mesh:\n {delaunay_result.simplices}")
             for p1_i, p2_i, p3_i in delaunay_result.simplices:
                 triangle = Triangle(
                     self.__positions[p1_i],
@@ -148,7 +148,7 @@ class FeedingBaseline():
                 self.__mesh.append(triangle)
                 self.__flocking_index += triangle.perimeter
         except QhullError as e:
-            logger.warning(
+            feeding_baseline_logger.warning(
                 f"not able to calculate delaunay triangulation: {e}")
 
     def __line_mesh(self):
@@ -189,7 +189,7 @@ def analyze_fiffb(gt_path, initial_t, final_t):
     feeding_baseline_obj = FeedingBaseline(mesh_thr=50)
     for t in ts:
         # get positions of the fishes at that instant
-        fishes_at_t, positions = detections_at_t(fishes, t)
+        _, positions = detections_at_t(fishes, t)
         # calculate aggregation index
         feeding_baseline_obj.reset()
         feeding_baseline_obj.set_positions(positions)
@@ -199,8 +199,8 @@ def analyze_fiffb(gt_path, initial_t, final_t):
                       else np.nan
                       )
         if t % 500 == 0:
-            logger.info(f"Calculating FIFFB frame {t}/{final_t}")
-    logger.info(f"Calculating FIFFB frame {final_t}/{final_t}")
+            feeding_baseline_logger.info(f"Calculating FIFFB frame {t}/{final_t}")
+    feeding_baseline_logger.info(f"Calculating FIFFB frame {final_t}/{final_t}")
     # plot results
     plt.figure()
     simple_line_plot(plt.gca(), ts, fiffbs, "Aggregation Index", "FIFFB", "t")
