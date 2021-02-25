@@ -12,6 +12,7 @@ import os
 
 CONF_DIR_NAME = "conf"
 FRAME_NAME = "regions selector"
+SELECTION_COLOR = (0, 0, 255)
 regions_selector_logger = logging.getLogger(__name__)
 regions_selector_logger.setLevel(logging.INFO)
 regions_selector_logger.addHandler(logging.StreamHandler())
@@ -49,20 +50,20 @@ class Rectangle():
         return v[0] >= xs[0] and v[0] <= xs[1] and v[1] >= ys[0] and v[1] <= ys[1]
 
 
-class RectangleEncoder(json.JSONEncoder):
-
-    def default(self, rectangle_obj):
-        return {
-            'pt1': rectangle_obj.pt1,
-            'pt2': rectangle_obj.pt2
-        }
+def rectangle_decoder(rectangle_dict):
+    rect = Rectangle()
+    rect.pt1 = rectangle_dict['pt1']
+    rect.pt2 = rectangle_dict['pt2']
+    return rect
 
 
 class Region():
 
     def __init__(self, region_id, region_tag):
         self.__region_id = region_id
-        self.__region_tag = region_tag
+        self.__region_tag = region_tag \
+            if region_tag.strip() != "" \
+            else f"r{self.__region_id}"
         self.__region_rectangles = []
         self.__color = (random.randint(0, 255),
                         random.randint(0, 255),
@@ -84,6 +85,10 @@ class Region():
     def color(self):
         return self.__color
 
+    @color.setter
+    def color(self, v):
+        self.__color = v
+
     def __contains__(self, v):
         for rectangle in self.__region_rectangles:
             if v in rectangle:
@@ -94,7 +99,7 @@ class Region():
         return len(self.__region_rectangles)
 
     def __str__(self):
-        obj_str = f"- region {self.__region_id}\n"
+        obj_str = f"- region {self.__region_id}\n- {self.__region_tag}\n"
         for rect in self.__region_rectangles:
             obj_str += f"- rect {rect.pt1}, {rect.pt2}\n"
         return obj_str
@@ -122,14 +127,40 @@ class Region():
 
 class RegionEncoder(json.JSONEncoder):
 
-    def default(self, region):
-        rectEncoder = RectangleEncoder()
-        return {
-            'region-id': region.region_id,
-            'region-tag': region.region_tag,
-            'color': region.color,
-            'rectangles': [rectEncoder.encode(rect) for rect in region.rectangles]
-        }
+    def default(self, obj):
+        # region instance
+        if isinstance(obj, Region):
+            return {
+                'region-id': obj.region_id,
+                'region-tag': obj.region_tag,
+                'color': obj.color,
+                'rectangles': [self.default(rect) for rect in obj.rectangles]
+            }
+        # rectangle instance
+        elif isinstance(obj, Rectangle):
+            return {
+                'pt1': obj.pt1,
+                'pt2': obj.pt2
+            }
+        # encoder from super class (default)
+        else:
+            return super().default(obj)
+
+
+def regions_decoder(dict):
+    # region obj
+    if "region-id" in dict:
+        # instantiate new region
+        region_obj = Region(dict['region-id'], dict['region-tag'])
+        region_obj.color = dict['color']
+        # decode region rectangles
+        rectangles = dict['rectangles']
+        for rect_dict in rectangles:
+            region_obj.append(rectangle_decoder(rect_dict))
+        return region_obj
+    # main dict or rectangle dict
+    else:
+        return dict
 
 
 class RegionsSelector():
@@ -137,7 +168,10 @@ class RegionsSelector():
     def __init__(self, input_file_path, output_filename, video_input_type=False):
         self.__regions = {}
         self.__output_filename = output_filename
+        # state attributes
+        self.__croping = False
         self.__rectangle = None
+        self.__mouse_position = None
         # results frame
         if video_input_type:
             video_capture = cv2.VideoCapture(input_file_path)
@@ -154,8 +188,10 @@ class RegionsSelector():
         if event == cv2.EVENT_LBUTTONDOWN:
             self.__rectangle = Rectangle()
             self.__rectangle.pt1 = (x, y)
+            self.__croping = True
         # left mouse click up - region selection
         elif event == cv2.EVENT_LBUTTONUP:
+            self.__croping = False
             self.__rectangle.pt2 = (x, y)
             region_id = int(input("region number? \n > "))
             # already exist
@@ -178,6 +214,9 @@ class RegionsSelector():
                         del self.__regions[region_id]
                         break
             self.__print_regions()
+        # mouse position updates
+        elif event == cv2.EVENT_MOUSEMOVE:
+            self.__mouse_position = (x, y)
 
     def __print_regions(self):
         if regions_selector_logger.level == logging.DEBUG:
@@ -188,15 +227,22 @@ class RegionsSelector():
         frame_copy = self.__frame.copy()
         for region in self.__regions.values():
             region.draw(frame_copy)
+        # if cropping
+        if self.__croping == True:
+            cv2.rectangle(frame_copy,
+                          self.__rectangle.pt1,
+                          self.__mouse_position,
+                          SELECTION_COLOR,
+                          2)
         return frame_copy
 
     def __save_to_file(self):
         if not os.path.isdir(CONF_DIR_NAME):
             os.mkdir(CONF_DIR_NAME, mode=0o666)
         conf_path = os.path.join(CONF_DIR_NAME,
-                                 self.__output_filename + ".conf")
+                                 self.__output_filename + ".json")
         with open(conf_path, "w") as f:
-            json.dump(RegionEncoder().encode(self.__regions), f)
+            json.dump(self.__regions, f, cls=RegionEncoder, indent=4)
 
     def start(self):
         regions_selector_logger.info("Select ROIs using left mouse click\n"
@@ -211,10 +257,9 @@ class RegionsSelector():
 
 
 def read_regions(config_path):
-    # todo
-    raise NotImplementedError()
+    with open(config_path, "r") as f:
+        return json.load(f, object_hook=regions_decoder).values()
 
 
 if __name__ == "__main__":
-    regions_selector_logger.setLevel(logging.DEBUG)
     RegionsSelector(sys.argv[1], sys.argv[2], bool(sys.argv[3])).start()
