@@ -37,7 +37,7 @@ class Fish:
 
     @property
     def bounding_boxes(self):
-        return self.__bounding_boxes_size.values()
+        return list(self.__bounding_boxes_size.values())
 
     def get_bounding_box_size(self, t):
         return self.__bounding_boxes_size[t]

@@ -52,8 +52,8 @@ class Rectangle():
 
 def rectangle_decoder(rectangle_dict):
     rect = Rectangle()
-    rect.pt1 = rectangle_dict['pt1']
-    rect.pt2 = rectangle_dict['pt2']
+    rect.pt1 = tuple(rectangle_dict['pt1'])
+    rect.pt2 = tuple(rectangle_dict['pt2'])
     return rect
 
 
@@ -152,7 +152,7 @@ def regions_decoder(dict):
     if "region-id" in dict:
         # instantiate new region
         region_obj = Region(dict['region-id'], dict['region-tag'])
-        region_obj.color = dict['color']
+        region_obj.color = tuple(dict['color'])
         # decode region rectangles
         rectangles = dict['rectangles']
         for rect_dict in rectangles:

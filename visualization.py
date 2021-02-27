@@ -25,6 +25,13 @@ def simple_line_plot(ax, xs, ys, title, ylabel, xlabel, marker='-', label=None):
     ax.plot(xs, ys, marker, label=label)
 
 
+def simple_bar_chart(ax, xs, ys, title, ylabel, xlabel):
+    ax.set_title(title)
+    ax.set_ylabel(ylabel)
+    ax.set_xlabel(xlabel)
+    ax.bar(xs, ys, align="center")
+    
+
 def draw_trajectory(trajectory, frame_size, color, regions=None):
     """
     Draws the trajectory on a given frame.
@@ -93,7 +100,8 @@ def draw_position_plots(trajectory, gap_interval, interpolation_points, with_gap
                        "frame", interpolation_points)
 
 
-def show_trajectory(video_path, fish, estimated_trajectory, simulated_gaps, record=None):
+def show_trajectory(video_path, fish, estimated_trajectory, simulated_gaps, 
+                    record=None, frame_name="gap estimation"):
     # record and read settings
     cap = cv2.VideoCapture(video_path)
     waitkey_value = 75
@@ -129,13 +137,14 @@ def show_trajectory(video_path, fish, estimated_trajectory, simulated_gaps, reco
                            int(centroid[1] + bounding_box_size.height/2)),
                           (0, 255, 0), 2)
         else:
-            data_point = list(
-                filter(lambda x: x[0] == t, estimated_trajectory))
-            cv2.circle(
-                frame, (data_point[0][1], data_point[0][2]), 5, (0, 0, 255), -1)
+            data_point = filter(lambda x: x[0] == t, estimated_trajectory)
+            if len(data_point) > 0:
+                data_point = list(data_point)
+                cv2.circle(
+                    frame, (data_point[0][1], data_point[0][2]), 5, (0, 0, 255), -1)
         # show or write frame
         if record is None:
-            cv2.imshow("gap estimation", frame)
+            cv2.imshow(frame_name, frame)
         else:
             out.write(frame)
         if cv2.waitKey(waitkey_value) & 0xFF == ord('q'):

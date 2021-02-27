@@ -10,13 +10,15 @@ Feature extraction from trajectory:
 """
 
 from itertools import permutations
+from multiprocessing import Process
 
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 
 from regions_selector import read_regions
-from visualization import draw_trajectory, show_trajectory, simple_line_plot
+from visualization import draw_trajectory, show_trajectory, simple_line_plot, \
+    simple_bar_chart
 
 
 FEATURES_ORDER = ["speed", "acceleration", "turning-angle",
@@ -60,7 +62,7 @@ class TrajectoryFeatureExtraction():
                 # geographic transitions
                 self.__pass_by_features(position)
                 # distance from trajectory center
-                self.__centered_distance.append(
+                self.__centered_distances.append(
                     np.linalg.norm(position - self.__trajectory_centroid)
                 )
                 # normalized bounding box
@@ -118,10 +120,14 @@ class TrajectoryFeatureExtraction():
     @property
     def normalized_bounding_boxes(self):
         return self.__normalized_bounding_boxes
+    
+    @property
+    def pass_by_info(self):
+        return self.__pass_by
 
-    @static_method
+    @staticmethod
     def statistical_features(time_series, feature_label):
-        return [
+        return ([
             f"mean-{feature_label}",
             f"median-{feature_label}",
             f"std-{feature_label}",
@@ -142,7 +148,7 @@ class TrajectoryFeatureExtraction():
             np.median([1] + [np.corrcoef(time_series[:-i], time_series[i:])
                              for i in range(1, len(time_series))]
                       )
-        ]
+        ])
 
     def __motion_features(self, i):
         p1 = self.__trajectory[i-2]
@@ -163,10 +169,13 @@ class TrajectoryFeatureExtraction():
         dy2_dt2 = (dy_dt[1] - dy_dt[0]) / (current_point[0] - p2[0])
         # features
         self.__speeds.append(np.linalg.norm([dx_dt[1], dy_dt[1]]))
-        self.__accelerations.append(np.linalg.norm([dx2_dt2, dy2_dt2]))
+        self.__accelerations.append(
+            np.linalg.norm([dx_dt[1], dy_dt[1]]) - np.linalg.norm([dx_dt[0], dy_dt[0]])
+        )
+        curvature_numerator = abs(dx2_dt2 * dy_dt[1] - dx_dt[1] * dy2_dt2)
+        curvature_denominator = (dx_dt[1] ** 2 + dy_dt[1] ** 2)**1.5
         self.__curvatures.append(
-            abs(dx2_dt2 * dy_dt[1] - dx_dt[1] * dy2_dt2) /
-            (dx_dt[1] ** 2 + dy_dt[1] ** 2)**1.5
+            curvature_numerator / curvature_denominator if curvature_denominator != 0 else 0
         )
         # turning angle
         motion_vector = [dx_dt[1], dy_dt[1]]
@@ -187,14 +196,7 @@ class TrajectoryFeatureExtraction():
 
 
 def analyze_trajectory(video_path, regions_config_path, fish):
-    # draw trajectory with the geographic regions
     regions = read_regions(regions_config_path)
-    video_capture = cv2.VideoCapture(video_path)
-    draw_trajectory(fish.trajectory,
-                    (video_capture.get(cv2.CAP_PROP_FRAME_HEIGHT),
-                     video_capture.get(cv2.CAP_PROP_FRAME_WIDTH)),
-                    (0, 0, 0),
-                    regions)
     # calculate and draw feature plots
     features_extractor_obj = TrajectoryFeatureExtraction(regions)
     features_extractor_obj.set_trajectory(fish.trajectory, fish.bounding_boxes)
@@ -205,29 +207,59 @@ def analyze_trajectory(video_path, regions_config_path, fish):
                         features_extractor_obj.curvature_time_series,
                         features_extractor_obj.centered_distances,
                         features_extractor_obj.normalized_bounding_boxes]
-    for i in range(len(time_series_list)):
-        plt.figure()
-        simple_line_plot(plt.gca(),
-                         range(len(fish.trajectory)),
-                         time_series_list[i],
-                         FEATURES_ORDER[i],
-                         "value",
-                         "t")
+    draw_time_series(*time_series_list, descriptions=FEATURES_ORDER)
+    draw_region_transitions_information(features_extractor_obj.pass_by_info)
+    # draw trajectory and regions
+    trajectory_repeated_reading(video_path, regions, fish)
     plt.show()
-    cv2.waitKey(1)
     cv2.destroyAllWindows()
 
 
 def draw_time_series(*args, descriptions):
-    # todo
-    raise NotImplementedError()
+    for i in range(len(args)):
+        plt.figure()
+        simple_line_plot(plt.gca(),
+                         range(len(args[i])),
+                         args[i],
+                         descriptions[i],
+                         "value",
+                         "t")
 
 
 def draw_region_transitions_information(pass_by_info):
-    # todo
-    raise NotImplementedError()
+    regions = list(pass_by_info.keys())
+    values = list(pass_by_info.values())
+    plt.figure()
+    simple_bar_chart(plt.gca(), range(len(values)), values, 
+                     "Region Transitions", "Number frames", "Region")
+    plt.gca().set_xticks(range(len(values)))
+    plt.gca().set_xticklabels(regions)
 
 
-def trajectory_repeated_reading(video_path, fish):
-    # todo
-    raise NotImplementedError()
+def trajectory_repeated_reading(video_path, regions, fish): 
+    def repeating_callback(event, x, y, flags, param):
+        nonlocal visualization_process
+        if event == cv2.EVENT_LBUTTONDOWN:
+            visualization_process.terminate()
+            visualization_process = Process(target=show_trajectory, 
+                                    args=(video_path, fish, fish.trajectory, [], None, "trajectory"))
+            visualization_process.start()
+    # trajectory and regions frame
+    video_capture = cv2.VideoCapture(video_path)
+    draw_trajectory(fish.trajectory,
+                    (int(video_capture.get(cv2.CAP_PROP_FRAME_HEIGHT)),
+                     int(video_capture.get(cv2.CAP_PROP_FRAME_WIDTH))),
+                    (0, 0, 0),
+                    regions)
+    # repeated visualization
+    visualization_process = Process(target=show_trajectory, 
+                                    args=(video_path, fish, fish.trajectory, [], None, "trajectory"))
+    cv2.namedWindow("trajectory")
+    cv2.setMouseCallback("trajectory", repeating_callback)
+    visualization_process.start()
+
+    
+if __name__ == "__main__":
+    from trajectories_reader import produce_trajectories
+    fishes = list(produce_trajectories("../data/Dsc 0037-lowres_gt.txt").values())
+    analyze_trajectory("../data/Dsc 0037-lowres.m4v", "conf/regions-example.json", fishes[0])
