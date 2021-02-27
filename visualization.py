@@ -25,7 +25,7 @@ def simple_line_plot(ax, xs, ys, title, ylabel, xlabel, marker='-', label=None):
     ax.plot(xs, ys, marker, label=label)
 
 
-def draw_trajectory(trajectory, frame_size, color):
+def draw_trajectory(trajectory, frame_size, color, regions=None):
     """
     Draws the trajectory on a given frame.
 
@@ -38,6 +38,9 @@ def draw_trajectory(trajectory, frame_size, color):
     for data_point in trajectory:
         cv2.circle(frame, (data_point[1], data_point[2]),
                    radius=2, color=color, thickness=-1)
+    if regions is not None:
+        for region in regions:
+            region.draw(frame)
     cv2.imshow("trajectory", frame)
 
 

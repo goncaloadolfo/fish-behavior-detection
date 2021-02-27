@@ -11,7 +11,12 @@ Feature extraction from trajectory:
 
 from itertools import permutations
 
+import cv2
 import numpy as np
+import matplotlib.pyplot as plt
+
+from regions_selector import read_regions
+from visualization import draw_trajectory, show_trajectory, simple_line_plot
 
 
 FEATURES_ORDER = ["speed", "acceleration", "turning-angle",
@@ -86,6 +91,34 @@ class TrajectoryFeatureExtraction():
             vector.append(pass_by_value)
         return vector_description, vector
 
+    @property
+    def speed_time_series(self):
+        return self.__speeds
+
+    @property
+    def acceleration_time_series(self):
+        return self.__accelerations
+
+    @property
+    def turning_angle_time_series(self):
+        return self.__turning_angles
+
+    @property
+    def curvature_time_series(self):
+        return self.__curvatures
+
+    @property
+    def centered_distances(self):
+        return self.__centered_distances
+
+    @property
+    def geographic_transitions(self):
+        return self.__pass_by
+
+    @property
+    def normalized_bounding_boxes(self):
+        return self.__normalized_bounding_boxes
+
     @static_method
     def statistical_features(time_series, feature_label):
         return [
@@ -151,3 +184,50 @@ class TrajectoryFeatureExtraction():
                 else:
                     self.__pass_by[(self.__last_region, region.region_id)] += 1
                 self.__last_region = region.region_id
+
+
+def analyze_trajectory(video_path, regions_config_path, fish):
+    # draw trajectory with the geographic regions
+    regions = read_regions(regions_config_path)
+    video_capture = cv2.VideoCapture(video_path)
+    draw_trajectory(fish.trajectory,
+                    (video_capture.get(cv2.CAP_PROP_FRAME_HEIGHT),
+                     video_capture.get(cv2.CAP_PROP_FRAME_WIDTH)),
+                    (0, 0, 0),
+                    regions)
+    # calculate and draw feature plots
+    features_extractor_obj = TrajectoryFeatureExtraction(regions)
+    features_extractor_obj.set_trajectory(fish.trajectory, fish.bounding_boxes)
+    features_extractor_obj.extract_features()
+    time_series_list = [features_extractor_obj.speed_time_series,
+                        features_extractor_obj.acceleration_time_series,
+                        features_extractor_obj.turning_angle_time_series,
+                        features_extractor_obj.curvature_time_series,
+                        features_extractor_obj.centered_distances,
+                        features_extractor_obj.normalized_bounding_boxes]
+    for i in range(len(time_series_list)):
+        plt.figure()
+        simple_line_plot(plt.gca(),
+                         range(len(fish.trajectory)),
+                         time_series_list[i],
+                         FEATURES_ORDER[i],
+                         "value",
+                         "t")
+    plt.show()
+    cv2.waitKey(1)
+    cv2.destroyAllWindows()
+
+
+def draw_time_series(*args, descriptions):
+    # todo
+    raise NotImplementedError()
+
+
+def draw_region_transitions_information(pass_by_info):
+    # todo
+    raise NotImplementedError()
+
+
+def trajectory_repeated_reading(video_path, fish):
+    # todo
+    raise NotImplementedError()
