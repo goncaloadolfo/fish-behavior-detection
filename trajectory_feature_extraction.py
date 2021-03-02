@@ -5,7 +5,7 @@ Feature extraction from trajectory:
     - turning angle
     - curvature
     - centered distance function
-    - pass by 
+    - pass by
     - normalized bounding box
 """
 
@@ -13,6 +13,7 @@ from itertools import permutations
 from multiprocessing import Process
 
 import cv2
+import logging
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -23,6 +24,8 @@ from visualization import draw_trajectory, show_trajectory, simple_line_plot, \
 
 FEATURES_ORDER = ["speed", "acceleration", "turning-angle",
                   "curvature", "centered-distance", "normalized-bb"]
+fe_logger = logging.getLogger(__name__)
+fe_logger.addHandler(logging.StreamHandler())
 
 
 class TrajectoryFeatureExtraction():
@@ -81,7 +84,7 @@ class TrajectoryFeatureExtraction():
         # extract statistics from each time series
         for i in range(len(FEATURES_ORDER)):
             description, statistical_features = TrajectoryFeatureExtraction.statistical_features(
-                time_series_list, FEATURES_ORDER[i]
+                time_series_list[i], FEATURES_ORDER[i]
             )
             vector_description.extend(description)
             vector.extend(statistical_features)
@@ -120,7 +123,7 @@ class TrajectoryFeatureExtraction():
     @property
     def normalized_bounding_boxes(self):
         return self.__normalized_bounding_boxes
-    
+
     @property
     def pass_by_info(self):
         return self.__pass_by
@@ -137,7 +140,7 @@ class TrajectoryFeatureExtraction():
             f"quartile3-{feature_label}",
             f"autocorr-{feature_label}",
         ],
-        [
+            [
             np.mean(time_series),
             np.median(time_series),
             np.std(time_series),
@@ -145,8 +148,10 @@ class TrajectoryFeatureExtraction():
             np.max(time_series),
             np.percentile(time_series, 25),
             np.percentile(time_series, 75),
-            np.median([1] + [np.corrcoef(time_series[:-i], time_series[i:])
-                             for i in range(1, len(time_series))]
+            np.median([1.0] + [np.corrcoef(time_series[:-i], time_series[i:])[0, 1]
+                               for i in range(1, len(time_series) - 1)
+                               if not np.isnan(np.corrcoef(time_series[:-i], time_series[i:])[0, 1])
+                               ]
                       )
         ])
 
@@ -170,7 +175,8 @@ class TrajectoryFeatureExtraction():
         # features
         self.__speeds.append(np.linalg.norm([dx_dt[1], dy_dt[1]]))
         self.__accelerations.append(
-            np.linalg.norm([dx_dt[1], dy_dt[1]]) - np.linalg.norm([dx_dt[0], dy_dt[0]])
+            np.linalg.norm([dx_dt[1], dy_dt[1]]) -
+            np.linalg.norm([dx_dt[0], dy_dt[0]])
         )
         curvature_numerator = abs(dx2_dt2 * dy_dt[1] - dx_dt[1] * dy2_dt2)
         curvature_denominator = (dx_dt[1] ** 2 + dy_dt[1] ** 2)**1.5
@@ -211,6 +217,11 @@ def analyze_trajectory(video_path, regions_config_path, fish):
     draw_region_transitions_information(features_extractor_obj.pass_by_info)
     # draw trajectory and regions
     trajectory_repeated_reading(video_path, regions, fish)
+    # features vector
+    description, vector = features_extractor_obj.get_feature_vector()
+    fe_logger.info(f"\ndescription: \n{description}")
+    fe_logger.info(f"\nvector: \n{vector}")
+    fe_logger.info(f"Dimensions: {len(vector)}")
     plt.show()
     cv2.destroyAllWindows()
 
@@ -230,19 +241,19 @@ def draw_region_transitions_information(pass_by_info):
     regions = list(pass_by_info.keys())
     values = list(pass_by_info.values())
     plt.figure()
-    simple_bar_chart(plt.gca(), range(len(values)), values, 
+    simple_bar_chart(plt.gca(), range(len(values)), values,
                      "Region Transitions", "Number frames", "Region")
     plt.gca().set_xticks(range(len(values)))
     plt.gca().set_xticklabels(regions)
 
 
-def trajectory_repeated_reading(video_path, regions, fish): 
+def trajectory_repeated_reading(video_path, regions, fish):
     def repeating_callback(event, x, y, flags, param):
         nonlocal visualization_process
         if event == cv2.EVENT_LBUTTONDOWN:
             visualization_process.terminate()
-            visualization_process = Process(target=show_trajectory, 
-                                    args=(video_path, fish, fish.trajectory, [], None, "trajectory"))
+            visualization_process = Process(target=show_trajectory,
+                                            args=(video_path, fish, fish.trajectory, [], None, "trajectory"))
             visualization_process.start()
     # trajectory and regions frame
     video_capture = cv2.VideoCapture(video_path)
@@ -252,14 +263,17 @@ def trajectory_repeated_reading(video_path, regions, fish):
                     (0, 0, 0),
                     regions)
     # repeated visualization
-    visualization_process = Process(target=show_trajectory, 
+    visualization_process = Process(target=show_trajectory,
                                     args=(video_path, fish, fish.trajectory, [], None, "trajectory"))
     cv2.namedWindow("trajectory")
     cv2.setMouseCallback("trajectory", repeating_callback)
     visualization_process.start()
 
-    
+
 if __name__ == "__main__":
     from trajectories_reader import produce_trajectories
-    fishes = list(produce_trajectories("../data/Dsc 0037-lowres_gt.txt").values())
-    analyze_trajectory("../data/Dsc 0037-lowres.m4v", "conf/regions-example.json", fishes[0])
+    fe_logger.setLevel(logging.INFO)
+    fishes = list(produce_trajectories(
+        "../data/Dsc 0037-lowres_gt.txt").values())
+    analyze_trajectory("../data/Dsc 0037-lowres.m4v",
+                       "conf/regions-example.json", fishes[0])
