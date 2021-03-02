@@ -153,7 +153,6 @@ def near_interpolation_points(trajectory, gap_starting_index, n):
     Returns:
         list of tuples (t, x, y): list with the chosen data points
     """
-    # todo: refractor, implement in a recursive way
     points = []
     current_temporal_sum = 0
     gap_center = (trajectory[gap_starting_index+1][0] +

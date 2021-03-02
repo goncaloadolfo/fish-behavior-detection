@@ -69,10 +69,13 @@ class TrajectoryFeatureExtraction():
                     np.linalg.norm(position - self.__trajectory_centroid)
                 )
                 # normalized bounding box
-                bounding_box = self.__bounding_boxes[i]
-                self.__normalized_bounding_boxes.append(
-                    bounding_box.width / bounding_box.height
-                )
+                try:
+                    bounding_box = self.__bounding_boxes[self.__trajectory[i][0]]
+                    self.__normalized_bounding_boxes.append(
+                        bounding_box.width / bounding_box.height
+                    )
+                except KeyError:
+                    continue
 
     def get_feature_vector(self):
         # list with all time series
