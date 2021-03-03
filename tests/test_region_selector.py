@@ -20,5 +20,6 @@ def config_reading_test(config_path):
         print(region)
 
 
-# regions_selector_behavior_test()
-config_reading_test("conf/regions-example.json")
+if __name__ == "__main__":
+    regions_selector_behavior_test()
+    # config_reading_test("conf/regions-example.json")

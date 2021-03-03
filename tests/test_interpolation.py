@@ -7,7 +7,8 @@ import matplotlib.pyplot as plt
 
 from trajectories_reader import produce_trajectories
 from interpolation import simulate_gap, fill_gaps_linear, fill_gaps_newton, \
-    equidistant_interpolation_points, near_interpolation_points
+    equidistant_interpolation_points, near_interpolation_points, linear_performance, \
+        newton_performance
 from visualization import draw_position_plots, draw_trajectory, show_trajectory
 
 
@@ -64,6 +65,18 @@ def draw_estimation_test():
     cv2.destroyAllWindows()
 
 
-linear_interpolation_test()
-# newton_interpolation_test()
-# draw_estimation_test()
+def evaluation_test():
+    # evaluation results of the different methods
+    linear_performance("../data/Dsc 0029-lowres_gt.txt", range(1, 50, 3))
+    newton_performance("../data/Dsc 0029-lowres_gt.txt", equidistant_interpolation_points,
+                       [4, 5, 6], range(1, 10, 2))
+    newton_performance("../data/Dsc 0029-lowres_gt.txt", near_interpolation_points,
+                       [4, 5, 6], range(1, 10, 1))
+    plt.show()
+
+
+if __name__ == "__main__":
+    linear_interpolation_test()
+    # newton_interpolation_test()
+    # draw_estimation_test()
+    # evaluation_test()

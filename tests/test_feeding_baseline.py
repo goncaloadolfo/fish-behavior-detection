@@ -122,9 +122,9 @@ def mesh_calculation_errors_test():
         f"failed to calculate mesh in {error_counter}/{n_times} iterations"
     )
 
-
-delaunay_test((1, 480))  # triangular mesh
-# delaunay_test((200, 240))  # line
-# delaunay_real_data_test()
-# fiffb_analysis_test()
-# mesh_calculation_errors_test()
+if __name__ == "__main__":
+    delaunay_test((1, 480))  # triangular mesh
+    # delaunay_test((200, 240))  # line
+    # delaunay_real_data_test()
+    # fiffb_analysis_test()
+    # mesh_calculation_errors_test()

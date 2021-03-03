@@ -271,12 +271,3 @@ def trajectory_repeated_reading(video_path, regions, fish):
     cv2.namedWindow("trajectory")
     cv2.setMouseCallback("trajectory", repeating_callback)
     visualization_process.start()
-
-
-if __name__ == "__main__":
-    from trajectories_reader import produce_trajectories
-    fe_logger.setLevel(logging.INFO)
-    fishes = list(produce_trajectories(
-        "../data/Dsc 0037-lowres_gt.txt").values())
-    analyze_trajectory("../data/Dsc 0037-lowres.m4v",
-                       "conf/regions-example.json", fishes[0])

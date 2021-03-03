@@ -70,16 +70,3 @@ def produce_trajectories(detections_file):
                     trajectories[fish_id] = Fish(
                         fish_id).add_position(data_point, abs(detection[0]-detection[2]), abs(detection[1]-detection[3]))
     return trajectories
-
-
-def read_trajectory_test():
-    trajectories = produce_trajectories("../data/Dsc 0029-lowres_gt.txt")
-    example_trajectory = list(trajectories.values())[0].trajectory
-    print(example_trajectory)
-    draw_trajectory(example_trajectory, (480, 720), (0, 0, 0))
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
-
-
-if __name__ == "__main__":
-    read_trajectory_test()

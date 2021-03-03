@@ -378,12 +378,3 @@ def linear_performance(trajectories_file_path, gap_sizes):
     simple_line_plot(plt.gca(), gap_sizes, results,
                      "Linear Interpolation Performance", "mean MSE", "gap size", "o:r")
 # endregion
-
-
-if __name__ == "__main__":
-    linear_performance("../data/Dsc 0029-lowres_gt.txt", range(1, 50, 3))
-    newton_performance("../data/Dsc 0029-lowres_gt.txt", equidistant_interpolation_points,
-                       [4, 5, 6], range(1, 10, 2))
-    newton_performance("../data/Dsc 0029-lowres_gt.txt", near_interpolation_points,
-                       [4, 5, 6], range(1, 10, 1))
-    plt.show()
