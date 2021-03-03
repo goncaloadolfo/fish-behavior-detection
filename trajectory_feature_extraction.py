@@ -26,12 +26,14 @@ FEATURES_ORDER = ["speed", "acceleration", "turning-angle",
                   "curvature", "centered-distance", "normalized-bb"]
 fe_logger = logging.getLogger(__name__)
 fe_logger.addHandler(logging.StreamHandler())
+fe_logger.setLevel(logging.INFO)
 
 
 class TrajectoryFeatureExtraction():
 
-    def __init__(self, regions):
+    def __init__(self, regions, calculation_frequency):
         self.__regions = regions
+        self.__calculation_frequency = calculation_frequency
         self.reset()
 
     def reset(self):
@@ -50,6 +52,7 @@ class TrajectoryFeatureExtraction():
         # state
         self.__trajectory_centroid = None
         self.__last_region = None
+        self.__calculation_positions = []
 
     def set_trajectory(self, trajectory, bounding_boxes):
         self.__bounding_boxes = bounding_boxes
@@ -58,10 +61,14 @@ class TrajectoryFeatureExtraction():
 
     def extract_features(self):
         for i in range(len(self.__trajectory)):
-            if i > 1:
+            current_position = self.__trajectory[i]
+            if len(self.__calculation_positions) == 0 or \
+                current_position[0] - self.__calculation_positions[-1][0] >= self.__calculation_frequency:
+                    self.__calculation_positions.append(current_position) 
+            if len(self.__calculation_positions) > 2:
                 position = np.array(self.__trajectory[i][1:])
                 # speed, acceleration, turning angle and curvature
-                self.__motion_features(i)
+                self.__motion_features()
                 # geographic transitions
                 self.__pass_by_features(position)
                 # distance from trajectory center
@@ -76,6 +83,9 @@ class TrajectoryFeatureExtraction():
                     )
                 except KeyError:
                     continue
+                # update state
+            
+                
 
     def get_feature_vector(self):
         # list with all time series
@@ -158,10 +168,10 @@ class TrajectoryFeatureExtraction():
                       )
         ])
 
-    def __motion_features(self, i):
-        p1 = self.__trajectory[i-2]
-        p2 = self.__trajectory[i-1]
-        current_point = self.__trajectory[i]
+    def __motion_features(self):
+        p1 = self.__calculation_positions[-3]
+        p2 = self.__calculation_positions[-2]
+        current_point = self.__calculation_positions[-1]
         # derivative in x
         dx_dt = [
             (p2[1] - p1[1]) / (p2[0] - p1[0]),
@@ -204,10 +214,9 @@ class TrajectoryFeatureExtraction():
                 self.__last_region = region.region_id
 
 
-def analyze_trajectory(video_path, regions_config_path, fish):
-    regions = read_regions(regions_config_path)
+def analyze_trajectory(video_path, regions, fish, frequency):
     # calculate and draw feature plots
-    features_extractor_obj = TrajectoryFeatureExtraction(regions)
+    features_extractor_obj = TrajectoryFeatureExtraction(regions, frequency)
     features_extractor_obj.set_trajectory(fish.trajectory, fish.bounding_boxes)
     features_extractor_obj.extract_features()
     time_series_list = [features_extractor_obj.speed_time_series,
@@ -230,6 +239,7 @@ def analyze_trajectory(video_path, regions_config_path, fish):
 
 
 def draw_time_series(*args, descriptions):
+    # draw each of time series received as argument
     for i in range(len(args)):
         plt.figure()
         simple_line_plot(plt.gca(),
@@ -243,7 +253,8 @@ def draw_time_series(*args, descriptions):
 def draw_region_transitions_information(pass_by_info):
     regions = list(pass_by_info.keys())
     values = list(pass_by_info.values())
-    plt.figure()
+    plt.figure() 
+    # regions histogram 
     simple_bar_chart(plt.gca(), range(len(values)), values,
                      "Region Transitions", "Number frames", "Region")
     plt.gca().set_xticks(range(len(values)))
@@ -271,3 +282,16 @@ def trajectory_repeated_reading(video_path, regions, fish):
     cv2.namedWindow("trajectory")
     cv2.setMouseCallback("trajectory", repeating_callback)
     visualization_process.start()
+
+
+def frequency_analysis(fish, regions, frequencies):
+    # for each frequency
+    for frequency in frequencies:
+        # calculate features
+        fe_obj = TrajectoryFeatureExtraction(regions, frequency)
+        fe_obj.set_trajectory(fish.trajectory, fish.bounding_boxes)        
+        fe_obj.extract_features()
+        # draw speed
+        draw_time_series(fe_obj.speed_time_series, descriptions=[f"Speed frequency={frequency}"])
+    plt.show()
+    
