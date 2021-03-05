@@ -31,9 +31,9 @@ fe_logger.setLevel(logging.INFO)
 
 class TrajectoryFeatureExtraction():
 
-    def __init__(self, regions, calculation_frequency):
+    def __init__(self, regions, calculation_period):
         self.__regions = regions
-        self.__calculation_frequency = calculation_frequency
+        self.__calculation_frequency = calculation_period
         self.reset()
 
     def reset(self):
@@ -83,8 +83,6 @@ class TrajectoryFeatureExtraction():
                     )
                 except KeyError:
                     continue
-                # update state
-            
                 
 
     def get_feature_vector(self):
@@ -102,11 +100,18 @@ class TrajectoryFeatureExtraction():
             vector_description.extend(description)
             vector.extend(statistical_features)
         # add pass by features
+        total_calculated_frames = len(self.__speeds)
         for regions_key, pass_by_value in self.__pass_by.items():
-            description = f"region({regions_key[0]})" if len(regions_key) == 1 \
-                else f"transition({regions_key[0]}-{regions_key[1]})"
-            vector_description.append(description)
-            vector.append(pass_by_value)
+            # region 
+            if len(regions_key) == 1:
+                vector_description.append(f"region({regions_key[0]})")
+                normalized_value = pass_by_value/total_calculated_frames 
+                vector.append(normalized_value)
+                self.__pass_by[regions_key] = normalized_value
+            # transition
+            else:
+                vector_description.append(f"transition({regions_key[0]}-{regions_key[1]})")
+                vector.append(pass_by_value)
         return vector_description, vector
 
     @property
@@ -225,12 +230,12 @@ def analyze_trajectory(video_path, regions, fish, frequency):
                         features_extractor_obj.curvature_time_series,
                         features_extractor_obj.centered_distances,
                         features_extractor_obj.normalized_bounding_boxes]
+    description, vector = features_extractor_obj.get_feature_vector()
     draw_time_series(*time_series_list, descriptions=FEATURES_ORDER)
-    draw_region_transitions_information(features_extractor_obj.pass_by_info)
+    draw_regions_information(features_extractor_obj.pass_by_info)
     # draw trajectory and regions
     trajectory_repeated_reading(video_path, regions, fish)
     # features vector
-    description, vector = features_extractor_obj.get_feature_vector()
     fe_logger.info(f"\ndescription: \n{description}")
     fe_logger.info(f"\nvector: \n{vector}")
     fe_logger.info(f"Dimensions: {len(vector)}")
@@ -250,13 +255,21 @@ def draw_time_series(*args, descriptions):
                          "t")
 
 
-def draw_region_transitions_information(pass_by_info):
-    regions = list(pass_by_info.keys())
-    values = list(pass_by_info.values())
+def draw_regions_information(pass_by_info):
+    regions = []
+    values = []
+    for region, value in pass_by_info.items():
+        # time spent in each region
+        if len(region) == 1:
+            regions.append(region)
+            values.append(value)
+        # transitions
+        else:
+            fe_logger.info(f"Number of transitions {region}: {value}")
     plt.figure() 
     # regions histogram 
     simple_bar_chart(plt.gca(), range(len(values)), values,
-                     "Region Transitions", "Number frames", "Region")
+                     "Regions", "Time (%)", "Region")
     plt.gca().set_xticks(range(len(values)))
     plt.gca().set_xticklabels(regions)
 
