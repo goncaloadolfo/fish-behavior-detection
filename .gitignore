@@ -132,4 +132,4 @@ dmypy.json
 .vscode/
 
 # too large
-./resources/videos
+resources/videos/
