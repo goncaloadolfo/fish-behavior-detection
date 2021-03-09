@@ -10,7 +10,7 @@ import json
 import os
 
 
-CONF_DIR_NAME = "conf"
+CONF_DIR_NAME = "resources"
 FRAME_NAME = "regions selector"
 SELECTION_COLOR = (0, 0, 255)
 regions_selector_logger = logging.getLogger(__name__)

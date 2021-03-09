@@ -63,8 +63,8 @@ class TrajectoryFeatureExtraction():
         for i in range(len(self.__trajectory)):
             current_position = self.__trajectory[i]
             if len(self.__calculation_positions) == 0 or \
-                current_position[0] - self.__calculation_positions[-1][0] >= self.__calculation_frequency:
-                    self.__calculation_positions.append(current_position) 
+                    current_position[0] - self.__calculation_positions[-1][0] >= self.__calculation_frequency:
+                self.__calculation_positions.append(current_position)
             if len(self.__calculation_positions) > 2:
                 position = np.array(self.__trajectory[i][1:])
                 # speed, acceleration, turning angle and curvature
@@ -83,7 +83,6 @@ class TrajectoryFeatureExtraction():
                     )
                 except KeyError:
                     continue
-                
 
     def get_feature_vector(self):
         # list with all time series
@@ -102,15 +101,16 @@ class TrajectoryFeatureExtraction():
         # add pass by features
         total_calculated_frames = len(self.__speeds)
         for regions_key, pass_by_value in self.__pass_by.items():
-            # region 
+            # region
             if len(regions_key) == 1:
                 vector_description.append(f"region({regions_key[0]})")
-                normalized_value = pass_by_value/total_calculated_frames 
+                normalized_value = pass_by_value/total_calculated_frames
                 vector.append(normalized_value)
                 self.__pass_by[regions_key] = normalized_value
             # transition
             else:
-                vector_description.append(f"transition({regions_key[0]}-{regions_key[1]})")
+                vector_description.append(
+                    f"transition({regions_key[0]}-{regions_key[1]})")
                 vector.append(pass_by_value)
         return vector_description, vector
 
@@ -266,8 +266,8 @@ def draw_regions_information(pass_by_info):
         # transitions
         else:
             fe_logger.info(f"Number of transitions {region}: {value}")
-    plt.figure() 
-    # regions histogram 
+    plt.figure()
+    # regions histogram
     simple_bar_chart(plt.gca(), range(len(values)), values,
                      "Regions", "Time (%)", "Region")
     plt.gca().set_xticks(range(len(values)))
@@ -302,9 +302,9 @@ def frequency_analysis(fish, regions, frequencies):
     for frequency in frequencies:
         # calculate features
         fe_obj = TrajectoryFeatureExtraction(regions, frequency)
-        fe_obj.set_trajectory(fish.trajectory, fish.bounding_boxes)        
+        fe_obj.set_trajectory(fish.trajectory, fish.bounding_boxes)
         fe_obj.extract_features()
         # draw speed
-        draw_time_series(fe_obj.speed_time_series, descriptions=[f"Speed frequency={frequency}"])
+        draw_time_series(fe_obj.speed_time_series, descriptions=[
+                         f"Speed frequency={frequency}"])
     plt.show()
-    
