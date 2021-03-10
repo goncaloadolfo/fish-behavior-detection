@@ -13,6 +13,7 @@ import numpy as np
 import seaborn as sns
 
 from visualization import simple_bar_chart
+from trajectory_feature_extraction import build_dataset
 
 
 def general_info(samples, features_labels):
@@ -46,7 +47,7 @@ def general_info(samples, features_labels):
     if nfeatures > 0:
         dtypes_counting = {}
         print("Features")
-        for i in range(len(nfeatures)):
+        for i in range(nfeatures):
             dtype = type(samples[0][i])
             print(f"\t - {labels[i]}: {dtype}")
             dtypes_counting[dtype] = dtypes_counting[dtype] + 1 \
@@ -56,8 +57,10 @@ def general_info(samples, features_labels):
         dtypes = list(dtypes_counting.keys())
         counting = list(dtypes_counting.values())
         plt.figure()
-        simple_bar_chart(plt.gca(), len(dtypes), counting,
+        simple_bar_chart(plt.gca(), range(len(dtypes)), counting,
                          "Data Types", "counting", "dtype")
+        plt.gca().set_xticks(range(len(dtypes)))
+        plt.gca().set_xticklabels(dtypes)
 
 
 def class_balance(gt, context_label):
@@ -91,16 +94,16 @@ def distribution_analysis(feature_values, gt, feature_label):
     nfeatures = len(feature_values)
     ngt = len(gt)
     if nfeatures == 0:
-        print(f"Warning from {distribution_analysis.__name__}: \
-              received an empty list of values")
+        print(f"Warning from {distribution_analysis.__name__}: " +
+              "received an empty list of values")
         return
     elif ngt == 0:
-        print(f"Warning from {distribution_analysis.__name__}: \
-              received an empty ground truth")
+        print(f"Warning from {distribution_analysis.__name__}: " +
+              "received an empty ground truth")
         return
-    elif nfeatures != gt:
-        print(f"Warning from {distribution_analysis.__name__}: \
-              number of values differ from number of received gt labels")
+    elif nfeatures != len(gt):
+        print(f"Warning from {distribution_analysis.__name__}: " +
+              "number of values differ from number of received gt labels")
         return
 
     # convert lists to a numpy array if necessary
@@ -111,6 +114,7 @@ def distribution_analysis(feature_values, gt, feature_label):
 
     # plot density prob functions for each class
     labels = np.unique(gt)
+    plt.figure()
     for label in labels:
         values_from_label = features_values_array[gt_array == label]
         # kde - gaussian kernel
@@ -128,23 +132,23 @@ def correlation_analysis(samples, features_labels, interest_thr):
     """
     # validation
     if len(samples) == 0:
-        print(f"Warning from {correlation_analysis.__name__}: \
-            no samples received, empty list")
+        print(f"Warning from {correlation_analysis.__name__}: " +
+              "no samples received, empty list")
         return
     n_variables = len(samples[0])
-    if n_variables > 1:
-        print(f"Warning from {correlation_analysis.__name__}: \
-            the number of variables of each sample must be at least 2")
+    if n_variables < 2:
+        print(f"Warning from {correlation_analysis.__name__}: " +
+              "the number of variables of each sample must be at least 2")
         return
 
     # calculate correlation
     samples_array = np.array(samples) \
         if type(samples) is not np.array else samples
-    correlation_matrix = np.corrcoef(samples.T)
+    correlation_matrix = np.corrcoef(samples_array.T)
 
     # heatmap
     lower_triangle_mask = np.ones_like(correlation_matrix, dtype=bool)
-    lower_triangle_mask[np.triu_indices(lower_triangle_mask)] = False
+    lower_triangle_mask[np.tril_indices(n_variables, k=-1)] = False
     plt.figure()
     sns.heatmap(correlation_matrix, vmin=-1, vmax=1,
                 cmap="YlGnBu", mask=lower_triangle_mask)
@@ -160,15 +164,35 @@ def correlation_analysis(samples, features_labels, interest_thr):
     plt.ylabel("counts")
 
     # correlations of interest
-    if len(samples[0] == len(features_labels)):
-        print(f"Variables with correlation \
-              > {interest_thr} or < {-interest_thr}:")
+    if len(samples[0]) == len(features_labels):
+        print("Variables with correlation" +
+              f"> {interest_thr} or < {-interest_thr}:")
         for i in range(n_variables):
             for j in range(i):  # only through lower triangle part
                 correlation = correlation_matrix[i][j]
                 if correlation > interest_thr or correlation < -interest_thr:
-                    print(f"\t - {features_labels[i]}, {features_labels[j]}: \
-                          {correlation}")
+                    print(f"\t - {features_labels[i]}, {features_labels[j]}: " +
+                          f"{correlation}")
     else:
-        print(f"Warning from {correlation_analysis.__name__}: \
-            number of variables differ from features label length")
+        print(f"Warning from {correlation_analysis.__name__}: " +
+              "number of variables differ from features label length")
+
+
+def species_analysis():
+    """
+    Dataset analysis from video 29 in relation to species.
+    """
+    samples, gt, features_descriptions = build_dataset("resources/detections/detections-v29-sharks-mantas.txt",
+                                                       "resources/classification/species-v29-sharks-mantas.csv",
+                                                       "resources/regions-example.json")
+    general_info(samples, features_descriptions)
+    class_balance(gt, "species")
+    correlation_analysis(samples, features_descriptions, 0.8)
+    samples = np.array(samples).T
+    for i in range(samples.shape[0]):
+        distribution_analysis(samples[i], gt, features_descriptions[i])
+        plt.show()
+
+
+if __name__ == "__main__":
+    species_analysis()

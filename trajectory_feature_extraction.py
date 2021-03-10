@@ -20,6 +20,9 @@ import matplotlib.pyplot as plt
 from regions_selector import read_regions
 from visualization import draw_trajectory, show_trajectory, simple_line_plot, \
     simple_bar_chart
+from trajectories_reader import produce_trajectories
+from trajectory_labeling import read_species_gt
+from interpolation import fill_gaps_linear
 
 
 FEATURES_ORDER = ["speed", "acceleration", "turning-angle",
@@ -308,3 +311,32 @@ def frequency_analysis(fish, regions, frequencies):
         draw_time_series(fe_obj.speed_time_series, descriptions=[
                          f"Speed frequency={frequency}"])
     plt.show()
+
+
+def build_dataset(detections_path, species_gt_path, regions_path):
+    """
+    Builds a matrix with the samples related
+    to the trajectories features of each fish. 
+    """
+    # read detections, regions, and species gt
+    fishes = list(produce_trajectories(detections_path).values())
+    regions = read_regions(regions_path)
+    species_gt = read_species_gt(species_gt_path)
+
+    # pre-process and feature extraction
+    samples = []
+    gt = []
+    for fish in fishes:
+        fill_gaps_linear(fish.trajectory)
+
+        # feature extraction
+        fe_obj = TrajectoryFeatureExtraction(regions, calculation_period=10)
+        fe_obj.set_trajectory(fish.trajectory, fish.bounding_boxes)
+        fe_obj.extract_features()
+        features_description, sample = fe_obj.get_feature_vector()
+
+        # update data structures
+        samples.append(sample)
+        gt.append(species_gt[fish.fish_id])
+
+    return (samples, gt, features_description)
