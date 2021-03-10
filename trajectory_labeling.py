@@ -9,11 +9,19 @@ from threading import Thread
 
 from trajectories_reader import produce_trajectories
 
+# alias for user input related to behaviors
 BEHAVIORS_ALIAS = {
     's': "swallowing-air",
     'f': "feeding",
     'l': "lack-of-interest",
     'a': "abnormal"
+}
+
+# alias for user input related species
+SPECIES_ALIAS = {
+    's': "shark",
+    'm': "manta-ray",
+    't': "tuna"
 }
 
 
@@ -58,16 +66,18 @@ class TrajectoryLabeling():
     labels to each one (species and behaviors).
     """
 
-    def __init__(self, fishes, video_path, output_path):
+    def __init__(self, fishes, video_path, episodes_out, classification_out):
         # files
         self.__video_capture = cv2.VideoCapture(video_path)
-        self.__output_path = output_path
+        self.__episodes_out = episodes_out
+        self.__classification_out = classification_out
         # entities
         self.__fishes = fishes
         self.__episodes = set()
+        self.__classification = {}
         # state
         self.__current_fish = 0
-        self.__running = False
+        self.__running = True
 
     def start(self):
         # validations
@@ -77,7 +87,8 @@ class TrajectoryLabeling():
         elif not self.__video_capture.isOpened():
             print(f"Error from {TrajectoryLabeling.__name__}: " +
                   "could not open video")
-        elif len(self.__output_path.strip()) == 0:
+        elif len(self.__episodes_out.strip()) == 0 or \
+                (self.__classification_out is not None and len(self.__classification_out.strip())) == 0:
             print(f"Error from {TrajectoryLabeling.__name__}: " +
                   "received an empty string as output path")
 
@@ -86,6 +97,8 @@ class TrajectoryLabeling():
             # analyze each of the fishes
             for i in range(len(self.__fishes)):
                 self.__current_fish = self.__fishes[i]
+                if self.__classification_out is not None:
+                    Thread(target=self.__get_species_label, daemon=True).start()
                 self.__analyze_trajectory()
             cv2.destroyAllWindows()
 
@@ -113,7 +126,7 @@ class TrajectoryLabeling():
             elif key == 32:  # space
                 self.__running = not self.__running
             elif key == ord('n'):  # jump to the next trajectory
-                self.__running = False
+                self.__running = True
                 cv2.destroyAllWindows()
                 break
             elif key == ord('e'):  # insert a new episode
@@ -149,6 +162,19 @@ class TrajectoryLabeling():
         cv2.putText(frame, f"t={t}", (30, 30), cv2.FONT_HERSHEY_SIMPLEX, fontScale=1,
                     color=(0, 255, 0), thickness=2)
         cv2.imshow(f"fish {self.__current_fish.fish_id}", frame)
+
+    def __get_species_label(self):
+        # input related to the species of the current trajectory
+        print("Species trajectory ", self.__current_fish.fish_id)
+        while True:
+            species = input("> ").strip()
+            if species not in SPECIES_ALIAS:
+                print(f"Error from {TrajectoryLabeling.__name__}: " +
+                      f"not a valid species - valid: {SPECIES_ALIAS}")
+            else:
+                break
+        print("OK!")
+        self.__classification[self.__current_fish.fish_id] = SPECIES_ALIAS[species]
 
     def __insert_new_episode(self, t_initial, t_final):
         # episode description
@@ -193,6 +219,7 @@ class TrajectoryLabeling():
 
             # passed all verifications
             break
+        print("OK!")
 
         # instantiate a new episode
         self.__episodes.add(Episode(self.__current_fish.fish_id,
@@ -207,10 +234,10 @@ class TrajectoryLabeling():
             print("\t - ", repr(episode))
 
     def __save_to_file(self):
-        # write episodes to file
+        # episodes
         try:
             if len(self.__episodes) > 0:
-                with open(self.__output_path, "w") as f:
+                with open(self.__episodes_out, "w") as f:
                     f.write("fish-id,description,t-initial,t-final\n")
                     for episode in self.__episodes:
                         f.write(f"{episode.fish_id}, \
@@ -220,6 +247,17 @@ class TrajectoryLabeling():
         except Exception as e:
             print(f"Error from {TrajectoryLabeling.__name__}: " +
                   f"problems writing episodes to file - {e}")
+
+        # species
+        try:
+            if len(self.__classification) > 0:
+                with open(self.__classification_out, "w") as f:
+                    f.write("fish-id,species\n")
+                    for fish_id, label in self.__classification.items():
+                        f.write(f"{fish_id},{label}\n")
+        except Exception as e:
+            print(f"Error from {TrajectoryLabeling.__name__}: " +
+                  f"problems writing species information to file - {e}")
 
 
 def read_episodes(file_path):
@@ -251,28 +289,57 @@ def read_episodes(file_path):
               f"problems reading episodes from file - {e}")
 
 
+def read_species_gt(file_path):
+    """
+    Reads the species ground truth in a file.
+    """
+    species_gt = {}
+
+    # read all lines in a file
+    try:
+        with open(file_path, 'r') as f:
+            f.readline()  # description line
+            while (True):
+                line = f.readline().replace(' ', '')
+                if line == None or line == '\n' or line == "":
+                    break
+                # parse fields
+                fields = line.split(",")
+                species_gt[int(fields[0])] = fields[1]
+        return species_gt
+
+    # report some problem
+    except Exception as e:
+        print(f"Error from {read_episodes.__name__}: " +
+              f"problems reading episodes from file - {e}")
+
+
 def main():
     """
     Starts trajectory labeling using system arguments. 
     """
-    if len(sys.argv) < 4:
+    if len(sys.argv) < 5:
         print(f"Error from {sys.argv[0]}: " +
               "some arguments are missing - " +
-              f"try 'python {sys.argv[0]} <detections-file> <video-path> <output-path>'")
+              f"try 'python {sys.argv[0]} " +
+              "<detections-file> <video-path> <episodes-out> <classification_out>'")
         exit(-1)
 
     # get arguments
     detections_path = sys.argv[1].strip()
     video_path = sys.argv[2].strip()
-    output_path = sys.argv[3].strip()
-    if len(detections_path) == 0 or len(video_path) == 0 or len(output_path) == 0:
+    episodes_path = sys.argv[3].strip()
+    classification_path = sys.argv[4].strip()
+    if len(detections_path) == 0 or len(video_path) == 0 \
+            or len(episodes_path) == 0 or len(classification_path) == 0:
         print(f"Error from {__name__}: " +
               "received empty string arguments")
         exit(-1)
 
     # start trajectory labeling
     fishes = list(produce_trajectories(detections_path).values())
-    TrajectoryLabeling(fishes, video_path, output_path).start()
+    TrajectoryLabeling(fishes, video_path, episodes_path,
+                       classification_path).start()
 
 
 if __name__ == "__main__":
