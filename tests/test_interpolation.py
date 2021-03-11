@@ -5,7 +5,7 @@ Set of tests to the interpolation module.
 import cv2
 import matplotlib.pyplot as plt
 
-from trajectories_reader import produce_trajectories
+from trajectories_reader import read_detections
 from interpolation import simulate_gap, fill_gaps_linear, fill_gaps_newton, \
     equidistant_interpolation_points, near_interpolation_points, linear_performance, \
         newton_performance
@@ -14,7 +14,7 @@ from visualization import draw_position_plots, draw_trajectory, show_trajectory
 
 def linear_interpolation_test():
     # read trajectories and choose an example one
-    trajectories = produce_trajectories("../data/Dsc 0029-lowres_gt.txt")
+    trajectories = read_detections("../data/Dsc 0029-lowres_gt.txt")
     example_fish = list(trajectories.values())[0]
     # generate a gap
     trajectory_with_gap, gap_interval = simulate_gap(example_fish, 20)
@@ -31,7 +31,7 @@ def linear_interpolation_test():
 
 def newton_interpolation_test():
     # read trajectories and choose an example one
-    trajectories = produce_trajectories("../data/Dsc 0029-lowres_gt.txt")
+    trajectories = read_detections("../data/Dsc 0029-lowres_gt.txt")
     example_fish = list(trajectories.values())[0]
     # generate a gap
     trajectory_with_gap, gap_interval = simulate_gap(example_fish, 20)
@@ -49,7 +49,7 @@ def newton_interpolation_test():
 
 def draw_estimation_test():
     # read trajectories and choose an example one
-    trajectories = produce_trajectories("../data/Dsc 0029-lowres_gt.txt")
+    trajectories = read_detections("../data/Dsc 0029-lowres_gt.txt")
     example_fish = list(trajectories.values())[0]
     # generate a gap
     trajectory_with_gap, gap_interval = simulate_gap(

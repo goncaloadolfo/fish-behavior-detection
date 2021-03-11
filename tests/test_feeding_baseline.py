@@ -9,7 +9,7 @@ import cv2
 import time
 
 from feeding_baseline import feeding_baseline_logger, FeedingBaseline, detections_at_t, analyze_fiffb
-from trajectories_reader import produce_trajectories
+from trajectories_reader import read_detections
 from interpolation import fill_gaps_linear
 from visualization import draw_fishes
 
@@ -54,7 +54,7 @@ def delaunay_real_data_test():
     random.seed(4)
     feeding_baseline_logger.setLevel(logging.DEBUG)
     # read GT and video file
-    fishes = produce_trajectories("../data/Dsc 0037-lowres_gt.txt").values()
+    fishes = read_detections("../data/Dsc 0037-lowres_gt.txt").values()
     feeding_baseline_logger.debug(f"number of trajectories: {len(fishes)}")
     video_capture = cv2.VideoCapture("../data/Dsc 0037-lowres.m4v")
     # pre process trajectories

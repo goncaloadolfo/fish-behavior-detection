@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 from random import randint
 from collections import defaultdict
 
-from trajectories_reader import produce_trajectories
+from trajectories_reader import read_detections
 from visualization import draw_trajectory, draw_position_plots, simple_line_plot, show_trajectory
 
 
@@ -328,7 +328,7 @@ def mse(true_trajectory, output_trajectory, gaps):
 
 
 def newton_performance(trajectories_file_path, sample_points_method, degrees, gap_sizes):
-    fishes = produce_trajectories(trajectories_file_path)
+    fishes = read_detections(trajectories_file_path)
     plt.figure()
     results = defaultdict(lambda: [])
     for gap_size in gap_sizes:
@@ -360,7 +360,7 @@ def newton_performance(trajectories_file_path, sample_points_method, degrees, ga
 
 
 def linear_performance(trajectories_file_path, gap_sizes):
-    fishes = produce_trajectories(trajectories_file_path)
+    fishes = read_detections(trajectories_file_path)
     results = []
     for gap_size in gap_sizes:
         total_mse = 0

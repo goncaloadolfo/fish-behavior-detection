@@ -7,7 +7,7 @@ import cv2
 import sys
 from threading import Thread
 
-from trajectories_reader import produce_trajectories
+from trajectories_reader import read_detections
 
 # alias for user input related to behaviors
 BEHAVIORS_ALIAS = {
@@ -337,7 +337,7 @@ def main():
         exit(-1)
 
     # start trajectory labeling
-    fishes = list(produce_trajectories(detections_path).values())
+    fishes = list(read_detections(detections_path).values())
     TrajectoryLabeling(fishes, video_path, episodes_path,
                        classification_path).start()
 

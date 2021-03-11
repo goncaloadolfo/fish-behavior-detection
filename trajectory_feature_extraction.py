@@ -20,7 +20,7 @@ import matplotlib.pyplot as plt
 from regions_selector import read_regions
 from visualization import draw_trajectory, show_trajectory, simple_line_plot, \
     simple_bar_chart
-from trajectories_reader import produce_trajectories
+from trajectories_reader import read_detections
 from trajectory_labeling import read_species_gt
 from interpolation import fill_gaps_linear
 
@@ -319,7 +319,7 @@ def build_dataset(detections_path, species_gt_path, regions_path):
     to the trajectories features of each fish. 
     """
     # read detections, regions, and species gt
-    fishes = list(produce_trajectories(detections_path).values())
+    fishes = list(read_detections(detections_path).values())
     regions = read_regions(regions_path)
     species_gt = read_species_gt(species_gt_path)
 

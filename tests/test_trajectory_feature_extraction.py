@@ -2,13 +2,13 @@
 Tests to trajectory feature extraction module
 """
 
-from trajectories_reader import produce_trajectories
+from trajectories_reader import read_detections
 from trajectory_feature_extraction import analyze_trajectory, frequency_analysis
 from regions_selector import read_regions
 
 
 def analyze_trajectory_test(calculation_period):
-    fishes = list(produce_trajectories("../data/Dsc 0037-lowres_gt.txt").values())
+    fishes = list(read_detections("../data/Dsc 0037-lowres_gt.txt").values())
     regions = read_regions("conf/regions-example.json")
     analyze_trajectory("../data/Dsc 0037-lowres.m4v",
                        regions, 
@@ -17,7 +17,7 @@ def analyze_trajectory_test(calculation_period):
     
     
 def frequency_analysis_test(calculations_periods):
-    fishes = list(produce_trajectories("../data/Dsc 0037-lowres_gt.txt").values())
+    fishes = list(read_detections("../data/Dsc 0037-lowres_gt.txt").values())
     regions = read_regions("conf/regions-example.json")
     frequency_analysis(fishes[0], regions, calculations_periods)
 

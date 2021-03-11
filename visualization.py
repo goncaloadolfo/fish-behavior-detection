@@ -30,7 +30,7 @@ def simple_bar_chart(ax, xs, ys, title, ylabel, xlabel):
     ax.set_ylabel(ylabel)
     ax.set_xlabel(xlabel)
     ax.bar(xs, ys, align="center")
-    
+
 
 def draw_trajectory(trajectory, frame_size, color, regions=None):
     """
@@ -100,7 +100,7 @@ def draw_position_plots(trajectory, gap_interval, interpolation_points, with_gap
                        "frame", interpolation_points)
 
 
-def show_trajectory(video_path, fish, estimated_trajectory, simulated_gaps, 
+def show_trajectory(video_path, fish, estimated_trajectory, simulated_gaps,
                     record=None, frame_name="gap estimation"):
     # record and read settings
     cap = cv2.VideoCapture(video_path)
@@ -128,7 +128,7 @@ def show_trajectory(video_path, fish, estimated_trajectory, simulated_gaps,
         true_data_point = fish.get_position(t)
         if not is_simulated_gap and true_data_point is not None:
             centroid = (true_data_point[1], true_data_point[2])
-            bounding_box_size = fish.get_bounding_box_size(t)
+            bounding_box_size = fish.bounding_boxes[t]
             cv2.circle(frame, centroid, 5, (0, 255, 0), -1)
             cv2.rectangle(frame,
                           (int(centroid[0] - (bounding_box_size.width/2)),
@@ -157,7 +157,7 @@ def show_trajectory(video_path, fish, estimated_trajectory, simulated_gaps,
 
 def draw_fishes(frame, fishes, t):
     for fish in fishes:
-        bounding_box_size = fish.get_bounding_box_size(t)
+        bounding_box_size = fish.bounding_boxes[t]
         centroid = fish.get_position(t)
         centroid = (centroid[1], centroid[2])
         cv2.rectangle(frame,

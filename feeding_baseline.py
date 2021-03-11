@@ -11,7 +11,7 @@ from random import randint
 from scipy.spatial import Delaunay
 from scipy.spatial.qhull import QhullError
 
-from trajectories_reader import produce_trajectories
+from trajectories_reader import read_detections
 from visualization import simple_line_plot
 
 feeding_baseline_logger = logging.getLogger(__name__)
@@ -183,7 +183,7 @@ def detections_at_t(fishes, t):
 
 
 def analyze_fiffb(gt_path, initial_t, final_t):
-    fishes = produce_trajectories(gt_path).values()
+    fishes = read_detections(gt_path).values()
     ts = range(initial_t, final_t+1)
     fiffbs = []
     feeding_baseline_obj = FeedingBaseline(mesh_thr=50)
