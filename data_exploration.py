@@ -13,7 +13,7 @@ import numpy as np
 import seaborn as sns
 
 from visualization import simple_bar_chart
-from trajectory_feature_extraction import build_dataset
+from trajectory_feature_extraction import read_dataset
 
 
 def general_info(samples, features_labels):
@@ -178,21 +178,23 @@ def correlation_analysis(samples, features_labels, interest_thr):
               "number of variables differ from features label length")
 
 
-def species_analysis():
+def full_analysis(samples, gt, features_description):
     """
-    Dataset analysis from video 29 in relation to species.
+    Dataset analysis: general info, class balance, correlation, and distributions
     """
-    samples, gt, features_descriptions = build_dataset("resources/detections/detections-v29-sharks-mantas.txt",
-                                                       "resources/classification/species-v29-sharks-mantas.csv",
-                                                       "resources/regions-example.json")
-    general_info(samples, features_descriptions)
+    # general information
+    general_info(samples, features_description)
     class_balance(gt, "species")
-    correlation_analysis(samples, features_descriptions, 0.8)
+    correlation_analysis(samples, features_description, 0.8)
+    
+    # distribution analysis
     samples = np.array(samples).T
     for i in range(samples.shape[0]):
-        distribution_analysis(samples[i], gt, features_descriptions[i])
+        distribution_analysis(samples[i], gt, features_description[i])
         plt.show()
 
 
 if __name__ == "__main__":
-    species_analysis()
+    # analysis of the video 29 dataset
+    samples, gt, features_descriptions = read_dataset("resources/datasets/v29-dataset1.csv")
+    full_analysis(samples, gt, features_descriptions)
