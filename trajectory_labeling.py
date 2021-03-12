@@ -7,7 +7,7 @@ import cv2
 import sys
 from threading import Thread
 
-from trajectories_reader import read_detections
+from trajectories_reader import read_fishes
 
 # alias for user input related to behaviors
 BEHAVIORS_ALIAS = {
@@ -95,8 +95,8 @@ class TrajectoryLabeling():
         # passed all preliminary validations
         else:
             # analyze each of the fishes
-            for i in range(len(self.__fishes)):
-                self.__current_fish = self.__fishes[i]
+            for fish in self.__fishes:
+                self.__current_fish = fish
                 if self.__classification_out is not None:
                     Thread(target=self.__get_species_label, daemon=True).start()
                 self.__analyze_trajectory()
@@ -153,7 +153,7 @@ class TrajectoryLabeling():
         position = self.__current_fish.get_position(t)
         if position is not None:
             cv2.circle(frame,
-                       center=(position[1], position[2]),
+                       center=position,
                        radius=4,
                        color=(0, 255, 0),
                        thickness=-1)
@@ -322,22 +322,22 @@ def main():
         print(f"Error from {sys.argv[0]}: " +
               "some arguments are missing - " +
               f"try 'python {sys.argv[0]} " +
-              "<detections-file> <video-path> <episodes-out> <classification_out>'")
+              "<fishes-file> <video-path> <episodes-out> <classification_out>'")
         exit(-1)
 
     # get arguments
-    detections_path = sys.argv[1].strip()
+    fishes_file_path = sys.argv[1].strip()
     video_path = sys.argv[2].strip()
     episodes_path = sys.argv[3].strip()
     classification_path = sys.argv[4].strip()
-    if len(detections_path) == 0 or len(video_path) == 0 \
+    if len(fishes_file_path) == 0 or len(video_path) == 0 \
             or len(episodes_path) == 0 or len(classification_path) == 0:
         print(f"Error from {__name__}: " +
               "received empty string arguments")
         exit(-1)
 
     # start trajectory labeling
-    fishes = list(read_detections(detections_path).values())
+    fishes = read_fishes(fishes_file_path)
     TrajectoryLabeling(fishes, video_path, episodes_path,
                        classification_path).start()
 
