@@ -51,12 +51,12 @@ class Fish:
         # trajectory
         trajectory = fish_dict["trajectory"]
         for data_point in trajectory:
-            t, x, y = data_point[0], data_point[1], data_point[2]
+            t, x, y = int(data_point[0]), int(data_point[1]), int(data_point[2])
             self.__trajectory.append((t, x, y))
             self.__positions[t] = (x, y)
 
         # bounding boxes
-        self.__bounding_boxes = {t: BoundingBox(bb_tuple[0], bb_tuple[1])
+        self.__bounding_boxes_size = {int(t): BoundingBox(int(bb_tuple[0]), int(bb_tuple[1]))
                                  for t, bb_tuple in fish_dict["bounding-boxes"].items()}
 
     @property
@@ -149,16 +149,17 @@ def read_fishes(fishes_file_path):
         [type]: [description]
     """
     fishes = set()
-    with open(trajectories_file_path) as f:
+    with open(fishes_file_path) as f:
         # dict with all fishes
         fishes = json.load(f)
+        fishes_set = set()
 
         # decode each one
         for fish_id, fish_dict in fishes.items():
-            fish_instance = Fish(fish_id)
+            fish_instance = Fish(int(fish_id))
             fish_instance.decode(fish_dict)
-            fishes.add(fish_instance)
-    return fishes
+            fishes_set.add(fish_instance)
+    return fishes_set
 
 
 def union_gt(*detection_file_paths, output_path):
@@ -182,4 +183,4 @@ def union_gt(*detection_file_paths, output_path):
 if __name__ == "__main__":
     union_gt("resources/detections/detections-joao-v29.txt",
              "resources/detections/detections-v29-sharks-mantas.txt",
-             output_path="resources/detections/v29-trajectories.json")
+             output_path="resources/detections/v29-fishes.json")
