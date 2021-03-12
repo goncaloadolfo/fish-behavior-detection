@@ -127,7 +127,7 @@ def show_trajectory(video_path, fish, estimated_trajectory, simulated_gaps,
         # and if it exists in the true trajectory
         true_data_point = fish.get_position(t)
         if not is_simulated_gap and true_data_point is not None:
-            centroid = (true_data_point[1], true_data_point[2])
+            centroid = true_data_point
             bounding_box_size = fish.bounding_boxes[t]
             cv2.circle(frame, centroid, 5, (0, 255, 0), -1)
             cv2.rectangle(frame,
