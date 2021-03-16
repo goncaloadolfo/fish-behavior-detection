@@ -376,7 +376,7 @@ def build_dataset(fishes_file_path, species_gt_path, regions_path, output_path=N
         fill_gaps_linear(fish.trajectory)
 
         # feature extraction
-        fe_obj = TrajectoryFeatureExtraction(regions, calculation_period=1, sliding_window=12, alpha=0.6)
+        fe_obj = TrajectoryFeatureExtraction(regions, calculation_period=1, sliding_window=24, alpha=0.3)
         fe_obj.set_trajectory(fish.trajectory, fish.bounding_boxes)
         fe_obj.extract_features()
         features_description, sample = fe_obj.get_feature_vector()
@@ -429,8 +429,8 @@ def analyze_trajectory_demo():
                        regions, 
                        fishes.pop(), 
                        calculation_period=1, 
-                       sliding_window=12, 
-                       alpha=0.6
+                       sliding_window=24,  # 1 seconds
+                       alpha=0.3
                        )
 
 
@@ -445,6 +445,32 @@ def build_dataset_v29():
                   "resources/classification/species-gt-v29.csv",
                   "resources/regions-example.json",
                   "resources/datasets/v29-dataset1.csv")
+    
+
+def moving_average_illustration():
+    # sliding window and alphas
+    sliding_window = 24 
+    alphas = [1, 0.5, 0.3, 0.1]
+    
+    # get an example fish    
+    fishes = read_fishes("resources/detections/v29-fishes.json")
+    regions = read_regions("resources/regions-example.json")
+    example_fish = fishes.pop()
+    
+    # smooth time series with different alphas
+    plt.figure()
+    for alpha in alphas:
+        # extract features
+        fe_obj = TrajectoryFeatureExtraction(regions, calculation_period=1, sliding_window=sliding_window, alpha=alpha)
+        fe_obj.set_trajectory(example_fish.trajectory, example_fish.bounding_boxes)
+        fe_obj.extract_features()
+        
+        # draw speed time series
+        simple_line_plot(plt.gca(), range(len(fe_obj.speed_time_series)), fe_obj.speed_time_series, 
+                         f"Speed time series with different alphas", "speed", "t", label=f"alpha={alpha}")
+        
+    plt.legend()
+    plt.show()
 # endregion          
                             
                             
@@ -452,3 +478,4 @@ if __name__ == "__main__":
     analyze_trajectory_demo()
     # frequency_impact_demo()
     # build_dataset_v29()
+    # moving_average_illustration()
