@@ -12,8 +12,25 @@ import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
 
-from visualization import simple_bar_chart
+from visualization import simple_bar_chart, simple_line_plot
 from trajectory_feature_extraction import read_dataset
+from pre_processing import remove_correlated_variables
+
+
+def full_analysis(samples, gt, features_description):
+    """
+    Dataset analysis: general info, class balance, correlation, and distributions
+    """
+    # general information
+    general_info(samples, features_description)
+    class_balance(gt, "species")
+    correlation_analysis(samples, features_description, 0.8)
+    
+    # distribution analysis
+    samples = np.array(samples).T
+    for i in range(samples.shape[0]):
+        distribution_analysis(samples[i], gt, features_description[i])
+        plt.show()
 
 
 def general_info(samples, features_labels):
@@ -176,22 +193,23 @@ def correlation_analysis(samples, features_labels, interest_thr):
     else:
         print(f"Warning from {correlation_analysis.__name__}: " +
               "number of variables differ from features label length")
+        
+    # dimensionality analysis
+    dimensionality_analysis(samples_array)
 
 
-def full_analysis(samples, gt, features_description):
-    """
-    Dataset analysis: general info, class balance, correlation, and distributions
-    """
-    # general information
-    general_info(samples, features_description)
-    class_balance(gt, "species")
-    correlation_analysis(samples, features_description, 0.8)
+def dimensionality_analysis(samples):
+    correlation_thrs = np.arange(1, 0, -0.1)
+    dimensionality_values = []
     
-    # distribution analysis
-    samples = np.array(samples).T
-    for i in range(samples.shape[0]):
-        distribution_analysis(samples[i], gt, features_description[i])
-        plt.show()
+    for thr in correlation_thrs:
+        new_matrix = remove_correlated_variables(samples, thr)
+        dimensionality_values.append(new_matrix.shape[1])  # check new dimensionality   
+
+    # plot results
+    plt.figure()
+    simple_line_plot(plt.gca(), correlation_thrs, dimensionality_values, "High correlated variable removal", 
+                     "new dimensionality", "correlation thr", marker="-o")  
 
 
 if __name__ == "__main__":
