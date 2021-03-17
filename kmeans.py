@@ -1,10 +1,14 @@
+import random
+import sys
+
 import tensorflow as tf
 import numpy as np
 import matplotlib.pyplot as plt
+import cv2
 
-from trajectory_feature_extraction import read_dataset
+from trajectory_feature_extraction import read_dataset, read_fishes
 from pre_processing import z_normalization
-from visualization import simple_line_plot, simple_bar_chart
+from visualization import simple_line_plot, simple_bar_chart, draw_trajectory
 
 DISTANCE_METRICS = [
     tf.compat.v1.estimator.experimental.KMeans.SQUARED_EUCLIDEAN_DISTANCE, 
@@ -12,6 +16,7 @@ DISTANCE_METRICS = [
 ]
 
 
+#region model training and evaluation
 def input_fn():
     # input source
     return tf.data.Dataset.from_tensors(
@@ -19,9 +24,10 @@ def input_fn():
     ).repeat(1)
 
 
-def train_model(k, distance_metric, max_steps):
+def train_model(k, distance_metric, max_steps, seed=None):
     # instatiate the model
-    kmeans_model = tf.compat.v1.estimator.experimental.KMeans(k, distance_metric=distance_metric, use_mini_batch=False)
+    kmeans_model = tf.compat.v1.estimator.experimental.KMeans(k, distance_metric=distance_metric, 
+                                                              use_mini_batch=False, seed=seed)
     
     # train until centers converge or reach max steps
     previous_centroids = None
@@ -62,9 +68,9 @@ def model_tunning(ks, max_steps):
                          f"KMeans Tunning (distance={distance_metric})", "cohesion", "k", marker='-o')
 
 
-def evaluate_model(k, distance_metric, max_steps):
+def evaluate_model(k, distance_metric, max_steps, seed=None):
     # train the model
-    model = train_model(k, distance_metric, max_steps)
+    model = train_model(k, distance_metric, max_steps, seed)
     print(f"KMeans model(k={k}, distance_metric={distance_metric})")
     
     # resulting distances and predictions
@@ -81,15 +87,32 @@ def evaluate_model(k, distance_metric, max_steps):
     print("separation: ", np.mean(separations))
     print("silhouette: ", np.mean(silhouettes))
     
-    # cluster balance
-    plt.figure()
-    clusters, cluster_counts = np.unique(resulting_clusters, return_counts=True)
-    simple_bar_chart(plt.gca(), clusters, cluster_counts, 
-                     f"Clusters Balance using {distance_metric}", "number of samples", "cluster index")    
+    return model, resulting_clusters
+
+
+def best_seed(n, k, distance_metric, max_steps):
+    results = {}
     
-    return model
+    for _ in range(n):
+        # train a new model using a new seed
+        seed = random.randrange(sys.maxsize)
+        model = train_model(k, distance_metric, max_steps, seed=seed)
+        
+        # get distances and cluster indexes
+        distances = np.array(list(model.transform(input_fn)))
+        resulting_clusters = np.array(list(model.predict_cluster_index(input_fn)))
+        
+        # calculate silhouette
+        cohesions = calculate_cohesions(distances, resulting_clusters)
+        separations = calculate_separations(distances, resulting_clusters)
+        silhouettes = calculate_silhouettes(cohesions, separations)
+        results[seed] = np.mean(silhouettes)
+        
+    print("Seed results\n", results)
+#endregion
 
 
+# region external metrics
 def calculate_cohesions(distances, cluster_info):
     # the cohesion of a point is considered the distance of a point to its centroid
     cohesions = []
@@ -129,22 +152,76 @@ def calculate_silhouettes(cohesions, separations):
             silhouettes.append(separation/cohesion - 1)
 
     return silhouettes
+#endregion
 
+
+#region clustering utils
+def draw_cluster_trajectories(trajectories_file_path, cluster_info):
+    # possible cluster indexes
+    clusters = np.unique(cluster_info)
     
+    # read fishes and sort by fish_id
+    fishes = list(read_fishes(trajectories_file_path))
+    fishes.sort(key=lambda x: x.fish_id)
+    fishes = np.array(fishes)
+    
+    for cluster in clusters:
+        cluster_frame = np.full((480, 720, 3), 255, dtype=np.uint8)
+        cluster_fishes = fishes[cluster_info == cluster]
+        
+        # draw the trajectory of each fish of this cluster
+        for fish in cluster_fishes:
+            random_color = np.random.rand(3) * 255
+            color_tuple = tuple(int(random_color[i]) for i in range(len(random_color)))
+            draw_trajectory(fish.trajectory, None, color_tuple, frame=cluster_frame)
+            
+        cv2.imshow(f"trajectories cluster {cluster}", cluster_frame)
+    
+        
+def species_distribution(species_gt, cluster_info):
+    clusters = np.unique(cluster_info)
+    species = np.unique(species_gt)
+    counting = {
+        species_tag: [] for species_tag in species
+    }
+    
+    # count the number of samples per cluster and per species
+    species_gt = np.array(species_gt)
+    for cluster in clusters:
+        cluster_gts = species_gt[cluster_info == cluster]
+        for species_tag in species:
+            counting[species_tag].append(np.sum(cluster_gts == species_tag))
+    
+    # stacked bar chart
+    plt.figure()
+    bottom = None
+    for species_tag in species:
+        plt.bar(clusters, counting[species_tag], bottom=bottom, label=species_tag)
+        bottom = counting[species_tag]
+    plt.title("Clusters distribution")
+    plt.xlabel("cluster")
+    plt.ylabel("number of samples")
+    plt.legend()
+#endregion
+
+
 if __name__ == '__main__':
     ## clustering on dataset1 (video 29)
-    # load and pre process data
+    
     samples, gt, descriptions = read_dataset("resources/datasets/v29-dataset1.csv")
     input_data = z_normalization(np.array(samples))
-    
-    # model experiences
     # model_tunning(ks=[2, 4, 8, 16, 32], max_steps=300)
-    evaluate_model(k=8, 
-                   distance_metric=tf.compat.v1.estimator.experimental.KMeans.SQUARED_EUCLIDEAN_DISTANCE,
-                   max_steps=300)
-    evaluate_model(k=8, 
+    # evaluate_model(k=8, 
+    #                distance_metric=tf.compat.v1.estimator.experimental.KMeans.SQUARED_EUCLIDEAN_DISTANCE,
+    #                max_steps=300)
+    _, resulting_clusters = evaluate_model(k=8, 
                    distance_metric=tf.compat.v1.estimator.experimental.KMeans.COSINE_DISTANCE,
                    max_steps=300)
-    
+    # best_seed(n=10, k=8, 
+    #           distance_metric=tf.compat.v1.estimator.experimental.KMeans.COSINE_DISTANCE, 
+    #           max_steps=300)
+    draw_cluster_trajectories("resources/detections/v29-fishes.json", resulting_clusters)
+    species_distribution(gt, resulting_clusters)
     plt.show()
+    cv2.destroyAllWindows()
     
