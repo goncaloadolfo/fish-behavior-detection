@@ -32,7 +32,7 @@ def simple_bar_chart(ax, xs, ys, title, ylabel, xlabel):
     ax.bar(xs, ys, align="center")
 
 
-def draw_trajectory(trajectory, frame_size, color, regions=None):
+def draw_trajectory(trajectory, frame_size, color, regions=None, frame=None):
     """
     Draws the trajectory on a given frame.
 
@@ -41,14 +41,15 @@ def draw_trajectory(trajectory, frame_size, color, regions=None):
         frame_size (tuple (height, width)): frame resolution
         color (tuple (b, g, r)): color of the trajectory points in rgb format
     """
-    frame = np.full((frame_size[0], frame_size[1], 3), 255, dtype=np.uint8)
+    if frame is None:
+        frame = np.full((frame_size[0], frame_size[1], 3), 255, dtype=np.uint8)
     for data_point in trajectory:
         cv2.circle(frame, (data_point[1], data_point[2]),
                    radius=2, color=color, thickness=-1)
     if regions is not None:
         for region in regions:
             region.draw(frame)
-    cv2.imshow("trajectory", frame)
+    return frame
 
 
 def draw_position_plots(trajectory, gap_interval, interpolation_points, with_gap=True):
@@ -104,7 +105,7 @@ def show_trajectory(video_path, fish, estimated_trajectory, simulated_gaps,
                     record=None, frame_name="gap estimation"):
     # record and read settings
     cap = cv2.VideoCapture(video_path)
-    waitkey_value = 75
+    waitkey_value = 24
     out = None
     if record is not None:
         codec = cv2.VideoWriter_fourcc(*"mp4v")
