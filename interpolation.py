@@ -10,7 +10,7 @@ from random import randint
 from collections import defaultdict
 
 from trajectories_reader import read_detections
-from visualization import draw_trajectory, draw_position_plots, simple_line_plot, show_trajectory
+from visualization import simple_line_plot
 
 
 # region interpolation methodologies

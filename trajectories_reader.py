@@ -10,7 +10,6 @@ import json
 import os
 
 from collections import namedtuple
-from visualization import draw_trajectory
 
 
 BoundingBox = namedtuple("BoundingBox", ["width", "height"])
