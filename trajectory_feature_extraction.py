@@ -9,9 +9,9 @@ Feature extraction from trajectory:
     - normalized bounding box
 """
 
+import random
 from itertools import permutations
 from multiprocessing import Process
-from functools import reduce
 
 import cv2
 import logging
@@ -21,7 +21,7 @@ import matplotlib.pyplot as plt
 from regions_selector import read_regions
 from visualization import draw_trajectory, show_trajectory, simple_line_plot, \
     simple_bar_chart
-from trajectories_reader import read_detections, read_fishes
+from trajectories_reader import read_fishes
 from trajectory_labeling import read_species_gt
 from interpolation import fill_gaps_linear
 
@@ -33,6 +33,7 @@ fe_logger.addHandler(logging.StreamHandler())
 fe_logger.setLevel(logging.INFO)
 
 
+#region feature extraction
 class TrajectoryFeatureExtraction():
 
     def __init__(self, regions, calculation_period, sliding_window, alpha):
@@ -259,8 +260,10 @@ class TrajectoryFeatureExtraction():
                 else:
                     self.__pass_by[(self.__last_region, region.region_id)] += 1
                 self.__last_region = region.region_id
+#endregion 
 
 
+#region information visualization
 def analyze_trajectory(video_path, regions, fish, calculation_period, sliding_window, alpha):
     # calculate and draw feature plots
     features_extractor_obj = TrajectoryFeatureExtraction(regions, calculation_period, sliding_window, alpha)
@@ -329,11 +332,12 @@ def trajectory_repeated_reading(video_path, regions, fish):
     
     # trajectory and regions frame
     video_capture = cv2.VideoCapture(video_path)
-    draw_trajectory(fish.trajectory,
+    frame = draw_trajectory(fish.trajectory,
                     (int(video_capture.get(cv2.CAP_PROP_FRAME_HEIGHT)),
                      int(video_capture.get(cv2.CAP_PROP_FRAME_WIDTH))),
                     (0, 0, 0),
                     regions)
+    cv2.imshow("trajectory", frame)
     
     # repeated visualization
     visualization_process = Process(target=show_trajectory,
@@ -341,8 +345,10 @@ def trajectory_repeated_reading(video_path, regions, fish):
     cv2.namedWindow("trajectory")
     cv2.setMouseCallback("trajectory", repeating_callback)
     visualization_process.start()
+#endregion
 
 
+#region parameters analysis
 def frequency_analysis(fish, regions, calculation_periods):
     # for each frequency
     for frequency in calculation_periods:
@@ -355,15 +361,38 @@ def frequency_analysis(fish, regions, calculation_periods):
         draw_time_series(fe_obj.speed_time_series, descriptions=[
                          f"Speed frequency={frequency}"])
     plt.show()
+    
+
+def moving_average_analysis(fish, sliding_window, alphas, regions, video_path=None):
+    # smooth time series with different alphas
+    plt.figure()
+    for alpha in alphas:
+        # extract features
+        fe_obj = TrajectoryFeatureExtraction(regions, calculation_period=1, sliding_window=sliding_window, alpha=alpha)
+        fe_obj.set_trajectory(fish.trajectory, fish.bounding_boxes)
+        fe_obj.extract_features()
+        
+        # draw speed time series
+        simple_line_plot(plt.gca(), range(len(fe_obj.speed_time_series)), fe_obj.speed_time_series, 
+                         f"Speed time series with different alphas", "speed", "t", label=f"alpha={alpha}")
+    plt.legend()
+    
+    # show trajectory and plot
+    if video_path is not None and regions is not None:
+        trajectory_repeated_reading("resources/videos/v29.m4v", regions, fish)
+    plt.show()
+#endregion
 
 
+#region dataset 
 def build_dataset(fishes_file_path, species_gt_path, regions_path, output_path=None):
     """
     - Feature extraction from each trajectory
     - Write dataset to file if output_path is defined      
     """
     # read detections, regions, and species gt
-    fishes = read_fishes(fishes_file_path)
+    fishes = list(read_fishes(fishes_file_path))
+    fishes.sort(key=lambda x: x.fish_id)
     regions = read_regions(regions_path)
     species_gt = read_species_gt(species_gt_path)
 
@@ -419,9 +448,10 @@ def read_dataset(dataset_file_path):
             gt.append(fields[-1])
     
     return (samples, gt, description[:-1])
+#endregion
 
 
-# region experiences
+#region experiences
 def analyze_trajectory_demo():
     fishes = read_fishes("resources/detections/v29-fishes.json")
     regions = read_regions("resources/regions-example.json")
@@ -450,28 +480,16 @@ def build_dataset_v29():
 def moving_average_illustration():
     # sliding window and alphas
     sliding_window = 24 
-    alphas = [1, 0.5, 0.3, 0.1]
+    alphas = [1, 0.5, 0.3, 0.1, 0.01]
     
     # get an example fish    
     fishes = read_fishes("resources/detections/v29-fishes.json")
     regions = read_regions("resources/regions-example.json")
-    example_fish = fishes.pop()
+    example_fish = random.choice(list(fishes))
     
-    # smooth time series with different alphas
-    plt.figure()
-    for alpha in alphas:
-        # extract features
-        fe_obj = TrajectoryFeatureExtraction(regions, calculation_period=1, sliding_window=sliding_window, alpha=alpha)
-        fe_obj.set_trajectory(example_fish.trajectory, example_fish.bounding_boxes)
-        fe_obj.extract_features()
-        
-        # draw speed time series
-        simple_line_plot(plt.gca(), range(len(fe_obj.speed_time_series)), fe_obj.speed_time_series, 
-                         f"Speed time series with different alphas", "speed", "t", label=f"alpha={alpha}")
-        
-    plt.legend()
-    plt.show()
-# endregion          
+    # analyze results
+    moving_average_analysis(example_fish, sliding_window, alphas, regions, "resources/videos/v29.m4v")
+#endregion          
                             
                             
 if __name__ == "__main__":
