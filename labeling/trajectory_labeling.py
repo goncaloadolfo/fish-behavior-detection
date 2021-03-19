@@ -3,11 +3,11 @@ Script that allow users to visualize a trajectory carefully,
 and assign a species label or define behavior episodes.
 """
 
-import cv2
 import sys
 from threading import Thread
 
-from trajectories_reader import read_fishes
+import cv2
+from trajectory_reader.trajectories_reader import read_fishes
 
 # alias for user input related to behaviors
 BEHAVIORS_ALIAS = {

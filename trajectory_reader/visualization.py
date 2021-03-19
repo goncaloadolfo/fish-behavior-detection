@@ -3,8 +3,8 @@ High-level information visualization methods.
 """
 
 import cv2
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 
 
 def simple_line_plot(ax, xs, ys, title, ylabel, xlabel, marker='-', label=None):

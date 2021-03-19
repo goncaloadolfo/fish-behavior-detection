@@ -3,14 +3,14 @@ Pre-process trajectories, fill gaps using interpolation.
 Implements linear and newton interpolation.
 """
 
-import cv2
-import numpy as np
-import matplotlib.pyplot as plt
-from random import randint
 from collections import defaultdict
+from random import randint
 
-from trajectories_reader import read_detections
-from visualization import simple_line_plot
+import cv2
+import matplotlib.pyplot as plt
+import numpy as np
+from trajectory_reader.trajectories_reader import read_detections
+from trajectory_reader.visualization import simple_line_plot
 
 
 # region interpolation methodologies

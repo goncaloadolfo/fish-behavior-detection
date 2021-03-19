@@ -4,13 +4,12 @@
 - read/save trajectories to file
 """
 
-import numpy as np
-import cv2
 import json
 import os
-
 from collections import namedtuple
 
+import cv2
+import numpy as np
 
 BoundingBox = namedtuple("BoundingBox", ["width", "height"])
 

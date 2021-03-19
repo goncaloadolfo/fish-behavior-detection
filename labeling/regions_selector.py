@@ -2,13 +2,13 @@
 Script to help defining geographic regions in the image plan.
 """
 
-import sys
-import cv2
-import logging
-import random
 import json
+import logging
 import os
+import random
+import sys
 
+import cv2
 
 CONF_DIR_NAME = "resources"
 FRAME_NAME = "regions selector"

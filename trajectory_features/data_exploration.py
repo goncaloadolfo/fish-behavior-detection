@@ -12,9 +12,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
 
-from visualization import simple_bar_chart, simple_line_plot
-from trajectory_feature_extraction import read_dataset
-from pre_processing import remove_correlated_variables
+from pre_processing.pre_processing import remove_correlated_variables
+from trajectory_features.trajectory_feature_extraction import read_dataset
+from trajectory_reader.visualization import simple_bar_chart, simple_line_plot
 
 
 def full_analysis(samples, gt, features_description):
@@ -25,7 +25,7 @@ def full_analysis(samples, gt, features_description):
     general_info(samples, features_description)
     class_balance(gt, "species")
     correlation_analysis(samples, features_description, 0.8)
-    
+
     # distribution analysis
     samples = np.array(samples).T
     for i in range(samples.shape[0]):
@@ -193,7 +193,7 @@ def correlation_analysis(samples, features_labels, interest_thr):
     else:
         print(f"Warning from {correlation_analysis.__name__}: " +
               "number of variables differ from features label length")
-        
+
     # dimensionality analysis
     dimensionality_analysis(samples_array)
 
@@ -201,18 +201,20 @@ def correlation_analysis(samples, features_labels, interest_thr):
 def dimensionality_analysis(samples):
     correlation_thrs = np.arange(1, 0, -0.1)
     dimensionality_values = []
-    
+
     for thr in correlation_thrs:
         new_matrix = remove_correlated_variables(samples, thr)
-        dimensionality_values.append(new_matrix.shape[1])  # check new dimensionality   
+        # check new dimensionality
+        dimensionality_values.append(new_matrix.shape[1])
 
     # plot results
     plt.figure()
-    simple_line_plot(plt.gca(), correlation_thrs, dimensionality_values, "High correlated variable removal", 
-                     "new dimensionality", "correlation thr", marker="-o")  
+    simple_line_plot(plt.gca(), correlation_thrs, dimensionality_values, "High correlated variable removal",
+                     "new dimensionality", "correlation thr", marker="-o")
 
 
 if __name__ == "__main__":
     # analysis of the video 29 dataset
-    samples, gt, features_descriptions = read_dataset("resources/datasets/v29-dataset1.csv")
+    samples, gt, features_descriptions = read_dataset(
+        "resources/datasets/v29-dataset1.csv")
     full_analysis(samples, gt, features_descriptions)
