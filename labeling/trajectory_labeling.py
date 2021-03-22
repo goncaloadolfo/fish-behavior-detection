@@ -14,7 +14,7 @@ BEHAVIORS_ALIAS = {
     's': "swallowing-air",
     'f': "feeding",
     'l': "lack-of-interest",
-    'a': "abnormal"
+    'i': "interesting"
 }
 
 # alias for user input related species
@@ -88,14 +88,15 @@ class TrajectoryLabeling():
             print(f"Error from {TrajectoryLabeling.__name__}: " +
                   "could not open video")
         elif len(self.__episodes_out.strip()) == 0 or \
-                (self.__classification_out is not None and len(self.__classification_out.strip())) == 0:
+                (self.__classification_out is not None and len(self.__classification_out.strip()) == 0):
             print(f"Error from {TrajectoryLabeling.__name__}: " +
                   "received an empty string as output path")
 
         # passed all preliminary validations
         else:
             # analyze each of the fishes
-            for fish in self.__fishes:
+            for i, fish in enumerate(self.__fishes):
+                print(f"trajectory {i}/{len(self.__fishes)-1}")
                 self.__current_fish = fish
                 if self.__classification_out is not None:
                     Thread(target=self.__get_species_label, daemon=True).start()
@@ -117,7 +118,7 @@ class TrajectoryLabeling():
             self.__draw_frame(t)
 
             # callbacks
-            key = cv2.waitKey(1) & 0xFF \
+            key = cv2.waitKey(30) & 0xFF \
                 if self.__running else cv2.waitKey(0) & 0xFF
             if key == ord('a') and not self.__running:  # left key
                 t = t - 1 if t > t_initial else t_initial
@@ -240,10 +241,10 @@ class TrajectoryLabeling():
                 with open(self.__episodes_out, "w") as f:
                     f.write("fish-id,description,t-initial,t-final\n")
                     for episode in self.__episodes:
-                        f.write(f"{episode.fish_id}, \
-                                {episode.description}, \
-                                {episode.t_initial}, \
-                                {episode.t_final}\n")
+                        f.write(f"{episode.fish_id}," +
+                                f"{episode.description}," +
+                                f"{episode.t_initial}," +
+                                f"{episode.t_final}\n")
         except Exception as e:
             print(f"Error from {TrajectoryLabeling.__name__}: " +
                   f"problems writing episodes to file - {e}")
@@ -318,7 +319,7 @@ def main():
     """
     Starts trajectory labeling using system arguments. 
     """
-    if len(sys.argv) < 5:
+    if len(sys.argv) < 4:
         print(f"Error from {sys.argv[0]}: " +
               "some arguments are missing - " +
               f"try 'python {sys.argv[0]} " +
@@ -329,9 +330,10 @@ def main():
     fishes_file_path = sys.argv[1].strip()
     video_path = sys.argv[2].strip()
     episodes_path = sys.argv[3].strip()
-    classification_path = sys.argv[4].strip()
+    classification_path = sys.argv[4].strip() if len(sys.argv) > 4 else None
     if len(fishes_file_path) == 0 or len(video_path) == 0 \
-            or len(episodes_path) == 0 or len(classification_path) == 0:
+            or len(episodes_path) == 0 or \
+            (classification_path is not None and len(classification_path) == 0):
         print(f"Error from {__name__}: " +
               "received empty string arguments")
         exit(-1)
