@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.cluster import KMeans
 
+from anomaly_detection.anomaly_detector import most_different_features
+from pre_processing.interpolation import fill_gaps_linear
 from pre_processing.pre_processing import (analyze_pca_components, apply_pca,
                                            remove_correlated_variables,
                                            z_normalization)
@@ -138,43 +140,31 @@ def calculate_silhouettes(cohesions, separations):
 
 
 # region clustering utils
-def most_similar_features(cluster_samples, feature_descriptions):
-    # calculate the distance from every sample to the centroid
-    centroid = np.mean(cluster_samples)
-    differences_sum = np.zeros(cluster_samples.shape[1])
-    for sample in cluster_samples:
-        diff = np.abs(sample - centroid)
-        differences_sum += diff
-
-    # order features by difference -
-    diffs_list = list(zip(feature_descriptions, differences_sum))
-    diffs_list.sort(key=lambda x: x[1])
-
-    return diffs_list
-
-
-def plot_similar_features(samples, feature_descriptions, cluster_labels, n):
-    labels = np.unique(cluster_labels)
-
-    # each cluster
-    for label in labels:
-        cluster_samples = samples[cluster_labels == label]
-
-        # calculate cumulative differences from centroid
-        features_similarity = most_similar_features(samples,
-                                                    feature_descriptions)
+def plot_most_different_features(centroids, feature_descriptions, n):
+    for label, centroid in centroids.items():
+        # get features difference from current centroid
+        all_centroids = centroids.copy()
+        del all_centroids[label]
+        features_difference = most_different_features(centroid,
+                                                      np.array(
+                                                          list(
+                                                              all_centroids.values()
+                                                          )
+                                                      ),
+                                                      feature_descriptions)
 
         # get first n
-        if samples.shape[1] > n:
-            features_similarity = features_similarity[:n]
+        if len(centroid) > n:
+            features_difference = features_difference[:n]
 
         # plot features with lower difference
         plt.figure()
-        xticks = range(len(features_similarity))
+        xticks = range(len(features_difference))
         simple_bar_chart(plt.gca(), xticks,
-                         [x[1] for x in features_similarity],
-                         "Similar features", "cumulative difference", "feature")
-        plt.xticks(xticks, [x[0] for x in features_similarity], rotation=60)
+                         [x[1] for x in features_difference],
+                         f"Most characterizing features cluster {label}",
+                         "mean difference", "feature")
+        plt.xticks(xticks, [x[0] for x in features_difference], rotation=60)
         plt.tight_layout()
 
 
@@ -186,6 +176,10 @@ def draw_cluster_trajectories(trajectories_file_path, cluster_info):
     fishes = list(read_fishes(trajectories_file_path))
     fishes.sort(key=lambda x: x.fish_id)
     fishes = np.array(fishes)
+
+    # fill gaps
+    for fish in fishes:
+        fill_gaps_linear(fish.trajectory)
 
     for cluster in clusters:
         cluster_frame = np.full((480, 720, 3), 255, dtype=np.uint8)
@@ -231,7 +225,7 @@ def species_distribution(species_gt, cluster_info):
 
 
 # region experiences
-def kmeans_v29_all_species():
+def v29_all_species():
     """
     KMeans on all trajectories from video 29
 
@@ -247,6 +241,7 @@ def kmeans_v29_all_species():
 
     Results using z-normalization and PCA:
         - Best k: 7
+        - Number of principal components: 17
         - Best seed: 4089396988, silhouette: 0.3038
         - Cohesion: 425.6164, separation: 595.9555, silhouette: 0.3038
     """
@@ -266,18 +261,26 @@ def kmeans_v29_all_species():
     best_seed(input_data, n=10000, k=7, max_steps=300)
 
     # evaluation
-    _, resulting_clusters = evaluate_model(input_data, k=7,
-                                           max_steps=300, n_init=1, seed=4089396988)
+    model, resulting_clusters = evaluate_model(input_data, k=7,
+                                               max_steps=300, n_init=1, seed=2286868185)
 
     # analysis
     draw_cluster_trajectories("resources/detections/v29-fishes.json",
                               resulting_clusters)
     species_distribution(gt, resulting_clusters)
-    plot_similar_features(input_data, descriptions, resulting_clusters, n=10)
+    plot_most_different_features({label: centroid
+                                  for label, centroid in enumerate(model.cluster_centers_)},
+                                 descriptions, n=10)
     plt.show()
     cv2.destroyAllWindows()
+
+
+def v29_group_by_species():
+    # todo
+    pass
 # endregion
 
 
 if __name__ == '__main__':
-    kmeans_v29_all_species()
+    # v29_all_species()
+    v29_group_by_species()

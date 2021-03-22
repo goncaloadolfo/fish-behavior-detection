@@ -55,12 +55,14 @@ def visualize_outlier_trajectories(video_path, fishes, labels, thr):
     cv2.destroyAllWindows()
 
 
-def most_different_features(v1, v2, feature_descriptions):
-    # calculate difference between vectors
-    differences = np.abs(v1 - v2)
+def most_different_features(centroid, remaining_centroids, feature_descriptions):
+    # mean difference
+    differences = np.array([np.abs(centroid - remaining_centroid)
+                            for remaining_centroid in remaining_centroids])
+    mean_diff = np.mean(differences, axis=0)
 
     # order features by difference value - descending order
-    diffs_list = list(zip(feature_descriptions, differences))
+    diffs_list = list(zip(feature_descriptions, mean_diff))
     diffs_list.sort(key=lambda x: x[1], reverse=True)
 
     return diffs_list
