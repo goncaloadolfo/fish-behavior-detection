@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
 
-from pre_processing.pre_processing import remove_correlated_variables
+from pre_processing.pre_processing import CorrelatedVariablesRemoval, load_data
 from trajectory_features.trajectory_feature_extraction import read_dataset
 from trajectory_reader.visualization import simple_bar_chart, simple_line_plot
 
@@ -203,7 +203,7 @@ def dimensionality_analysis(samples):
     dimensionality_values = []
 
     for thr in correlation_thrs:
-        new_matrix = remove_correlated_variables(samples, thr)
+        new_matrix = CorrelatedVariablesRemoval(thr).fit_transform(samples, [])
         # check new dimensionality
         dimensionality_values.append(new_matrix.shape[1])
 
@@ -213,8 +213,29 @@ def dimensionality_analysis(samples):
                      "new dimensionality", "correlation thr", marker="-o")
 
 
-if __name__ == "__main__":
-    # analysis of the video 29 dataset
-    samples, gt, features_descriptions = read_dataset(
+def v29_analysis():
+    samples, species_gt, features_descriptions = read_dataset(
         "resources/datasets/v29-dataset1.csv")
-    full_analysis(samples, gt, features_descriptions)
+    full_analysis(samples, species_gt, features_descriptions)
+    plt.show()
+
+
+def v29_episodes_analysis(species):
+    samples, episodes_gt, features_descriptions = load_data(
+        "resources/datasets/v29-dataset1.csv", species
+    )
+    general_info(samples, features_descriptions)
+    class_balance(episodes_gt, "Interesting episodes")
+    samples = np.array(samples).T
+    for i in range(samples.shape[0]):
+        distribution_analysis(
+            samples[i], episodes_gt, features_descriptions[i]
+        )
+        plt.show()
+
+
+if __name__ == "__main__":
+    # v29_analysis()
+    # v29_episodes_analysis(("shark", "manta-ray"))
+    v29_episodes_analysis(("shark", ))
+    # v29_episodes_analysis(("manta-ray", ))
