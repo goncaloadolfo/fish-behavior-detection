@@ -27,11 +27,11 @@ def simple_line_plot(ax, xs, ys, title, ylabel, xlabel, marker='-', label=None):
     ax.plot(xs, ys, marker, label=label)
 
 
-def simple_bar_chart(ax, xs, ys, title, ylabel, xlabel):
+def simple_bar_chart(ax, xs, ys, title, ylabel, xlabel, label=None, width=0.8):
     ax.set_title(title)
     ax.set_ylabel(ylabel)
     ax.set_xlabel(xlabel)
-    ax.bar(xs, ys, align="center")
+    ax.bar(xs, ys, align="center", label=label, width=width)
 
 
 def draw_trajectory(trajectory, frame_size, color, regions=None, frame=None):
