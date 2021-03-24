@@ -8,7 +8,6 @@ from sklearn.cluster import KMeans
 from anomaly_detection.anomaly_detector import most_different_features
 from pre_processing.interpolation import fill_gaps_linear
 from pre_processing.pre_processing import (analyze_pca_components, apply_pca,
-                                           remove_correlated_variables,
                                            z_normalization)
 from trajectory_features.trajectory_feature_extraction import read_dataset, read_fishes
 from trajectory_reader.visualization import (draw_trajectory, simple_bar_chart,
@@ -273,14 +272,8 @@ def v29_all_species():
                                  descriptions, n=10)
     plt.show()
     cv2.destroyAllWindows()
-
-
-def v29_group_by_species():
-    # todo
-    pass
 # endregion
 
 
 if __name__ == '__main__':
-    # v29_all_species()
-    v29_group_by_species()
+    v29_all_species()
