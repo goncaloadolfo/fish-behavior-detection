@@ -451,7 +451,7 @@ def read_dataset(dataset_file_path):
             samples.append(np.array(fields[:-1]).astype(np.float))
 
             # ground truth
-            gt.append(fields[-1])
+            gt.append(fields[-1].replace('\n', ''))
 
     return (samples, gt, description[:-1])
 # endregion
