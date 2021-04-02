@@ -128,9 +128,9 @@ def linear_interpolation(starting_point, ending_point):
     nr_missing_points = (ending_point[0] - starting_point[0]) - 1
     x_step = (ending_point[1] - starting_point[1]) / (nr_missing_points + 1)
     y_step = (ending_point[2] - starting_point[2]) / (nr_missing_points + 1)
-    gap_points = [(starting_point[0]+i,
+    gap_points = [[starting_point[0]+i,
                    int(starting_point[1] + (i*x_step)),
-                   int(starting_point[2] + (i*y_step)))
+                   int(starting_point[2] + (i*y_step))]
                   for i in range(1, nr_missing_points+1)]
     return gap_points
 # endregion
@@ -213,7 +213,7 @@ def equidistant_interpolation_points(trajectory, n):
 
 
 # region generate and fill gaps
-def fill_gaps_linear(trajectory):
+def fill_gaps_linear(trajectory, fish):
     """
     Detects gaps on the trajectory and fills them using a linear interpolation (on place). 
 
@@ -225,13 +225,23 @@ def fill_gaps_linear(trajectory):
         if i == 0:
             i += 1
             continue
+
         current_point = trajectory[i]
         previous_point = trajectory[i-1]
+
         if current_point[0] - previous_point[0] > 1:  # gap
             predicted_points = linear_interpolation(
-                previous_point, current_point)
+                previous_point, current_point
+            )
             trajectory[i:i] = predicted_points
             i += len(predicted_points) + 1
+
+            if fish is not None:
+                for predicted_point in predicted_points:
+                    fish.positions[predicted_point[0]] = (
+                        predicted_point[1], predicted_point[2]
+                    )
+
         else:
             i += 1
 
@@ -369,7 +379,7 @@ def linear_performance(trajectories_file_path, gap_sizes):
             # simulate gap and fill the gaps with linear interpolation
             trajectory_with_gap, gap_interval = simulate_gap(
                 fish, gap_size)
-            fill_gaps_linear(trajectory_with_gap)
+            fill_gaps_linear(trajectory_with_gap, None)
             # calculate error
             total_mse += mse(trajectory, trajectory_with_gap, [gap_interval])
         results.append(total_mse / len(fishes))
