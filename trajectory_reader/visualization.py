@@ -79,6 +79,7 @@ def draw_position_plots(trajectory, gap_interval, interpolation_points, with_gap
         plt.figure()
         ax = plt.gca()
         simple_line_plot(ax, xs, ys, title, ylabel, xlabel)
+
         # example points highliting
         if interpolation_points is not None:
             ts, values = [], []
@@ -88,6 +89,7 @@ def draw_position_plots(trajectory, gap_interval, interpolation_points, with_gap
                 values.append(data_point[value_index])
             ax.scatter(ts, values, s=10, c="g", marker="o",
                        label="interpolation point")
+
         # circles in the gap edges
         ax.scatter(gap_interval[0], ys[xs.index(
             gap_interval[0])], s=10, c="r", marker="o", label="gap edge")
@@ -95,16 +97,19 @@ def draw_position_plots(trajectory, gap_interval, interpolation_points, with_gap
             gap_interval[1])], s=10, c="r", marker="o")
         ax.legend()
         return ax
+
     ts, xs, ys = [], [], []
     for data_point in trajectory:
         ts.append(data_point[0])
         xs.append(data_point[1])
         ys.append(data_point[2])
+
     # to avoid the line interligating both sides of the gap
     if with_gap:
         ts.insert(gap_interval[0]+1, np.nan)
         xs.insert(gap_interval[0]+1, np.nan)
         ys.insert(gap_interval[0]+1, np.nan)
+
     return plot_variation(ts, xs, "X Position", "x value", "frame", interpolation_points), \
         plot_variation(ts, ys, "Y Position", "y value",
                        "frame", interpolation_points)
@@ -125,10 +130,8 @@ def show_trajectory(video_path, fish, estimated_trajectory, simulated_gaps,
     # set next frame to be read to the initial timestamp index of the trajectory
     t = estimated_trajectory[0][0]
     cap.set(cv2.CAP_PROP_POS_FRAMES, t)
-    timestamp = 0
 
     while(t < estimated_trajectory[-1][0]):
-        time_elapsed = time.time() - timestamp
         _, frame = cap.read()
         t = cap.get(cv2.CAP_PROP_POS_FRAMES)
 
@@ -160,12 +163,11 @@ def show_trajectory(video_path, fish, estimated_trajectory, simulated_gaps,
                     frame, (data_point[0][1], data_point[0][2]), 5, (0, 0, 255), -1)
 
         # show or write frame
-        if record is None and time_elapsed > 1/24:
+        if record is None:
             cv2.imshow(frame_name, frame)
-            timestamp = time.time()
         elif record is not None:
             out.write(frame)
-        if cv2.waitKey(1) & 0xFF == ord('q'):
+        if cv2.waitKey(30) & 0xFF == ord('q'):
             break
 
     cap.release()
