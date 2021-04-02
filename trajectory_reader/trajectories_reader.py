@@ -30,7 +30,7 @@ class Fish:
         # add new information from a frame
         self.__trajectory.append(data_point)
         self.__bounding_boxes_size[data_point[0]] = BoundingBox(width, height)
-        self.__positions[data_point[0]] = (data_point[1], data_point[2])
+        self.__positions[data_point[0]] = [data_point[1], data_point[2]]
         return self
 
     def get_position(self, t):
@@ -49,13 +49,14 @@ class Fish:
         # trajectory
         trajectory = fish_dict["trajectory"]
         for data_point in trajectory:
-            t, x, y = int(data_point[0]), int(data_point[1]), int(data_point[2])
-            self.__trajectory.append((t, x, y))
-            self.__positions[t] = (x, y)
+            t, x, y = int(data_point[0]), int(
+                data_point[1]), int(data_point[2])
+            self.__trajectory.append([t, x, y])
+            self.__positions[t] = [x, y]
 
         # bounding boxes
         self.__bounding_boxes_size = {int(t): BoundingBox(int(bb_tuple[0]), int(bb_tuple[1]))
-                                 for t, bb_tuple in fish_dict["bounding-boxes"].items()}
+                                      for t, bb_tuple in fish_dict["bounding-boxes"].items()}
 
     @property
     def fish_id(self):
@@ -68,6 +69,10 @@ class Fish:
     @property
     def bounding_boxes(self):
         return self.__bounding_boxes_size
+
+    @property
+    def positions(self):
+        return self.__positions
 
 
 def read_detections(detections_file_path):
