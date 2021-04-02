@@ -26,6 +26,7 @@ def plot_metrics(values, x_values, classifier_label, width):
 
 
 def plot_confusion_matrix(true_labels, predicted_labels):
+    # bug: heatmap poorly formatted
     labels = np.unique(true_labels)
     matrix = confusion_matrix(true_labels, predicted_labels,
                               labels=labels)

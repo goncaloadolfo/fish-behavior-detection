@@ -178,7 +178,7 @@ def draw_cluster_trajectories(trajectories_file_path, cluster_info):
 
     # fill gaps
     for fish in fishes:
-        fill_gaps_linear(fish.trajectory)
+        fill_gaps_linear(fish.trajectory, fish)
 
     for cluster in clusters:
         cluster_frame = np.full((480, 720, 3), 255, dtype=np.uint8)
