@@ -17,13 +17,14 @@ from multiprocessing import Process
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
-
 from labeling.regions_selector import read_regions
 from labeling.trajectory_labeling import read_species_gt
 from pre_processing.interpolation import fill_gaps_linear
+from pre_processing.trajectory_pre_processing import exponential_weights
 from trajectory_reader.trajectories_reader import read_fishes
 from trajectory_reader.visualization import (draw_trajectory, show_trajectory,
-                                             simple_bar_chart, simple_line_plot)
+                                             simple_bar_chart,
+                                             simple_line_plot)
 
 FEATURES_ORDER = ["speed", "acceleration", "turning-angle",
                   "curvature", "centered-distance", "normalized-bb"]
@@ -35,12 +36,25 @@ fe_logger.setLevel(logging.INFO)
 # region feature extraction
 class TrajectoryFeatureExtraction():
 
+    SPEEDS_ATR_NAME = "speed_time_series"
+    ACCELERATIONS_ATR_NAME = "acceleration_time_series"
+    TAS_ATR_NAME = "turning_angle_time_series"
+    CURVATURES_ATR_NAME = "curvature_time_series"
+    CDS_ATR_NAME = "centered_distances"
+    GTS_ATR_NAME = "geographic_transitions"
+    NBBS_ATR_NAME = "normalized_bounding_boxes"
+
     def __init__(self, regions, calculation_period, sliding_window, alpha):
         self.__regions = regions
         self.__calculation_frequency = calculation_period
         self.__sliding_window = sliding_window
-        self.__sliding_weights = [
-            alpha * (1 - alpha)**n for n in range(0, sliding_window)]
+        self.__alpha = alpha
+
+        if sliding_window is not None and alpha is not None:
+            self.__sliding_window = sliding_window if sliding_window % 2 == 0 else sliding_window + 1
+            self.__sliding_weights = exponential_weights(
+                self.__sliding_window, alpha)
+
         self.reset()
 
     def reset(self):
@@ -99,7 +113,7 @@ class TrajectoryFeatureExtraction():
                     continue
 
         # smooth time series
-        if self.__sliding_window > 1:
+        if self.__sliding_window is not None and self.__alpha is not None:
             for time_series in self.__time_series_list:
                 TrajectoryFeatureExtraction.exponential_sliding_average(time_series,
                                                                         self.__sliding_window,
@@ -175,6 +189,10 @@ class TrajectoryFeatureExtraction():
     def pass_by_info(self):
         return self.__pass_by
 
+    @property
+    def all_time_series(self):
+        return self.__time_series_list
+
     @staticmethod
     def statistical_features(time_series, feature_label):
         return ([
@@ -204,13 +222,18 @@ class TrajectoryFeatureExtraction():
 
     @staticmethod
     def exponential_sliding_average(time_series, sliding_window, weights):
-        # expand edge
-        time_series_copy = time_series + [time_series[-1]] * sliding_window
+        # expand edges
+        half_window = sliding_window / 2
+        time_series_copy = [time_series[0]] * half_window + time_series
+        time_series_copy = time_series_copy + \
+            [time_series[-1]] * sliding_window
 
         # calculate new values
         for i in range(len(time_series)):
             time_series[i] = np.average(
-                time_series_copy[i+1: i+1+sliding_window], weights=weights)
+                time_series_copy[i-half_window:i+half_window+1],
+                weights=weights
+            )
 
     def __motion_features(self):
         p1 = self.__calculation_positions[-3]
@@ -261,22 +284,26 @@ class TrajectoryFeatureExtraction():
                 else:
                     self.__pass_by[(self.__last_region, region.region_id)] += 1
                 self.__last_region = region.region_id
+
+
+def extract_features(fish, regions, calculation_period=1, sliding_window=None, alpha=None):
+    fe_obj = TrajectoryFeatureExtraction(
+        regions, calculation_period=calculation_period,
+        sliding_window=sliding_window, alpha=alpha
+    )
+    fe_obj.set_trajectory(fish.trajectory, fish.bounding_boxes)
+    fe_obj.extract_features()
+    return fe_obj
 # endregion
 
 
 # region information visualization
 def analyze_trajectory(video_path, regions, fish, calculation_period, sliding_window, alpha):
     # calculate and draw feature plots
-    features_extractor_obj = TrajectoryFeatureExtraction(
-        regions, calculation_period, sliding_window, alpha)
-    features_extractor_obj.set_trajectory(fish.trajectory, fish.bounding_boxes)
-    features_extractor_obj.extract_features()
-    time_series_list = [features_extractor_obj.speed_time_series,
-                        features_extractor_obj.acceleration_time_series,
-                        features_extractor_obj.turning_angle_time_series,
-                        features_extractor_obj.curvature_time_series,
-                        features_extractor_obj.centered_distances,
-                        features_extractor_obj.normalized_bounding_boxes]
+    features_extractor_obj = extract_features(
+        fish, regions, calculation_period, sliding_window, alpha
+    )
+    time_series_list = features_extractor_obj.all_time_series
     description, vector = features_extractor_obj.get_feature_vector()
     draw_time_series(*time_series_list, descriptions=FEATURES_ORDER)
     draw_regions_information(features_extractor_obj.pass_by_info)
@@ -355,10 +382,7 @@ def frequency_analysis(fish, regions, calculation_periods):
     # for each frequency
     for frequency in calculation_periods:
         # calculate features
-        fe_obj = TrajectoryFeatureExtraction(
-            regions, frequency, sliding_window=1, alpha=None)
-        fe_obj.set_trajectory(fish.trajectory, fish.bounding_boxes)
-        fe_obj.extract_features()
+        fe_obj = extract_features(fish, regions, frequency, None, None)
 
         # draw speed
         draw_time_series(fe_obj.speed_time_series, descriptions=[
@@ -371,10 +395,7 @@ def moving_average_analysis(fish, sliding_window, alphas, regions, video_path=No
     plt.figure()
     for alpha in alphas:
         # extract features
-        fe_obj = TrajectoryFeatureExtraction(
-            regions, calculation_period=1, sliding_window=sliding_window, alpha=alpha)
-        fe_obj.set_trajectory(fish.trajectory, fish.bounding_boxes)
-        fe_obj.extract_features()
+        fe_obj = extract_features(fish, regions, 1, sliding_window, alpha)
 
         # draw speed time series
         simple_line_plot(plt.gca(), range(len(fe_obj.speed_time_series)), fe_obj.speed_time_series,
@@ -406,13 +427,10 @@ def build_dataset(fishes_file_path, species_gt_path, regions_path, output_path=N
 
     for fish in fishes:
         # pre-processing
-        fill_gaps_linear(fish.trajectory)
+        fill_gaps_linear(fish.trajectory, fish)
 
         # feature extraction
-        fe_obj = TrajectoryFeatureExtraction(
-            regions, calculation_period=1, sliding_window=24, alpha=0.3)
-        fe_obj.set_trajectory(fish.trajectory, fish.bounding_boxes)
-        fe_obj.extract_features()
+        fe_obj = extract_features(fish, regions, 1, 24, 0.3)
         features_description, sample = fe_obj.get_feature_vector()
 
         # update data structures
