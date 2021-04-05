@@ -17,10 +17,10 @@ from multiprocessing import Process
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
+import pre_processing.trajectory_filtering as tf
 from labeling.regions_selector import read_regions
 from labeling.trajectory_labeling import read_species_gt
 from pre_processing.interpolation import fill_gaps_linear
-from pre_processing.trajectory_pre_processing import exponential_weights
 from trajectory_reader.trajectories_reader import read_fishes
 from trajectory_reader.visualization import (draw_trajectory, show_trajectory,
                                              simple_bar_chart,
@@ -52,8 +52,9 @@ class TrajectoryFeatureExtraction():
 
         if sliding_window is not None and alpha is not None:
             self.__sliding_window = sliding_window if sliding_window % 2 == 0 else sliding_window + 1
-            self.__sliding_weights = exponential_weights(
-                self.__sliding_window, alpha)
+            self.__sliding_weights = tf.exponential_weights(
+                self.__sliding_window, alpha
+            )
 
         self.reset()
 
@@ -223,15 +224,14 @@ class TrajectoryFeatureExtraction():
     @staticmethod
     def exponential_sliding_average(time_series, sliding_window, weights):
         # expand edges
-        half_window = sliding_window / 2
+        half_window = int(sliding_window / 2)
         time_series_copy = [time_series[0]] * half_window + time_series
-        time_series_copy = time_series_copy + \
-            [time_series[-1]] * sliding_window
+        time_series_copy = time_series_copy + [time_series[-1]] * half_window
 
         # calculate new values
         for i in range(len(time_series)):
             time_series[i] = np.average(
-                time_series_copy[i-half_window:i+half_window+1],
+                time_series_copy[i:i+sliding_window+1],
                 weights=weights
             )
 
