@@ -6,6 +6,7 @@
 
 import json
 import os
+import random
 from collections import namedtuple
 
 import cv2
@@ -181,6 +182,14 @@ def union_gt(*detection_file_paths, output_path):
 
     # save all to the same file
     save_fishes(all_fishes, output_path, 0)
+
+
+def get_random_fish(fishes_file_path, seed=None):
+    if seed is not None:
+        random.seed(seed)
+    fishes = list(read_fishes(fishes_file_path))
+    fishes.sort(key=lambda x: x.fish_id)
+    return random.choice(fishes)
 
 
 if __name__ == "__main__":
