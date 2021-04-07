@@ -20,12 +20,12 @@ class Fish:
     Entity - Fish
     """
 
-    def __init__(self, fish_id):
+    def __init__(self, fish_id, trajectory=[], bounding_boxes={}, positions={}):
         # initialization
         self.__fish_id = fish_id
-        self.__trajectory = []
-        self.__bounding_boxes_size = {}
-        self.__positions = {}
+        self.__trajectory = trajectory
+        self.__bounding_boxes_size = bounding_boxes
+        self.__positions = positions
 
     def add_position(self, data_point, width, height):
         # add new information from a frame
@@ -47,13 +47,19 @@ class Fish:
         }
 
     def decode(self, fish_dict):
-        # trajectory
-        trajectory = fish_dict["trajectory"]
+        trajectory = fish_dict['trajectory']
+        trajectory_list = []
+        trajectory_positions_dict = {}
+
         for data_point in trajectory:
-            t, x, y = int(data_point[0]), int(
-                data_point[1]), int(data_point[2])
-            self.__trajectory.append([t, x, y])
-            self.__positions[t] = [x, y]
+            t = int(data_point[0])
+            x = int(data_point[1])
+            y = int(data_point[2])
+            trajectory_list.append([t, x, y])
+            trajectory_positions_dict[t] = [x, y]
+
+        self.__positions = trajectory_positions_dict
+        self.__trajectory = trajectory_list
 
         # bounding boxes
         self.__bounding_boxes_size = {int(t): BoundingBox(int(bb_tuple[0]), int(bb_tuple[1]))
@@ -192,7 +198,17 @@ def get_random_fish(fishes_file_path, seed=None):
     return random.choice(fishes)
 
 
+def read_fishes_test():
+    fishes = read_fishes("resources/detections/v29-fishes.json")
+    print("number of fishes: ", len(fishes))
+    example_fish = fishes.pop()
+    print("example fish: ", example_fish.fish_id)
+    print("first data points: ", example_fish.trajectory[:10])
+    print("trajectory length: ", len(example_fish.trajectory))
+
+
 if __name__ == "__main__":
-    union_gt("resources/detections/detections-joao-v29.txt",
-             "resources/detections/detections-v29-sharks-mantas.txt",
-             output_path="resources/detections/v29-fishes.json")
+    # union_gt("resources/detections/detections-joao-v29.txt",
+    #          "resources/detections/detections-v29-sharks-mantas.txt",
+    #          output_path="resources/detections/v29-fishes.json")
+    read_fishes_test()
