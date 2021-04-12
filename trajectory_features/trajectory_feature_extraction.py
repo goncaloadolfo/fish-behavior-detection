@@ -43,6 +43,7 @@ class TrajectoryFeatureExtraction():
     CDS_ATR_NAME = "centered_distances"
     GTS_ATR_NAME = "geographic_transitions"
     NBBS_ATR_NAME = "normalized_bounding_boxes"
+    REGION_ATR_NAME = "region_time_series"
 
     def __init__(self, regions, calculation_period, sliding_window, alpha):
         self.__regions = regions
@@ -71,6 +72,7 @@ class TrajectoryFeatureExtraction():
         self.__centered_distances = []
         self.__pass_by = {k: 0 for k in self.__pass_by_description}
         self.__normalized_bounding_boxes = []
+        self.__regions_time_series = []
         self.__time_series_list = [self.__speeds, self.__accelerations, self.__turning_angles,
                                    self.__curvatures, self.__centered_distances, self.__normalized_bounding_boxes]
 
@@ -191,6 +193,10 @@ class TrajectoryFeatureExtraction():
         return self.__pass_by
 
     @property
+    def region_time_series(self):
+        return self.__regions_time_series
+
+    @property
     def all_time_series(self):
         return self.__time_series_list
 
@@ -277,13 +283,22 @@ class TrajectoryFeatureExtraction():
     def __pass_by_features(self, position):
         # check in which region is the given position
         # and update pass by status
+        found = False
         for region in self.__regions:
             if position in region:
+                found = True
+                self.__regions_time_series.append(region.region_id)
+
                 if self.__last_region is None or self.__last_region == region.region_id:
                     self.__pass_by[(region.region_id,)] += 1
+
                 else:
                     self.__pass_by[(self.__last_region, region.region_id)] += 1
+
                 self.__last_region = region.region_id
+
+        if not found:
+            self.__regions_time_series.append(0)
 
 
 def extract_features(fish, regions, calculation_period=1, sliding_window=None, alpha=None):
