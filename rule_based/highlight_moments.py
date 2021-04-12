@@ -1,14 +1,17 @@
-from pre_processing.interpolation import fill_gaps_linear
-from pre_processing.trajectory_filtering import exponential_weights, smooth_positions, _set_timestamps
-from trajectory_features.trajectory_feature_extraction import TrajectoryFeatureExtraction, extract_features
+import random
+from collections import defaultdict
 
-RULE_FEATURES_MAPPING = {
-    Rule.SPEED: TrajectoryFeatureExtraction.SPEEDS_ATR_NAME,
-    Rule.ACCELERATION: TrajectoryFeatureExtraction.ACCELERATIONS_ATR_NAME,
-    Rule.DIRECTION: TrajectoryFeatureExtraction.TAS_ATR_NAME,
-    Rule.CURVATURE: TrajectoryFeatureExtraction.CURVATURES_ATR_NAME,
-    Rule.POSTURE: TrajectoryFeatureExtraction.NBBS_ATR_NAME
-}
+from labeling.regions_selector import read_regions
+from matplotlib import pyplot as plt
+from pre_processing.interpolation import fill_gaps_linear
+from pre_processing.trajectory_filtering import (_set_timestamps,
+                                                 exponential_weights,
+                                                 smooth_positions)
+from trajectory_features.trajectory_feature_extraction import (
+    TrajectoryFeatureExtraction, extract_features)
+from trajectory_reader.trajectories_reader import read_fishes
+from trajectory_reader.visualization import simple_line_plot
+import sys
 
 
 class HighlightMoment():
@@ -35,16 +38,26 @@ class Rule():
         self.duration = duration
 
     def pass_the_rule(self, value):
-        return values[0] <= value <= values[1]
+        return self.values[0] <= value <= self.values[1]
 
     def is_region_related(self):
-        return self.feature == REGION or self.feature == TRANSITION
+        return self.feature == Rule.REGION or self.feature == Rule.TRANSITION
+
+
+RULE_FEATURES_MAPPING = {
+    Rule.SPEED: TrajectoryFeatureExtraction.SPEEDS_ATR_NAME,
+    Rule.ACCELERATION: TrajectoryFeatureExtraction.ACCELERATIONS_ATR_NAME,
+    Rule.DIRECTION: TrajectoryFeatureExtraction.TAS_ATR_NAME,
+    Rule.CURVATURE: TrajectoryFeatureExtraction.CURVATURES_ATR_NAME,
+    Rule.POSTURE: TrajectoryFeatureExtraction.NBBS_ATR_NAME,
+    Rule.REGION: TrajectoryFeatureExtraction.REGION_ATR_NAME
+}
 
 
 def highlight_moments(fish, regions, rules):
     fill_gaps_linear(fish.trajectory, fish)
     weights = exponential_weights(24, 0.01)
-    smooth_positions(fish, regions)
+    smooth_positions(fish, weights)
     fe_obj = extract_features(fish, regions, sliding_window=24, alpha=0.01)
 
     highlighting_moments = set()
@@ -58,15 +71,35 @@ def highlight_moments(fish, regions, rules):
             new_moments = _search_moments_time_series(
                 _set_timestamps(fish.trajectory[0][0],
                                 len(fish.trajectory),
-                                getattr(fe_obj, time_series_name))
+                                getattr(fe_obj, time_series_name)),
+                rule
             )
-            highlighting_moments.union(new_moments)
+            highlighting_moments = highlighting_moments.union(new_moments)
 
-    highlight_moments.union(
-        _search_moments_regions(fish.trajectory, regions,
+    highlighting_moments = highlighting_moments.union(
+        _search_moments_regions(fish.trajectory, fe_obj.region_time_series,
                                 fe_obj.pass_by_info, region_rules)
     )
-    return highlighting_moments
+    return (highlighting_moments, fe_obj)
+
+
+def plot_hms(fish, feature, fe_obj, hms):
+    original_time_series = getattr(fe_obj, RULE_FEATURES_MAPPING[feature])
+    time_diff = len(fish.trajectory) - len(original_time_series)
+    ts = list(range(fish.trajectory[time_diff][0], fish.trajectory[-1][0]+1))
+    plt.figure()
+    simple_line_plot(plt.gca(), ts, original_time_series,
+                     feature, "value", "t", label="original")
+
+    for hm in hms:
+        hm_ts = range(hm.t_initial, hm.t_final + 1)
+        t_initial_index = hm.t_initial - fish.trajectory[time_diff][0]
+        t_final_index = hm.t_final - fish.trajectory[time_diff][0]
+        simple_line_plot(plt.gca(), hm_ts, original_time_series[t_initial_index: t_final_index + 1],
+                         feature, "value", "t", marker="-r", label="highlight")
+    handles, labels = plt.gca().get_legend_handles_labels()
+    group_by_label = dict(zip(labels, handles))
+    plt.gca().legend(group_by_label.values(), group_by_label.keys())
 
 
 def _search_moments_time_series(time_series, rule):
@@ -84,28 +117,29 @@ def _search_moments_time_series(time_series, rule):
     return highlight_moments
 
 
-def _search_moments_regions(trajectory, regions, pass_by_results, rules):
+def _search_moments_regions(trajectory, regions_time_series, pass_by_results, rules):
     highlight_moments = set()
 
     last_region = -1
     duration = 0
-    for t, x, y in trajectory:
-        for region in regions:
-            if (x, y) in region:
-                break
+    time_diff = len(trajectory) - len(regions_time_series)
 
-        if last_region == region.region_id or last_region == -1:
+    for i in range(time_diff, len(trajectory)):
+        t, x, y = trajectory[i]
+        region = regions_time_series[i - time_diff]
+
+        if last_region == region or last_region == -1:
             duration += 1
 
-        if (last_region != region.region_id or t == trajectory[-1][0]) and duration > 0:
+        if (last_region != region or t == trajectory[-1][0]) and duration > 0:
             for rule in rules:
-                if rule.feature == Rule.REGION and rule.values[0] == region.region_id and rule.duration < duration:
+                if rule.feature == Rule.REGION and rule.values[0] == region and rule.duration < duration:
                     highlight_moments.add(
                         HighlightMoment(t - duration, t - 1, rule)
                     )
             duration = 0
 
-        last_region = region.region_id
+        last_region = region
 
     for rule in rules:
         if rule.feature != Rule.TRANSITION:
@@ -119,9 +153,50 @@ def _search_moments_regions(trajectory, regions, pass_by_results, rules):
                 total_transitions = pass_by_results[(transition[0], transition[1])] + \
                     pass_by_results[(transition[1], transition[0])]
 
-                if total_transitions > rule.duration:
+                if total_transitions >= rule.duration:
                     highlight_moments.add(
                         HighlightMoment(None, None, rule)
                     )
 
     return highlight_moments
+
+
+def highlight_moments_test(rules):
+    fishes = read_fishes("resources/detections/v29-fishes.json")
+    regions = read_regions("resources/regions-example.json")
+
+    highlight_fishes = {}
+    for fish in fishes:
+        hm = highlight_moments(fish, regions, rules)
+        if len(hm[0]) > 0:
+            highlight_fishes[fish.fish_id] = (fish, hm)
+
+    print(
+        f"Fishes that validate some of the rules: {len(highlight_fishes)}/{len(fishes)}"
+    )
+
+    if len(highlight_fishes) > 0:
+        example_fish_id = random.choice(list(highlight_fishes.keys()))
+        all_hms, fe_obj = highlight_fishes[example_fish_id][1]
+
+        grouped_moments = defaultdict(set)
+        for hm in all_hms:
+            grouped_moments[hm.rule.feature].add(hm)
+
+        for feature, hms in grouped_moments.items():
+            if feature != Rule.TRANSITION:
+                plot_hms(highlight_fishes[example_fish_id][0],
+                         feature, fe_obj, hms)
+
+
+if __name__ == "__main__":
+    rules = [
+        Rule(Rule.SPEED, (3.5, sys.maxsize), 24),
+        Rule(Rule.DIRECTION, (60, 120), 24),
+        Rule(Rule.DIRECTION, (-120, -60), 24),
+        Rule(Rule.CURVATURE, (1, sys.maxsize), 24),
+        Rule(Rule.REGION, (3,), 24*60),
+        Rule(Rule.TRANSITION, (2, 3), 2)
+    ]
+    highlight_moments_test(rules)
+    plt.show()
