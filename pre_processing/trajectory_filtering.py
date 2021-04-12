@@ -52,6 +52,8 @@ def play_trajectory_segments(video_path, fish, descontinuity_points):
 
     color = np.random.randint(0, 256, 3)
     color = (int(color[0]), int(color[1]), int(color[2]))
+    colors = [color]
+
     current_tag = descontinuity_points[0][1]
     descontinuities = dict(descontinuity_points)
 
@@ -65,6 +67,7 @@ def play_trajectory_segments(video_path, fish, descontinuity_points):
         if t in descontinuities:
             color = np.random.randint(0, 256, 3)
             color = (int(color[0]), int(color[1]), int(color[2]))
+            colors.append(color)
             current_tag = descontinuities[t]
 
         cv2.circle(frame, current_point, 5, color, -1)
@@ -82,12 +85,28 @@ def play_trajectory_segments(video_path, fish, descontinuity_points):
                     (current_point[0], current_point[1] - 30),
                     cv2.FONT_HERSHEY_COMPLEX, 0.8, color)
 
-        if previous_point is not None:
-            cv2.line(frame, previous_point, current_point, color, 2)
-
+        draw_path(frame, fish.trajectory, t, descontinuities, colors)
         cv2.imshow("trajectory segments", frame)
         cv2.waitKey(36)
     video_capture.release()
+
+
+def draw_path(frame, trajectory, current_t, descontinuities, colors):
+    segment_index = 0
+    color = colors[segment_index]
+
+    for i in range(len(trajectory)):
+        if i == 0:
+            continue
+        elif trajectory[i-1][0] == current_t:
+            break
+
+        if trajectory[i][0] in descontinuities:
+            segment_index += 1
+            color = colors[segment_index]
+
+        cv2.line(frame, (trajectory[i-1][1], trajectory[i-1][2]),
+                 (trajectory[i][1], trajectory[i][2]), color, 2)
 
 
 def smooth_positions_dp(fish, geo_regions, distance_thr, speed_thr, angle_thr):
@@ -239,22 +258,29 @@ def _plot_positions(axs, trajectory, ts, filtered):
                      f"{title_label.capitalize()} y values", "y position", "t")
 
 
-def _plot_descontinuities(time_series, time_series_description, descontinuity_points):
-    descontinuity_points.sort(key=lambda x: x[0])
+def _plot_descontinuities(time_series, time_series_description, descontinuity_points_list, thresholds):
     ts = [t for t, _ in time_series]
     time_series_values = [value for _, value in time_series]
-    descontinuity_ts = [t for t, _ in descontinuity_points]
-    key_values = [time_series_values[ts.index(t)] for t in descontinuity_ts]
 
     plt.figure()
     simple_line_plot(plt.gca(), ts, time_series_values,
                      time_series_description, "value", "t", label="original")
-    simple_line_plot(plt.gca(), descontinuity_ts, key_values,
-                     time_series_description, "value", "t", label="douglass peucker output")
+
+    for i in range(len(descontinuity_points_list)):
+        descontinuity_points_list[i].sort(key=lambda x: x[0])
+        descontinuity_ts = [t for t, _ in descontinuity_points_list[i]]
+        key_values = [
+            time_series_values[ts.index(t)] for t in descontinuity_ts
+        ]
+
+        simple_line_plot(plt.gca(), descontinuity_ts, key_values,
+                         time_series_description, "value", "t",
+                         label=f"douglass peucker output ep={thresholds[i]}")
+        print(
+            f"Number of key points ({time_series_description}, ep={thresholds[i]}): {len(descontinuity_ts)}"
+        )
+
     plt.gca().legend()
-    print(
-        f"Number of key points ({time_series_description}): {len(descontinuity_ts)}"
-    )
 
 
 def _plot_time_series(fe_objs, descriptions, features_of_interest, trajectory_ts):
@@ -281,6 +307,46 @@ def _plot_time_series(fe_objs, descriptions, features_of_interest, trajectory_ts
         ax.legend()
 
 
+def douglass_peucker_tuning(distance_thrs, speed_thrs, angle_thrs, seed):
+    example_fish = get_random_fish(
+        "resources/detections/v29-fishes.json", seed)
+    regions = read_regions("resources/regions-example.json")
+    fill_gaps_linear(example_fish.trajectory, example_fish)
+
+    _dp_feature_tuning(example_fish, regions, distance_thrs, DISTANCE_TAG)
+    _dp_feature_tuning(example_fish, regions, speed_thrs, SPEED_TAG)
+    _dp_feature_tuning(example_fish, regions, angle_thrs, ANGLE_TAG)
+
+
+def _dp_feature_tuning(fish, regions, thrs, feature_tag):
+    descontinuity_points_list = []
+
+    for thr in thrs:
+        distance_thr = 0 if feature_tag != DISTANCE_TAG else thr
+        speed_thr = 0 if feature_tag != SPEED_TAG else thr
+        angle_thr = 0 if feature_tag != ANGLE_TAG else thr
+
+        descontinuity_points, speed_time_series, angle_time_series = identify_descontinuity_points(
+            fish, regions, distance_thr, speed_thr, angle_thr
+        )
+        descontinuity_points_list.append(
+            [point for point in descontinuity_points if point[1] == feature_tag]
+        )
+
+    if feature_tag == DISTANCE_TAG:
+        x_time_series = [(t, x) for t, x, y in fish.trajectory]
+        y_time_series = [(t, y) for t, x, y in fish.trajectory]
+        _plot_descontinuities(x_time_series, "x position",
+                              descontinuity_points_list, thrs)
+        _plot_descontinuities(y_time_series, "y position",
+                              descontinuity_points_list, thrs)
+
+    else:
+        time_series = speed_time_series if feature_tag == SPEED_TAG else angle_time_series
+        _plot_descontinuities(time_series, feature_tag,
+                              descontinuity_points_list, thrs)
+
+
 def smooth_positions_dp_test(fish, regions, distance_thr, speed_thr, angle_thr):
     original_trajectory = draw_trajectory(
         fish.trajectory, (480, 720), (0, 255, 0)
@@ -298,32 +364,15 @@ def smooth_positions_dp_test(fish, regions, distance_thr, speed_thr, angle_thr):
     return descontinuity_points
 
 
-def douglass_peucker_test(distance_thr, speed_thr, angle_thr):
-    example_fish = get_random_fish("resources/detections/v29-fishes.json", 1)
+def douglass_peucker_test(distance_thr, speed_thr, angle_thr, seed):
+    example_fish = get_random_fish(
+        "resources/detections/v29-fishes.json", seed)
     regions = read_regions("resources/regions-example.json")
     fill_gaps_linear(example_fish.trajectory, example_fish)
 
-    descontinuity_points, speed_time_series, angle_time_series = identify_descontinuity_points(
-        example_fish, regions, distance_thr, speed_thr, angle_thr
-    )
-    distance_descontinuities = [
-        point for point in descontinuity_points if point[1] == DISTANCE_TAG
-    ]
-    speed_descontinuities = [
-        point for point in descontinuity_points if point[1] == SPEED_TAG
-    ]
-    angle_descontinuities = [
-        point for point in descontinuity_points if point[1] == ANGLE_TAG
-    ]
-
-    _plot_descontinuities(
-        [(t, x) for t, x, y in example_fish.trajectory], "x position", distance_descontinuities
-    )
-    _plot_descontinuities(
-        [(t, y) for t, x, y in example_fish.trajectory], "y position", distance_descontinuities
-    )
-    _plot_descontinuities(speed_time_series, "speed", speed_descontinuities)
-    _plot_descontinuities(angle_time_series, "angle", angle_descontinuities)
+    _dp_feature_tuning(example_fish, regions, [distance_thr], DISTANCE_TAG)
+    _dp_feature_tuning(example_fish, regions, [speed_thr], SPEED_TAG)
+    _dp_feature_tuning(example_fish, regions, [angle_thr], ANGLE_TAG)
 
     descontinuity_points = smooth_positions_dp_test(example_fish, regions,
                                                     distance_thr, speed_thr, angle_thr)
@@ -331,8 +380,9 @@ def douglass_peucker_test(distance_thr, speed_thr, angle_thr):
                              example_fish, descontinuity_points)
 
 
-def positions_filtering_test(window_size, alpha, features_of_interest):
-    example_fish = get_random_fish("resources/detections/v29-fishes.json", 1)
+def positions_filtering_test(window_size, alpha, features_of_interest, seed):
+    example_fish = get_random_fish(
+        "resources/detections/v29-fishes.json", seed)
     regions = read_regions("resources/regions-example.json")
     fill_gaps_linear(example_fish.trajectory, example_fish)
 
@@ -375,9 +425,14 @@ if __name__ == '__main__':
     #                          features_of_interest=(
     #                              fe_module.TrajectoryFeatureExtraction.SPEEDS_ATR_NAME,
     #                              fe_module.TrajectoryFeatureExtraction.CURVATURES_ATR_NAME,
-    #                              fe_module.TrajectoryFeatureExtraction.TAS_ATR_NAME
+    #                              fe_module.TrajectoryFeatureExtraction.TAS_ATR_NAME,
+    #                              fe_module.TrajectoryFeatureExtraction.CDS_ATR_NAME
+    #                          ), seed=1
     #                          )
-    #                          )
-    douglass_peucker_test(10, 0.75, 20)
+
+    douglass_peucker_test(10, 0.75, 20, 1)
+
+    # douglass_peucker_tuning([10, 20, 30], [0.5, 1, 2], [10, 30, 50], 1)
+
     plt.show()
     cv2.destroyAllWindows()
