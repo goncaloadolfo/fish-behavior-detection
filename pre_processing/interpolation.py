@@ -9,7 +9,7 @@ from random import randint
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
-from trajectory_reader.trajectories_reader import read_detections
+from trajectory_reader.trajectories_reader import BoundingBox, read_detections
 from trajectory_reader.visualization import simple_line_plot
 
 
@@ -228,8 +228,10 @@ def fill_gaps_linear(trajectory, fish):
 
         current_point = trajectory[i]
         previous_point = trajectory[i-1]
+        t1 = previous_point[0]
+        t2 = current_point[0]
 
-        if current_point[0] - previous_point[0] > 1:  # gap
+        if t2 - t1 > 1:  # gap
             predicted_points = linear_interpolation(
                 previous_point, current_point
             )
@@ -241,6 +243,14 @@ def fill_gaps_linear(trajectory, fish):
                     fish.positions[predicted_point[0]] = (
                         predicted_point[1], predicted_point[2]
                     )
+
+                current_bbs = fish.bounding_boxes
+                predicted_bbs = linear_interpolation(
+                    (t1, current_bbs[t1].height, current_bbs[t1].width),
+                    (t2, current_bbs[t2].height, current_bbs[t2].width)
+                )
+                for t, height, width in predicted_bbs:
+                    current_bbs[t] = BoundingBox(width, height)
 
         else:
             i += 1
