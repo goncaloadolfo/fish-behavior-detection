@@ -306,7 +306,7 @@ def read_species_gt(file_path):
                     break
                 # parse fields
                 fields = line.split(",")
-                species_gt[int(fields[0])] = fields[1]
+                species_gt[int(fields[0])] = fields[1].replace('\n', '')
         return species_gt
 
     # report some problem
