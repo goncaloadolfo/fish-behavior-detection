@@ -1,0 +1,2 @@
+https://www.sciencedirect.com/science/article/pii/S0306457318302577 
+https://www.researchgate.net/profile/Duarte-Folgado/publication/349383970_Robust_Anomaly_Detection_in_Time_Series_through_Variational_AutoEncoders_and_a_Local_Similarity_Score/links/6030fc55299bf1cc26dc27b5/Robust-Anomaly-Detection-in-Time-Series-through-Variational-AutoEncoders-and-a-Local-Similarity-Score.pdf
