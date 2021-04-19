@@ -131,8 +131,8 @@ def linear_interpolation(starting_point, ending_point):
     x_step = (ending_point[1] - starting_point[1]) / (nr_missing_points + 1)
     y_step = (ending_point[2] - starting_point[2]) / (nr_missing_points + 1)
     gap_points = [[starting_point[0]+i,
-                   int(starting_point[1] + (i*x_step)),
-                   int(starting_point[2] + (i*y_step))]
+                   starting_point[1] + (i*x_step),
+                   starting_point[2] + (i*y_step)]
                   for i in range(1, nr_missing_points+1)]
     return gap_points
 # endregion
@@ -404,7 +404,9 @@ def linear_performance(trajectories_file_path, gap_sizes):
 
 def linear_interpolation_test():
     # read trajectories and choose an example one
-    trajectories = read_detections("resources/detections/detections-v29.txt")
+    trajectories = read_detections(
+        "resources/detections/detections-v29-sharks-mantas.txt"
+    )
     example_fish = list(trajectories.values())[0]
 
     # generate a gap
@@ -412,7 +414,7 @@ def linear_interpolation_test():
     draw_trajectory(example_fish.trajectory, (480, 720), (0, 0, 0))
 
     # fill gaps with linear interpolation
-    fill_gaps_linear(trajectory_with_gap)
+    fill_gaps_linear(trajectory_with_gap, None)
 
     # visualize result
     draw_position_plots(trajectory_with_gap, gap_interval,

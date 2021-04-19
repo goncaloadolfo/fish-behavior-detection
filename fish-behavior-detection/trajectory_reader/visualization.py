@@ -50,8 +50,8 @@ def draw_trajectory(trajectory, frame_size, color, regions=None, frame=None):
     for i in range(len(trajectory)):
         # velocity vector
         if i != len(trajectory) - 1:
-            cv2.arrowedLine(frame, (trajectory[i][1], trajectory[i][2]),
-                            (trajectory[i+1][1], trajectory[i+1][2]), color)
+            cv2.arrowedLine(frame, (int(trajectory[i][1]), int(trajectory[i][2])),
+                            (int(trajectory[i+1][1]), int(trajectory[i+1][2])), color)
 
     # draw bounding boxes of each region
     if regions is not None:
@@ -101,8 +101,8 @@ def draw_position_plots(trajectory, gap_interval, interpolation_points, with_gap
     ts, xs, ys = [], [], []
     for data_point in trajectory:
         ts.append(data_point[0])
-        xs.append(data_point[1])
-        ys.append(data_point[2])
+        xs.append(int(data_point[1]))
+        ys.append(int(data_point[2]))
 
     # to avoid the line interligating both sides of the gap
     if with_gap:
