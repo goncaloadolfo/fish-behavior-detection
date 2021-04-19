@@ -11,6 +11,7 @@ from collections import namedtuple
 
 import cv2
 import numpy as np
+from trajectory_reader.visualization import draw_trajectory
 
 BoundingBox = namedtuple("BoundingBox", ["width", "height"])
 
@@ -198,6 +199,15 @@ def get_random_fish(fishes_file_path, seed=None):
     return random.choice(fishes)
 
 
+def read_trajectory_test():
+    trajectories = read_detections("resources/detections/detections-v29.txt")
+    example_trajectory = list(trajectories.values())[0].trajectory
+    print(example_trajectory)
+    draw_trajectory(example_trajectory, (480, 720), (0, 0, 0))
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+
+
 def read_fishes_test():
     fishes = read_fishes("resources/detections/v29-fishes.json")
     print("number of fishes: ", len(fishes))
@@ -208,7 +218,8 @@ def read_fishes_test():
 
 
 if __name__ == "__main__":
+    read_trajectory_test()
+    read_fishes_test()
     # union_gt("resources/detections/detections-joao-v29.txt",
     #          "resources/detections/detections-v29-sharks-mantas.txt",
     #          output_path="resources/detections/v29-fishes.json")
-    read_fishes_test()
