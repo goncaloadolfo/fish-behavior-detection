@@ -12,7 +12,7 @@ Feature extraction from trajectory:
 import logging
 import random
 from itertools import permutations
-from multiprocessing import Process
+from threading import Thread
 
 import cv2
 import matplotlib.pyplot as plt
@@ -324,7 +324,7 @@ def analyze_trajectory(video_path, regions, fish, calculation_period, sliding_wi
     draw_regions_information(features_extractor_obj.pass_by_info)
 
     # draw trajectory and regions
-    trajectory_repeated_reading(video_path, regions, fish)
+    trajectory_illustration(video_path, regions, fish)
 
     # features vector
     fe_logger.info(f"\ndescription: \n{description}")
@@ -365,15 +365,7 @@ def draw_regions_information(pass_by_info):
     plt.gca().set_xticklabels(regions)
 
 
-def trajectory_repeated_reading(video_path, regions, fish):
-    def repeating_callback(event, x, y, flags, param):
-        nonlocal visualization_process
-        if event == cv2.EVENT_LBUTTONDOWN:
-            visualization_process.terminate()
-            visualization_process = Process(target=show_trajectory,
-                                            args=(video_path, fish, fish.trajectory, [], None, "trajectory"))
-            visualization_process.start()
-
+def trajectory_illustration(video_path, regions, fish):
     # trajectory and regions frame
     video_capture = cv2.VideoCapture(video_path)
     frame = draw_trajectory(fish.trajectory,
@@ -383,12 +375,8 @@ def trajectory_repeated_reading(video_path, regions, fish):
                             regions)
     cv2.imshow("trajectory", frame)
 
-    # repeated visualization
-    visualization_process = Process(target=show_trajectory,
-                                    args=(video_path, fish, fish.trajectory, [], None, "trajectory"))
-    cv2.namedWindow("trajectory")
-    cv2.setMouseCallback("trajectory", repeating_callback)
-    visualization_process.start()
+    # video
+    show_trajectory(video_path, fish, fish.trajectory, [], None, "trajectory")
 # endregion
 
 
@@ -419,13 +407,15 @@ def moving_average_analysis(fish, sliding_window, alphas, regions, video_path=No
 
     # show trajectory and plot
     if video_path is not None and regions is not None:
-        trajectory_repeated_reading("resources/videos/v29.m4v", regions, fish)
+        trajectory_illustration("resources/videos/v29.m4v", regions, fish)
     plt.show()
 # endregion
 
 
 # region dataset
-def build_dataset(fishes_file_path, species_gt_path, regions_path, output_path=None):
+def build_dataset(fishes_file_path, species_gt_path, regions_path,
+                  calculation_period, sliding_window, alpha,
+                  output_path=None):
     """
     - Feature extraction from each trajectory
     - Write dataset to file if output_path is defined      
@@ -445,7 +435,9 @@ def build_dataset(fishes_file_path, species_gt_path, regions_path, output_path=N
         fill_gaps_linear(fish.trajectory, fish)
 
         # feature extraction
-        fe_obj = extract_features(fish, regions, 1, 24, 0.3)
+        fe_obj = extract_features(
+            fish, regions, calculation_period, sliding_window, alpha
+        )
         features_description, sample = fe_obj.get_feature_vector()
 
         # update data structures
@@ -509,13 +501,6 @@ def frequency_impact_demo():
     frequency_analysis(fishes.pop(), regions, calculation_periods=[1, 12, 24])
 
 
-def build_dataset_v29():
-    build_dataset("resources/detections/v29-fishes.json",
-                  "resources/classification/species-gt-v29.csv",
-                  "resources/regions-example.json",
-                  "resources/datasets/v29-dataset1.csv")
-
-
 def moving_average_illustration():
     # sliding window and alphas
     sliding_window = 24
@@ -533,7 +518,13 @@ def moving_average_illustration():
 
 
 if __name__ == "__main__":
-    analyze_trajectory_demo()
+    # analyze_trajectory_demo()
     # frequency_impact_demo()
-    # build_dataset_v29()
     # moving_average_illustration()
+
+    # dataset 1
+    build_dataset("resources/detections/v29-fishes.json",
+                  "resources/classification/species-gt-v29.csv",
+                  "resources/regions-example.json",
+                  1, 24, 0.01,
+                  "resources/datasets/v29-dataset1.csv")

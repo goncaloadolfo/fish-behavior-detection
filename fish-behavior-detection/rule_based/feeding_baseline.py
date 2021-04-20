@@ -183,7 +183,7 @@ def detections_at_t(fishes, t):
         position = fish.get_position(t)
         if position is not None:
             fishes_at_t.append(fish)
-            positions.append((position[1], position[2]))
+            positions.append(position)
     return fishes_at_t, positions
 
 
@@ -260,7 +260,7 @@ def delaunay_real_data_test():
 
     # pre process trajectories
     for fish in fishes:
-        fill_gaps_linear(fish.trajectory)
+        fill_gaps_linear(fish.trajectory, None)
 
     # get a frame at a random timestamp
     random_t = random.randint(
