@@ -413,7 +413,9 @@ def moving_average_analysis(fish, sliding_window, alphas, regions, video_path=No
 
 
 # region dataset
-def build_dataset(fishes_file_path, species_gt_path, regions_path, output_path=None):
+def build_dataset(fishes_file_path, species_gt_path, regions_path,
+                  calculation_period, sliding_window, alpha,
+                  output_path=None):
     """
     - Feature extraction from each trajectory
     - Write dataset to file if output_path is defined      
@@ -433,7 +435,9 @@ def build_dataset(fishes_file_path, species_gt_path, regions_path, output_path=N
         fill_gaps_linear(fish.trajectory, fish)
 
         # feature extraction
-        fe_obj = extract_features(fish, regions, 1, 24, 0.01)
+        fe_obj = extract_features(
+            fish, regions, calculation_period, sliding_window, alpha
+        )
         features_description, sample = fe_obj.get_feature_vector()
 
         # update data structures
@@ -497,13 +501,6 @@ def frequency_impact_demo():
     frequency_analysis(fishes.pop(), regions, calculation_periods=[1, 12, 24])
 
 
-def build_dataset_v29():
-    build_dataset("resources/detections/v29-fishes.json",
-                  "resources/classification/species-gt-v29.csv",
-                  "resources/regions-example.json",
-                  "resources/datasets/v29-dataset1.csv")
-
-
 def moving_average_illustration():
     # sliding window and alphas
     sliding_window = 24
@@ -521,7 +518,13 @@ def moving_average_illustration():
 
 
 if __name__ == "__main__":
-    analyze_trajectory_demo()
+    # analyze_trajectory_demo()
     # frequency_impact_demo()
-    # build_dataset_v29()
     # moving_average_illustration()
+
+    # dataset 1
+    build_dataset("resources/detections/v29-fishes.json",
+                  "resources/classification/species-gt-v29.csv",
+                  "resources/regions-example.json",
+                  1, 24, 0.01,
+                  "resources/datasets/v29-dataset1.csv")
