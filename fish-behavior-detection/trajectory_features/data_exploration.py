@@ -213,9 +213,8 @@ def dimensionality_analysis(samples):
                      "new dimensionality", "correlation thr", marker="-o")
 
 
-def v29_analysis():
-    samples, species_gt, features_descriptions = read_dataset(
-        "resources/datasets/v29-dataset1.csv")
+def v29_analysis(path):
+    samples, species_gt, features_descriptions = read_dataset(path)
     full_analysis(samples, species_gt, features_descriptions)
     plt.show()
 
@@ -235,7 +234,8 @@ def v29_episodes_analysis(species):
 
 
 if __name__ == "__main__":
-    # v29_analysis()
+    # v29_analysis("resources/datasets/v29-dataset1.csv")
+    v29_analysis("resources/datasets/v29-dataset2.csv")
     # v29_episodes_analysis(("shark", "manta-ray"))
-    v29_episodes_analysis(("shark", ))
+    # v29_episodes_analysis(("shark", ))
     # v29_episodes_analysis(("manta-ray", ))

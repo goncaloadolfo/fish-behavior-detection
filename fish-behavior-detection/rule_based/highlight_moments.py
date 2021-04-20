@@ -26,7 +26,11 @@ class HighlightMoment():
 class Rule():
 
     SPEED = "speed"
+    XSPEED = "xspeed"
+    YSPEED = "yspeed"
     ACCELERATION = "acceleration"
+    XACCELERATION = "xacceleration"
+    YACCELERATION = "yacceleration"
     DIRECTION = "direction"
     CURVATURE = "curvature"
     POSTURE = "posture"
@@ -47,7 +51,11 @@ class Rule():
 
 RULE_FEATURES_MAPPING = {
     Rule.SPEED: TrajectoryFeatureExtraction.SPEEDS_ATR_NAME,
+    Rule.XSPEED: TrajectoryFeatureExtraction.XSPEED_ATR_NAME,
+    Rule.YSPEED: TrajectoryFeatureExtraction.YSPEED_ATR_NAME,
     Rule.ACCELERATION: TrajectoryFeatureExtraction.ACCELERATIONS_ATR_NAME,
+    Rule.XACCELERATION: TrajectoryFeatureExtraction.XACCELERATION_ATR_NAME,
+    Rule.YACCELERATION: TrajectoryFeatureExtraction.YACCELERATION_ATR_NAME,
     Rule.DIRECTION: TrajectoryFeatureExtraction.TAS_ATR_NAME,
     Rule.CURVATURE: TrajectoryFeatureExtraction.CURVATURES_ATR_NAME,
     Rule.POSTURE: TrajectoryFeatureExtraction.NBBS_ATR_NAME,
@@ -62,7 +70,9 @@ def highlight_moments(fish, regions, rules, species):
     fill_gaps_linear(fish.trajectory, fish)
     weights = exponential_weights(24, 0.01)
     smooth_positions(fish, weights)
-    fe_obj = extract_features(fish, regions, sliding_window=24, alpha=0.01)
+    fe_obj = extract_features(
+        fish, regions, sliding_window=24, alpha=0.01, with_xy_split=True
+    )
 
     species_rules = rules[species]
     highlighting_moments = set()
@@ -204,7 +214,11 @@ if __name__ == "__main__":
     rules = {
         "shark": [
             Rule(Rule.SPEED, (3, sys.maxsize), 24),
+            Rule(Rule.XSPEED, (2, sys.maxsize), 24),
+            Rule(Rule.YSPEED, (0.6, sys.maxsize), 24),
             Rule(Rule.ACCELERATION, (0.1, sys.maxsize), 24),
+            Rule(Rule.XACCELERATION, (0.15, sys.maxsize), 24),
+            Rule(Rule.YACCELERATION, (0.08, sys.maxsize), 24),
             Rule(Rule.DIRECTION, (60, 120), 24),
             Rule(Rule.DIRECTION, (-120, -60), 24),
             Rule(Rule.CURVATURE, (0.6, sys.maxsize), 24),
@@ -213,8 +227,12 @@ if __name__ == "__main__":
             Rule(Rule.POSTURE, (2.3, sys.maxsize), 24)
         ],
         "manta-ray": [
-            Rule(Rule.SPEED, (2, sys.maxsize), 24),
+            Rule(Rule.SPEED, (3, sys.maxsize), 24),
+            Rule(Rule.XSPEED, (2, sys.maxsize), 24),
+            Rule(Rule.YSPEED, (0.6, sys.maxsize), 24),
             Rule(Rule.ACCELERATION, (0.1, sys.maxsize), 24),
+            Rule(Rule.XACCELERATION, (0.15, sys.maxsize), 24),
+            Rule(Rule.YACCELERATION, (0.06, sys.maxsize), 24),
             Rule(Rule.DIRECTION, (60, 120), 24),
             Rule(Rule.DIRECTION, (-120, -60), 24),
             Rule(Rule.CURVATURE, (0.7, sys.maxsize), 24),
@@ -223,8 +241,12 @@ if __name__ == "__main__":
             Rule(Rule.POSTURE, (1.7, sys.maxsize), 24)
         ],
         "tuna": [
-            Rule(Rule.SPEED, (2, sys.maxsize), 24),
+            Rule(Rule.SPEED, (4.5, sys.maxsize), 24),
+            Rule(Rule.XSPEED, (5, sys.maxsize), 24),
+            Rule(Rule.YSPEED, (0.6, sys.maxsize), 24),
             Rule(Rule.ACCELERATION, (0.15, sys.maxsize), 24),
+            Rule(Rule.XACCELERATION, (0.15, sys.maxsize), 24),
+            Rule(Rule.YACCELERATION, (0.08, sys.maxsize), 24),
             Rule(Rule.DIRECTION, (60, 120), 24),
             Rule(Rule.DIRECTION, (-120, -60), 24),
             Rule(Rule.CURVATURE, (0.5, sys.maxsize), 24),

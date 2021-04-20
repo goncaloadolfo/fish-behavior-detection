@@ -12,7 +12,6 @@ Feature extraction from trajectory:
 import logging
 import random
 from itertools import permutations
-from threading import Thread
 
 import cv2
 import matplotlib.pyplot as plt
@@ -26,8 +25,6 @@ from trajectory_reader.visualization import (draw_trajectory, show_trajectory,
                                              simple_bar_chart,
                                              simple_line_plot)
 
-FEATURES_ORDER = ["speed", "acceleration", "turning-angle",
-                  "curvature", "centered-distance", "normalized-bb"]
 fe_logger = logging.getLogger(__name__)
 fe_logger.addHandler(logging.StreamHandler())
 fe_logger.setLevel(logging.INFO)
@@ -37,7 +34,11 @@ fe_logger.setLevel(logging.INFO)
 class TrajectoryFeatureExtraction():
 
     SPEEDS_ATR_NAME = "speed_time_series"
+    XSPEED_ATR_NAME = "xspeed_time_series"
+    YSPEED_ATR_NAME = "yspeed_time_series"
     ACCELERATIONS_ATR_NAME = "acceleration_time_series"
+    XACCELERATION_ATR_NAME = "xacceleration_time_series"
+    YACCELERATION_ATR_NAME = "yacceleration_time_series"
     TAS_ATR_NAME = "turning_angle_time_series"
     CURVATURES_ATR_NAME = "curvature_time_series"
     CDS_ATR_NAME = "centered_distances"
@@ -45,11 +46,12 @@ class TrajectoryFeatureExtraction():
     NBBS_ATR_NAME = "normalized_bounding_boxes"
     REGION_ATR_NAME = "region_time_series"
 
-    def __init__(self, regions, calculation_period, sliding_window, alpha):
+    def __init__(self, regions, calculation_period, sliding_window, alpha, with_xy_split=False):
         self.__regions = regions
         self.__calculation_frequency = calculation_period
         self.__sliding_window = sliding_window
         self.__alpha = alpha
+        self.__with_xy_split = with_xy_split
 
         if sliding_window is not None and alpha is not None:
             self.__sliding_window = sliding_window if sliding_window % 2 == 0 else sliding_window + 1
@@ -73,8 +75,17 @@ class TrajectoryFeatureExtraction():
         self.__pass_by = {k: 0 for k in self.__pass_by_description}
         self.__normalized_bounding_boxes = []
         self.__regions_time_series = []
+        self.__features_order = ["speed", "acceleration", "turning-angle",
+                                 "curvature", "centered-distance", "normalized-bb"]
         self.__time_series_list = [self.__speeds, self.__accelerations, self.__turning_angles,
                                    self.__curvatures, self.__centered_distances, self.__normalized_bounding_boxes]
+
+        if self.__with_xy_split:
+            self.__xspeed = []
+            self.__yspeed = []
+            self.__xacceleration = []
+            self.__yacceleration = []
+            self.__add_xy_time_series()
 
         # state
         self.__trajectory_centroid = None
@@ -129,9 +140,9 @@ class TrajectoryFeatureExtraction():
         vector = []
 
         # extract statistics from each time series
-        for i in range(len(FEATURES_ORDER)):
+        for i in range(len(self.__features_order)):
             description, statistical_features = TrajectoryFeatureExtraction.statistical_features(
-                self.__time_series_list[i], FEATURES_ORDER[i]
+                self.__time_series_list[i], self.__features_order[i]
             )
             vector_description.extend(description)
             vector.extend(statistical_features)
@@ -165,8 +176,24 @@ class TrajectoryFeatureExtraction():
         return self.__speeds
 
     @property
+    def xspeed_time_series(self):
+        return self.__xspeed
+
+    @property
+    def yspeed_time_series(self):
+        return self.__yspeed
+
+    @property
     def acceleration_time_series(self):
         return self.__accelerations
+
+    @property
+    def xacceleration_time_series(self):
+        return self.__xacceleration
+
+    @property
+    def yacceleration_time_series(self):
+        return self.__yacceleration
 
     @property
     def turning_angle_time_series(self):
@@ -199,6 +226,10 @@ class TrajectoryFeatureExtraction():
     @property
     def all_time_series(self):
         return self.__time_series_list
+
+    @property
+    def features_order(self):
+        return self.__features_order
 
     @staticmethod
     def statistical_features(time_series, feature_label):
@@ -268,6 +299,13 @@ class TrajectoryFeatureExtraction():
             np.linalg.norm([dx_dt[1], dy_dt[1]]) -
             np.linalg.norm([dx_dt[0], dy_dt[0]])
         )
+
+        if self.__with_xy_split:
+            self.__xspeed.append(dx_dt[1])
+            self.__yspeed.append(dy_dt[1])
+            self.__xacceleration.append(dx_dt[1] - dx_dt[0])
+            self.__yacceleration.append(dy_dt[1] - dy_dt[0])
+
         curvature_numerator = abs(dx2_dt2 * dy_dt[1] - dx_dt[1] * dy2_dt2)
         curvature_denominator = (dx_dt[1] ** 2 + dy_dt[1] ** 2)**1.5
         self.__curvatures.append(
@@ -300,11 +338,22 @@ class TrajectoryFeatureExtraction():
         if not found:
             self.__regions_time_series.append(0)
 
+    def __add_xy_time_series(self):
+        self.__time_series_list.insert(1, self.__xspeed)
+        self.__time_series_list.insert(2, self.__yspeed)
+        self.__time_series_list.insert(4, self.__xacceleration)
+        self.__time_series_list.insert(5, self.__yacceleration)
 
-def extract_features(fish, regions, calculation_period=1, sliding_window=None, alpha=None):
+        self.__features_order.insert(1, "xspeed")
+        self.__features_order.insert(2, "yspeed")
+        self.__features_order.insert(4, "xacceleration")
+        self.__features_order.insert(5, "yacceleration")
+
+
+def extract_features(fish, regions, calculation_period=1, sliding_window=None, alpha=None, with_xy_split=False):
     fe_obj = TrajectoryFeatureExtraction(
         regions, calculation_period=calculation_period,
-        sliding_window=sliding_window, alpha=alpha
+        sliding_window=sliding_window, alpha=alpha, with_xy_split=with_xy_split
     )
     fe_obj.set_trajectory(fish.trajectory, fish.bounding_boxes)
     fe_obj.extract_features()
@@ -316,11 +365,13 @@ def extract_features(fish, regions, calculation_period=1, sliding_window=None, a
 def analyze_trajectory(video_path, regions, fish, calculation_period, sliding_window, alpha):
     # calculate and draw feature plots
     features_extractor_obj = extract_features(
-        fish, regions, calculation_period, sliding_window, alpha
+        fish, regions, calculation_period, sliding_window, alpha, True
     )
     time_series_list = features_extractor_obj.all_time_series
     description, vector = features_extractor_obj.get_feature_vector()
-    draw_time_series(*time_series_list, descriptions=FEATURES_ORDER)
+    draw_time_series(*time_series_list,
+                     descriptions=features_extractor_obj.features_order
+                     )
     draw_regions_information(features_extractor_obj.pass_by_info)
 
     # draw trajectory and regions
@@ -415,7 +466,7 @@ def moving_average_analysis(fish, sliding_window, alphas, regions, video_path=No
 # region dataset
 def build_dataset(fishes_file_path, species_gt_path, regions_path,
                   calculation_period, sliding_window, alpha,
-                  output_path=None):
+                  output_path=None, with_xy_split=False):
     """
     - Feature extraction from each trajectory
     - Write dataset to file if output_path is defined      
@@ -436,7 +487,7 @@ def build_dataset(fishes_file_path, species_gt_path, regions_path,
 
         # feature extraction
         fe_obj = extract_features(
-            fish, regions, calculation_period, sliding_window, alpha
+            fish, regions, calculation_period, sliding_window, alpha, with_xy_split
         )
         features_description, sample = fe_obj.get_feature_vector()
 
@@ -450,7 +501,7 @@ def build_dataset(fishes_file_path, species_gt_path, regions_path,
             f.write(','.join(features_description) + ",species\n")
             for i in range(len(samples)):
                 f.write(
-                    ','.join(np.array(samples[i]).astype(np.str)) + f",{gt[i]}")
+                    ','.join(np.array(samples[i]).astype(np.str)) + f",{gt[i]}\n")
 
     return (samples, gt, features_description)
 
@@ -528,3 +579,11 @@ if __name__ == "__main__":
                   "resources/regions-example.json",
                   1, 24, 0.01,
                   "resources/datasets/v29-dataset1.csv")
+
+    # dataset 2
+    build_dataset("resources/detections/v29-fishes.json",
+                  "resources/classification/species-gt-v29.csv",
+                  "resources/regions-example.json",
+                  1, 24, 0.01,
+                  "resources/datasets/v29-dataset2.csv",
+                  True)
