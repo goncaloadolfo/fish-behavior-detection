@@ -154,7 +154,7 @@ class TrajectoryLabeling():
         position = self.__current_fish.get_position(t)
         if position is not None:
             cv2.circle(frame,
-                       center=position,
+                       center=(int(position[0]), int(position[1])),
                        radius=4,
                        color=(0, 255, 0),
                        thickness=-1)

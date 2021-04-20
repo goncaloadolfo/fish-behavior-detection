@@ -50,8 +50,8 @@ def draw_trajectory(trajectory, frame_size, color, regions=None, frame=None):
     for i in range(len(trajectory)):
         # velocity vector
         if i != len(trajectory) - 1:
-            cv2.arrowedLine(frame, (trajectory[i][1], trajectory[i][2]),
-                            (trajectory[i+1][1], trajectory[i+1][2]), color)
+            cv2.arrowedLine(frame, (int(trajectory[i][1]), int(trajectory[i][2])),
+                            (int(trajectory[i+1][1]), int(trajectory[i+1][2])), color)
 
     # draw bounding boxes of each region
     if regions is not None:
@@ -145,7 +145,7 @@ def show_trajectory(video_path, fish, estimated_trajectory, simulated_gaps,
         # and if it exists in the true trajectory
         true_data_point = fish.get_position(t)
         if not is_simulated_gap and true_data_point is not None:
-            centroid = true_data_point
+            centroid = (int(true_data_point[0]), int(true_data_point[1]))
             bounding_box_size = fish.bounding_boxes[t]
             cv2.circle(frame, centroid, 5, (0, 255, 0), -1)
             cv2.rectangle(frame,
@@ -156,11 +156,15 @@ def show_trajectory(video_path, fish, estimated_trajectory, simulated_gaps,
                           (0, 255, 0), 2)
 
         else:
-            data_point = filter(lambda x: x[0] == t, estimated_trajectory)
+            data_point = list(
+                filter(lambda x: x[0] == t, estimated_trajectory)
+            )
             if len(data_point) > 0:
-                data_point = list(data_point)
                 cv2.circle(
-                    frame, (data_point[0][1], data_point[0][2]), 5, (0, 0, 255), -1)
+                    frame,
+                    (int(data_point[0][1]), int(data_point[0][2])),
+                    5, (0, 0, 255), -1
+                )
 
         # show or write frame
         if record is None:
@@ -180,7 +184,6 @@ def draw_fishes(frame, fishes, t):
     for fish in fishes:
         bounding_box_size = fish.bounding_boxes[t]
         centroid = fish.get_position(t)
-        centroid = (centroid[1], centroid[2])
         cv2.rectangle(frame,
                       (int(centroid[0] - (bounding_box_size.width/2)),
                        int(centroid[1] - bounding_box_size.height/2)),

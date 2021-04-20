@@ -61,8 +61,10 @@ def play_trajectory_segments(video_path, fish, descontinuity_points):
         _, frame = video_capture.read()
         t = fish.trajectory[i][0]
         previous_point = None if i == 0 \
-            else (fish.trajectory[i-1][1], fish.trajectory[i-1][2])
-        current_point = (fish.trajectory[i][1], fish.trajectory[i][2])
+            else (int(fish.trajectory[i-1][1]), int(fish.trajectory[i-1][2]))
+        current_point = (
+            int(fish.trajectory[i][1]), int(fish.trajectory[i][2])
+        )
 
         if t in descontinuities:
             color = np.random.randint(0, 256, 3)
@@ -105,8 +107,8 @@ def draw_path(frame, trajectory, current_t, descontinuities, colors):
             segment_index += 1
             color = colors[segment_index]
 
-        cv2.line(frame, (trajectory[i-1][1], trajectory[i-1][2]),
-                 (trajectory[i][1], trajectory[i][2]), color, 2)
+        cv2.line(frame, (int(trajectory[i-1][1]), int(trajectory[i-1][2])),
+                 (int(trajectory[i][1]), int(trajectory[i][2])), color, 2)
 
 
 def smooth_positions_dp(fish, geo_regions, distance_thr, speed_thr, angle_thr):
@@ -212,8 +214,8 @@ def smooth_positions(fish, weights):
         t = data_point[0]
         xs, ys = _get_edge_positions(fish_copy, t, half_window)
 
-        new_x = int(np.average(xs, weights=weights))
-        new_y = int(np.average(ys, weights=weights))
+        new_x = np.average(xs, weights=weights)
+        new_y = np.average(ys, weights=weights)
 
         fish.positions[t] = (new_x, new_y)
         trajectory[i][1] = new_x
@@ -421,16 +423,16 @@ def positions_filtering_test(window_size, alpha, features_of_interest, seed):
 
 
 if __name__ == '__main__':
-    # positions_filtering_test(window_size=24, alpha=0.01,
-    #                          features_of_interest=(
-    #                              fe_module.TrajectoryFeatureExtraction.SPEEDS_ATR_NAME,
-    #                              fe_module.TrajectoryFeatureExtraction.CURVATURES_ATR_NAME,
-    #                              fe_module.TrajectoryFeatureExtraction.TAS_ATR_NAME,
-    #                              fe_module.TrajectoryFeatureExtraction.CDS_ATR_NAME
-    #                          ), seed=1
-    #                          )
+    positions_filtering_test(window_size=24, alpha=0.01,
+                             features_of_interest=(
+                                 fe_module.TrajectoryFeatureExtraction.SPEEDS_ATR_NAME,
+                                 fe_module.TrajectoryFeatureExtraction.CURVATURES_ATR_NAME,
+                                 fe_module.TrajectoryFeatureExtraction.TAS_ATR_NAME,
+                                 fe_module.TrajectoryFeatureExtraction.CDS_ATR_NAME
+                             ), seed=1
+                             )
 
-    douglass_peucker_test(10, 0.75, 20, 1)
+    # douglass_peucker_test(10, 0.75, 20, 1)
 
     # douglass_peucker_tuning([10, 20, 30], [0.5, 1, 2], [10, 30, 50], 1)
 

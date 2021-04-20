@@ -21,12 +21,12 @@ class Fish:
     Entity - Fish
     """
 
-    def __init__(self, fish_id, trajectory=[], bounding_boxes={}, positions={}):
+    def __init__(self, fish_id, trajectory=None, bounding_boxes=None, positions=None):
         # initialization
         self.__fish_id = fish_id
-        self.__trajectory = trajectory
-        self.__bounding_boxes_size = bounding_boxes
-        self.__positions = positions
+        self.__trajectory = [] if trajectory is None else trajectory
+        self.__bounding_boxes_size = {} if bounding_boxes is None else bounding_boxes
+        self.__positions = {} if positions is None else positions
 
     def add_position(self, data_point, width, height):
         # add new information from a frame
@@ -95,26 +95,40 @@ def read_detections(detections_file_path):
     """
     # read file content
     trajectories = {}
+
     with open(detections_file_path, 'r') as f:
-        for line in f:
-            fields = list(map(int, line.split(",")))
-            frame = fields[0]
-            nr_fish = fields[1]
-            # add the new detected positions to the fish
-            for i in range(int(nr_fish)):
-                detection = fields[2+(i*5):2+(i*5)+5]
-                # centroid
-                data_point = (frame,
-                              int((detection[0] + detection[2])/2),
-                              int((detection[1] + detection[3])/2))
-                fish_id = detection[-1]
-                if fish_id in trajectories:
-                    trajectories[fish_id].add_position(
-                        data_point, abs(detection[0]-detection[2]), abs(detection[1]-detection[3]))
-                # new fish detected
-                else:
-                    trajectories[fish_id] = Fish(
-                        fish_id).add_position(data_point, abs(detection[0]-detection[2]), abs(detection[1]-detection[3]))
+        detections = f.readlines()
+
+    for line in detections:
+        fields = list(map(int, line.split(",")))
+        frame = fields[0]
+        nr_fish = fields[1]
+
+        # add the new detected positions to the fish
+        for i in range(int(nr_fish)):
+            detection = fields[2+(i*5):2+(i*5)+5]
+
+            # centroid
+            data_point = [frame,
+                          int((detection[0] + detection[2])/2),
+                          int((detection[1] + detection[3])/2)]
+
+            fish_id = detection[-1]
+            if fish_id in trajectories.keys():
+                trajectories[fish_id].add_position(
+                    data_point,
+                    abs(detection[0]-detection[2]),
+                    abs(detection[1]-detection[3])
+                )
+
+            # new fish detected
+            else:
+                trajectories[fish_id] = Fish(fish_id).add_position(
+                    data_point,
+                    abs(detection[0]-detection[2]),
+                    abs(detection[1]-detection[3])
+                )
+
     return trajectories
 
 
@@ -200,10 +214,15 @@ def get_random_fish(fishes_file_path, seed=None):
 
 
 def read_trajectory_test():
-    trajectories = read_detections("resources/detections/detections-v29.txt")
+    trajectories = read_detections(
+        "resources/detections/detections-v29-sharks-mantas.txt"
+    )
     example_trajectory = list(trajectories.values())[0].trajectory
-    print(example_trajectory)
-    draw_trajectory(example_trajectory, (480, 720), (0, 0, 0))
+    # print(example_trajectory)
+    trajectory_frame = draw_trajectory(
+        example_trajectory, (480, 720), (0, 0, 0)
+    )
+    cv2.imshow("example trajectory", trajectory_frame)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 
@@ -219,7 +238,7 @@ def read_fishes_test():
 
 if __name__ == "__main__":
     read_trajectory_test()
-    read_fishes_test()
+    # read_fishes_test()
     # union_gt("resources/detections/detections-joao-v29.txt",
     #          "resources/detections/detections-v29-sharks-mantas.txt",
     #          output_path="resources/detections/v29-fishes.json")

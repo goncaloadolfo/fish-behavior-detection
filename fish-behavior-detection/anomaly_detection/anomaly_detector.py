@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from trajectory_features.trajectory_feature_extraction import \
-    trajectory_repeated_reading
+    trajectory_illustration
 from trajectory_reader.visualization import simple_line_plot
 
 
@@ -49,7 +49,7 @@ def visualize_outlier_trajectories(video_path, fishes, labels, thr):
     for outlier_label in outlier_labels:
         outlier_fishes = fishes[labels == outlier_label]
         for fish in outlier_fishes:
-            trajectory_repeated_reading(video_path, None, fish)
+            trajectory_illustration(video_path, None, fish)
 
     cv2.waitKey(0)
     cv2.destroyAllWindows()

@@ -64,9 +64,9 @@ class NewtonInterpolation:
             tuple (t, x, y): predicted position
         """
         return (t,
-                int(NewtonInterpolation.interpolate(
-                    self.__xcoefs, self.__ts, t)),
-                int(NewtonInterpolation.interpolate(self.__ycoefs, self.__ts, t)))
+                NewtonInterpolation.interpolate(
+                    self.__xcoefs, self.__ts, t),
+                NewtonInterpolation.interpolate(self.__ycoefs, self.__ts, t))
 
     @staticmethod
     def interpolate(coefs, xs, x):
@@ -131,8 +131,8 @@ def linear_interpolation(starting_point, ending_point):
     x_step = (ending_point[1] - starting_point[1]) / (nr_missing_points + 1)
     y_step = (ending_point[2] - starting_point[2]) / (nr_missing_points + 1)
     gap_points = [[starting_point[0]+i,
-                   int(starting_point[1] + (i*x_step)),
-                   int(starting_point[2] + (i*y_step))]
+                   starting_point[1] + (i*x_step),
+                   starting_point[2] + (i*y_step)]
                   for i in range(1, nr_missing_points+1)]
     return gap_points
 # endregion
@@ -311,16 +311,23 @@ def simulate_gap(fish, gap_size, gap_interval=None):
     """
     trajectory = fish.trajectory
     trajectory_copy = trajectory.copy()
+
     # specific interval
     if gap_interval is not None:
-        start = trajectory_copy.index(fish.get_position(gap_interval[0]+1))
-        end = trajectory_copy.index(fish.get_position(gap_interval[1]))
+        start = trajectory_copy.index(
+            [gap_interval[0]+1] + fish.get_position(gap_interval[0]+1)
+        )
+        end = trajectory_copy.index(
+            [gap_interval[1]] + fish.get_position(gap_interval[1])
+        )
         del trajectory_copy[start:end]
         return trajectory_copy, gap_interval
+
     # random initial point
     else:
         while(True):
             gap_start_index = randint(1, len(trajectory_copy)-gap_size-2)
+
             # no gaps around
             if trajectory[gap_start_index][0] - trajectory[gap_start_index-1][0] == 1 \
                     and trajectory[gap_start_index+gap_size][0] - trajectory[gap_start_index+gap_size-1][0] == 1:
@@ -384,17 +391,21 @@ def newton_performance(trajectories_file_path, sample_points_method, degrees, ga
 def linear_performance(trajectories_file_path, gap_sizes):
     fishes = read_detections(trajectories_file_path)
     results = []
+
     for gap_size in gap_sizes:
         total_mse = 0
         for fish in fishes.values():
             trajectory = fish.trajectory
+
             # simulate gap and fill the gaps with linear interpolation
-            trajectory_with_gap, gap_interval = simulate_gap(
-                fish, gap_size)
+            trajectory_with_gap, gap_interval = simulate_gap(fish, gap_size)
             fill_gaps_linear(trajectory_with_gap, None)
+
             # calculate error
             total_mse += mse(trajectory, trajectory_with_gap, [gap_interval])
+
         results.append(total_mse / len(fishes))
+
     # plot results
     plt.figure()
     simple_line_plot(plt.gca(), gap_sizes, results,
@@ -404,73 +415,84 @@ def linear_performance(trajectories_file_path, gap_sizes):
 
 def linear_interpolation_test():
     # read trajectories and choose an example one
-    trajectories = read_detections("resources/detections/detections-v29.txt")
+    trajectories = read_detections(
+        "resources/detections/detections-v29-sharks-mantas.txt"
+    )
     example_fish = list(trajectories.values())[0]
 
     # generate a gap
     trajectory_with_gap, gap_interval = simulate_gap(example_fish, 20)
-    draw_trajectory(example_fish.trajectory, (480, 720), (0, 0, 0))
+    frame = draw_trajectory(example_fish.trajectory, (480, 720), (0, 0, 0))
 
     # fill gaps with linear interpolation
-    fill_gaps_linear(trajectory_with_gap)
+    fill_gaps_linear(trajectory_with_gap, None)
 
     # visualize result
     draw_position_plots(trajectory_with_gap, gap_interval,
                         None, with_gap=False)
+    cv2.imshow("trajectory", frame)
     plt.show()
-    cv2.waitKey(0)
     cv2.destroyAllWindows()
 
 
 def newton_interpolation_test():
     # read trajectories and choose an example one
-    trajectories = read_detections("resources/detections/detections-v29.txt")
+    trajectories = read_detections(
+        "resources/detections/detections-v29-sharks-mantas.txt"
+    )
     example_fish = list(trajectories.values())[0]
 
     # generate a gap
     trajectory_with_gap, gap_interval = simulate_gap(example_fish, 20)
-    draw_trajectory(example_fish.trajectory, (480, 720), (0, 0, 0))
+    frame = draw_trajectory(example_fish.trajectory, (480, 720), (0, 0, 0))
 
     # fill gaps with newton interpolation
     interpolation_points = fill_gaps_newton(
-        trajectory_with_gap, 5, equidistant_interpolation_points)
+        trajectory_with_gap, 5, equidistant_interpolation_points
+    )
 
     # visualize result
     draw_position_plots(trajectory_with_gap, gap_interval,
                         interpolation_points, with_gap=False)
+    cv2.imshow("trajectory", frame)
     plt.show()
-    cv2.waitKey(0)
     cv2.destroyAllWindows()
 
 
 def draw_estimation_test():
     # read trajectories and choose an example one
-    trajectories = read_detections("resources/detections/detections-v29.txt")
+    trajectories = read_detections(
+        "resources/detections/detections-v29-sharks-mantas.txt"
+    )
     example_fish = list(trajectories.values())[0]
 
     # generate a gap
     trajectory_with_gap, gap_interval = simulate_gap(
         example_fish, 30)
-    draw_trajectory(example_fish.trajectory, (480, 720), (0, 0, 0))
+    frame = draw_trajectory(example_fish.trajectory, (480, 720), (0, 0, 0))
+    cv2.imshow("trajectory", frame)
 
     # fill gaps with linear interpolation
-    fill_gaps_linear(trajectory_with_gap)
+    fill_gaps_linear(trajectory_with_gap, None)
 
     # visualize video, showing interpolation results
     show_trajectory("resources/videos/v29.m4v",
                     example_fish, trajectory_with_gap, [gap_interval])  # , "interpolation-example1.mp4")
     plt.show()
-    cv2.waitKey(0)
     cv2.destroyAllWindows()
 
 
 def evaluation_test():
     # evaluation results of the different methods
     linear_performance(
-        "resources/detections/detections-v29.txt", range(1, 50, 3))
-    newton_performance("resources/detections/detections-v29.txt", equidistant_interpolation_points,
+        "resources/detections/detections-v29-sharks-mantas.txt",
+        range(1, 30, 3)
+    )
+    newton_performance("resources/detections/detections-v29-sharks-mantas.txt",
+                       equidistant_interpolation_points,
                        [4, 5, 6], range(1, 10, 2))
-    newton_performance("resources/detections/detections-v29.txt", near_interpolation_points,
+    newton_performance("resources/detections/detections-v29-sharks-mantas.txt",
+                       near_interpolation_points,
                        [4, 5, 6], range(1, 10, 1))
     plt.show()
 
