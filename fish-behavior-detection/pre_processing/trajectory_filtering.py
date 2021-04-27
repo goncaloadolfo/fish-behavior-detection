@@ -222,13 +222,17 @@ def smooth_positions(fish, weights):
         trajectory[i][2] = new_y
 
 
-def exponential_weights(window_size, alpha):
-    half_window_weights = [
-        alpha * (1 - alpha)**n for n in range(0, int(window_size/2))
-    ]
-    reversed_weights = half_window_weights.copy()
-    reversed_weights.reverse()
-    return reversed_weights + [0] + half_window_weights
+def exponential_weights(window_size, alpha, forward_only=False):
+    if forward_only:
+        return [alpha * (1 - alpha)**n for n in range(0, window_size)]
+
+    else:
+        half_window_weights = [
+            alpha * (1 - alpha)**n for n in range(0, int(window_size/2))
+        ]
+        reversed_weights = half_window_weights.copy()
+        reversed_weights.reverse()
+        return reversed_weights + [0] + half_window_weights
 
 
 def _get_edge_positions(fish, t, half_window):

@@ -56,7 +56,7 @@ class TrajectoryFeatureExtraction():
         if sliding_window is not None and alpha is not None:
             self.__sliding_window = sliding_window if sliding_window % 2 == 0 else sliding_window + 1
             self.__sliding_weights = tf.exponential_weights(
-                self.__sliding_window, alpha
+                self.__sliding_window, alpha, True
             )
 
         self.reset()
@@ -260,17 +260,13 @@ class TrajectoryFeatureExtraction():
 
     @staticmethod
     def exponential_sliding_average(time_series, sliding_window, weights):
-        # expand edges
-        half_window = int(sliding_window / 2)
-        time_series_copy = [time_series[0]] * half_window + time_series
-        time_series_copy = time_series_copy + [time_series[-1]] * half_window
+        # expand edge
+        time_series_copy = time_series + [time_series[-1]] * sliding_window
 
         # calculate new values
         for i in range(len(time_series)):
             time_series[i] = np.average(
-                time_series_copy[i:i+sliding_window+1],
-                weights=weights
-            )
+                time_series_copy[i+1: i+1+sliding_window], weights=weights)
 
     def __motion_features(self):
         p1 = self.__calculation_positions[-3]
@@ -577,13 +573,13 @@ if __name__ == "__main__":
     build_dataset("resources/detections/v29-fishes.json",
                   "resources/classification/species-gt-v29.csv",
                   "resources/regions-example.json",
-                  1, 24, 0.01,
+                  1, 24, 0.3,
                   "resources/datasets/v29-dataset1.csv")
 
     # dataset 2
     build_dataset("resources/detections/v29-fishes.json",
                   "resources/classification/species-gt-v29.csv",
                   "resources/regions-example.json",
-                  1, 24, 0.01,
+                  1, 24, 0.3,
                   "resources/datasets/v29-dataset2.csv",
                   True)
