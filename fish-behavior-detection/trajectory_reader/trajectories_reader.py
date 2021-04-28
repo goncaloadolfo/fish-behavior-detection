@@ -11,6 +11,7 @@ from collections import namedtuple
 
 import cv2
 import numpy as np
+import pre_processing.interpolation as interpolation_module
 from trajectory_reader.visualization import draw_trajectory
 
 BoundingBox = namedtuple("BoundingBox", ["width", "height"])
@@ -217,10 +218,11 @@ def read_trajectory_test():
     trajectories = read_detections(
         "resources/detections/detections-v29-sharks-mantas.txt"
     )
-    example_trajectory = list(trajectories.values())[0].trajectory
+    example_fish = list(trajectories.values())[0]
+    interpolation_module.fill_gaps_linear(example_fish.trajectory, None)
     # print(example_trajectory)
     trajectory_frame = draw_trajectory(
-        example_trajectory, (480, 720), (0, 0, 0)
+        example_fish.trajectory, (480, 720), (0, 0, 0), path=False
     )
     cv2.imshow("example trajectory", trajectory_frame)
     cv2.waitKey(0)

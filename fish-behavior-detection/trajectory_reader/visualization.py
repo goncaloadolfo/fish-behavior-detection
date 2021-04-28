@@ -61,7 +61,7 @@ def histogram2d(ax, values, values2, title, ylabel, xlabel, colormap="Blues", cm
     return counts, binsx, binsy, quad_image
 
 
-def draw_trajectory(trajectory, frame_size, color, regions=None, frame=None):
+def draw_trajectory(trajectory, frame_size, color, regions=None, frame=None, path=True, interval=24):
     """
     Draws the trajectory on a given frame.
 
@@ -74,11 +74,14 @@ def draw_trajectory(trajectory, frame_size, color, regions=None, frame=None):
     if frame is None:
         frame = np.full((frame_size[0], frame_size[1], 3), 255, dtype=np.uint8)
 
-    for i in range(len(trajectory)):
+    step = 1 if path else interval
+    for i in range(0, len(trajectory), step):
         # velocity vector
-        if i != len(trajectory) - 1:
+        if i + step < len(trajectory):
             cv2.arrowedLine(frame, (int(trajectory[i][1]), int(trajectory[i][2])),
-                            (int(trajectory[i+1][1]), int(trajectory[i+1][2])), color)
+                            (int(trajectory[i+step][1]),
+                             int(trajectory[i+step][2])),
+                            color, thickness=2)
 
     # draw bounding boxes of each region
     if regions is not None:
@@ -205,6 +208,45 @@ def show_trajectory(video_path, fish, estimated_trajectory, simulated_gaps,
     if out is not None:
         print("done!")
         out.release()
+
+
+def show_fish_trajectory(frame_description, path_video, fish, episodes):
+    video_capture = cv2.VideoCapture(path_video)
+    trajectory = fish.trajectory
+    fish_episodes = [episode for episode in episodes
+                     if episode.fish_id == fish.fish_id]
+    video_capture.set(cv2.CAP_PROP_POS_FRAMES, trajectory[0][0])
+
+    while True:
+        _, frame = video_capture.read()
+        t = video_capture.get(cv2.CAP_PROP_POS_FRAMES)
+
+        is_between_interesting = False
+        for episode in fish_episodes:
+            if t >= episode.t_initial and t <= episode.t_final:
+                is_between_interesting = True
+                break
+        color = (0, 0, 255) if is_between_interesting else (0, 255, 0)
+
+        bb = fish.bounding_boxes[t]
+        centroid = fish.get_position(t)
+        cv2.rectangle(frame,
+                      (int(centroid[0] - bb.width/2),
+                       int(centroid[1] - bb.height/2)),
+                      (int(centroid[0] + bb.width/2),
+                       int(centroid[1] + bb.height/2)),
+                      color, thickness=2)
+        cv2.imshow(frame_description, frame)
+
+        if t == trajectory[-1][0]:
+            key = cv2.waitKey(0)
+            if key == ord('a'):
+                video_capture.set(cv2.CAP_PROP_POS_FRAMES, trajectory[0][0])
+            elif key == ord('q'):
+                break
+
+        if cv2.waitKey(30) == ord('q'):
+            break
 
 
 def draw_fishes(frame, fishes, t):
