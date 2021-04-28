@@ -9,7 +9,7 @@ from random import randint
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
-from trajectory_reader.trajectories_reader import BoundingBox, read_detections
+import trajectory_reader.trajectories_reader as tr
 from trajectory_reader.visualization import (draw_position_plots,
                                              draw_trajectory, show_trajectory,
                                              simple_line_plot)
@@ -258,7 +258,7 @@ def fill_gaps_linear(trajectory, fish, discretization=True):
                     discretization
                 )
                 for t, height, width in predicted_bbs:
-                    current_bbs[t] = BoundingBox(width, height)
+                    current_bbs[t] = tr.BoundingBox(width, height)
 
         else:
             i += 1
@@ -363,7 +363,7 @@ def mse(true_trajectory, output_trajectory, gaps):
 
 
 def newton_performance(trajectories_file_path, sample_points_method, degrees, gap_sizes):
-    fishes = read_detections(trajectories_file_path)
+    fishes = tr.read_detections(trajectories_file_path)
     plt.figure()
     results = defaultdict(lambda: [])
     for gap_size in gap_sizes:
@@ -395,7 +395,7 @@ def newton_performance(trajectories_file_path, sample_points_method, degrees, ga
 
 
 def linear_performance(trajectories_file_path, gap_sizes):
-    fishes = read_detections(trajectories_file_path)
+    fishes = tr.read_detections(trajectories_file_path)
     results = []
 
     for gap_size in gap_sizes:
@@ -421,7 +421,7 @@ def linear_performance(trajectories_file_path, gap_sizes):
 
 def linear_interpolation_test():
     # read trajectories and choose an example one
-    trajectories = read_detections(
+    trajectories = tr.read_detections(
         "resources/detections/detections-v29-sharks-mantas.txt"
     )
     example_fish = list(trajectories.values())[0]
@@ -443,7 +443,7 @@ def linear_interpolation_test():
 
 def newton_interpolation_test():
     # read trajectories and choose an example one
-    trajectories = read_detections(
+    trajectories = tr.read_detections(
         "resources/detections/detections-v29-sharks-mantas.txt"
     )
     example_fish = list(trajectories.values())[0]
@@ -467,7 +467,7 @@ def newton_interpolation_test():
 
 def draw_estimation_test():
     # read trajectories and choose an example one
-    trajectories = read_detections(
+    trajectories = tr.read_detections(
         "resources/detections/detections-v29-sharks-mantas.txt"
     )
     example_fish = list(trajectories.values())[0]

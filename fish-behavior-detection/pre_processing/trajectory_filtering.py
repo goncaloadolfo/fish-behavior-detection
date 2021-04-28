@@ -4,8 +4,8 @@ import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 import trajectory_features.trajectory_feature_extraction as fe_module
+import trajectory_reader.trajectories_reader as tr
 from labeling.regions_selector import read_regions
-from trajectory_reader.trajectories_reader import Fish, get_random_fish
 from trajectory_reader.visualization import draw_trajectory, simple_line_plot
 
 from pre_processing.interpolation import fill_gaps_linear
@@ -38,7 +38,7 @@ def segment_trajectory(fish, descontinuity_points):
                 segment_bbs[segment_tf] = original_bbs[segment_tf]
                 segment_positions[segment_tf] = original_positions[segment_tf]
 
-            fishes.append(Fish(fish.fish_id), segment_trajectory,
+            fishes.append(tr.Fish(fish.fish_id), segment_trajectory,
                           segment_bbs, segment_positions)
         return fishes
 
@@ -314,7 +314,7 @@ def _plot_time_series(fe_objs, descriptions, features_of_interest, trajectory_ts
 
 
 def douglass_peucker_tuning(distance_thrs, speed_thrs, angle_thrs, seed):
-    example_fish = get_random_fish(
+    example_fish = tr.get_random_fish(
         "resources/detections/v29-fishes.json", seed)
     regions = read_regions("resources/regions-example.json")
     fill_gaps_linear(example_fish.trajectory, example_fish)
@@ -371,7 +371,7 @@ def smooth_positions_dp_test(fish, regions, distance_thr, speed_thr, angle_thr):
 
 
 def douglass_peucker_test(distance_thr, speed_thr, angle_thr, seed):
-    example_fish = get_random_fish(
+    example_fish = tr.get_random_fish(
         "resources/detections/v29-fishes.json", seed)
     regions = read_regions("resources/regions-example.json")
     fill_gaps_linear(example_fish.trajectory, example_fish)
@@ -387,7 +387,7 @@ def douglass_peucker_test(distance_thr, speed_thr, angle_thr, seed):
 
 
 def positions_filtering_test(window_size, alpha, features_of_interest, seed):
-    example_fish = get_random_fish(
+    example_fish = tr.get_random_fish(
         "resources/detections/v29-fishes.json", seed)
     regions = read_regions("resources/regions-example.json")
     fill_gaps_linear(example_fish.trajectory, example_fish)
