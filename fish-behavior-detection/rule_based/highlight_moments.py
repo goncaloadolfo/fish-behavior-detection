@@ -2,6 +2,7 @@ import random
 import sys
 from collections import defaultdict
 
+import trajectory_reader.trajectories_reader as tr
 from labeling.regions_selector import read_regions
 from labeling.trajectory_labeling import read_species_gt
 from matplotlib import pyplot as plt
@@ -11,8 +12,8 @@ from pre_processing.trajectory_filtering import (_set_timestamps,
                                                  smooth_positions)
 from trajectory_features.trajectory_feature_extraction import (
     TrajectoryFeatureExtraction, extract_features)
-from trajectory_reader.trajectories_reader import read_fishes
 from trajectory_reader.visualization import simple_line_plot
+import numpy as np
 
 
 class HighlightMoment():
@@ -21,6 +22,9 @@ class HighlightMoment():
         self.t_initial = t_initial
         self.t_final = t_final
         self.rule = rule
+
+    def __repr__(self):
+        return f"HighlightMoment(t_initial={self.t_initial}, t_final={self.t_final})"
 
 
 class Rule():
@@ -33,7 +37,7 @@ class Rule():
     YACCELERATION = "yacceleration"
     DIRECTION = "direction"
     CURVATURE = "curvature"
-    POSTURE = "posture"
+    ASPECT_RATIO = "aspect ratio"
     REGION = "region"
     TRANSITION = "transition"
 
@@ -58,7 +62,7 @@ RULE_FEATURES_MAPPING = {
     Rule.YACCELERATION: TrajectoryFeatureExtraction.YACCELERATION_ATR_NAME,
     Rule.DIRECTION: TrajectoryFeatureExtraction.TAS_ATR_NAME,
     Rule.CURVATURE: TrajectoryFeatureExtraction.CURVATURES_ATR_NAME,
-    Rule.POSTURE: TrajectoryFeatureExtraction.NBBS_ATR_NAME,
+    Rule.ASPECT_RATIO: TrajectoryFeatureExtraction.NBBS_ATR_NAME,
     Rule.REGION: TrajectoryFeatureExtraction.REGION_ATR_NAME
 }
 
@@ -107,6 +111,12 @@ def plot_hms(fish, feature, fe_obj, hms):
                      feature, "value", "t", label="original")
 
     for hm in hms:
+        if callable(hm.rule.values[0]):
+            print(
+                f"rule using {hm.rule.values[0]} with value {hm.rule.values[1]}"
+            )
+            print(f"\t{repr(hm)}")
+
         hm_ts = range(hm.t_initial, hm.t_final + 1)
         t_initial_index = hm.t_initial - fish.trajectory[time_diff][0]
         t_final_index = hm.t_final - fish.trajectory[time_diff][0]
@@ -119,15 +129,32 @@ def plot_hms(fish, feature, fe_obj, hms):
 
 def _search_moments_time_series(time_series, rule):
     highlight_moments = set()
-    duration = 0
 
-    for t, value in time_series:
-        if (not rule.pass_the_rule(value) or t == time_series[-1][0]) and duration > 0:
-            highlight_moments.add(HighlightMoment(t - duration, t-1, rule))
-            duration = 0
+    if callable(rule.values[0]):
+        func = rule.values[0]
 
-        elif rule.pass_the_rule(value):
-            duration += 1
+        if func.__name__ == min.__name__:
+            min_index = np.argmin(time_series, axis=0)[1]
+            if time_series[min_index][1] < rule.values[1]:
+                highlight_moments.add(HighlightMoment(time_series[min_index][0],
+                                                      time_series[min_index][0],
+                                                      rule))
+        elif func.__name__ == max.__name__:
+            max_index = np.argmax(time_series, axis=0)[1]
+            if time_series[max_index][1] > rule.values[1]:
+                highlight_moments.add(HighlightMoment(time_series[max_index][0],
+                                                      time_series[max_index][0],
+                                                      rule))
+
+    else:
+        duration = 0
+        for t, value in time_series:
+            if (not rule.pass_the_rule(value) or t == time_series[-1][0]) and duration > 0:
+                highlight_moments.add(HighlightMoment(t - duration, t-1, rule))
+                duration = 0
+
+            elif rule.pass_the_rule(value):
+                duration += 1
 
     return highlight_moments
 
@@ -178,7 +205,7 @@ def _search_moments_regions(trajectory, regions_time_series, pass_by_results, ru
 
 def highlight_moments_test(rules):
     random.seed(10000)
-    fishes = list(read_fishes("resources/detections/v29-fishes.json"))
+    fishes = list(tr.read_fishes("resources/detections/v29-fishes.json"))
     fishes.sort(key=lambda x: x.fish_id)
     regions = read_regions("resources/regions-example.json")
     species_gt = read_species_gt("resources/classification/species-gt-v29.csv")
@@ -215,6 +242,7 @@ if __name__ == "__main__":
         "shark": [
             Rule(Rule.SPEED, (3, sys.maxsize), 24),
             Rule(Rule.XSPEED, (2, sys.maxsize), 24),
+            Rule(Rule.XSPEED, (min, 4), None),
             Rule(Rule.YSPEED, (0.6, sys.maxsize), 24),
             Rule(Rule.ACCELERATION, (0.1, sys.maxsize), 24),
             Rule(Rule.XACCELERATION, (0.15, sys.maxsize), 24),
@@ -224,7 +252,7 @@ if __name__ == "__main__":
             Rule(Rule.CURVATURE, (0.6, sys.maxsize), 24),
             Rule(Rule.REGION, (1,), 24),
             Rule(Rule.TRANSITION, (1, 2), 2),
-            Rule(Rule.POSTURE, (2.3, sys.maxsize), 24)
+            Rule(Rule.ASPECT_RATIO, (2.3, sys.maxsize), 24)
         ],
         "manta-ray": [
             Rule(Rule.SPEED, (3, sys.maxsize), 24),
@@ -238,7 +266,7 @@ if __name__ == "__main__":
             Rule(Rule.CURVATURE, (0.7, sys.maxsize), 24),
             Rule(Rule.REGION, (3,), 24),
             Rule(Rule.TRANSITION, (2, 3), 2),
-            Rule(Rule.POSTURE, (1.7, sys.maxsize), 24)
+            Rule(Rule.ASPECT_RATIO, (1.7, sys.maxsize), 24)
         ],
         "tuna": [
             Rule(Rule.SPEED, (4.5, sys.maxsize), 24),
@@ -250,7 +278,7 @@ if __name__ == "__main__":
             Rule(Rule.DIRECTION, (60, 120), 24),
             Rule(Rule.DIRECTION, (-120, -60), 24),
             Rule(Rule.CURVATURE, (0.5, sys.maxsize), 24),
-            Rule(Rule.POSTURE, (2.7, sys.maxsize), 24)
+            Rule(Rule.ASPECT_RATIO, (2.7, sys.maxsize), 24)
         ]
     }
     highlight_moments_test(rules)
