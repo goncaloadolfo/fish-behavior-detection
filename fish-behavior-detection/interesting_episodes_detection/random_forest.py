@@ -13,9 +13,12 @@ from trajectory_reader.visualization import simple_bar_chart
 from interesting_episodes_detection.evaluation import holdout_prediction
 
 
+SEED = 0
+
+
 def random_forest_tuning(dataset, species, parameters_grid):
     x, y, _ = load_data(dataset, species)
-    random_forest = RandomForestClassifier(random_state=100)
+    random_forest = RandomForestClassifier(random_state=SEED)
     gridsearch_obj = GridSearchCV(estimator=random_forest, param_grid=parameters_grid,
                                   scoring="accuracy", cv=KFold(n_splits=len(x)), verbose=3.5)
     gridsearch_obj.fit(x, y)
@@ -32,8 +35,9 @@ def random_forest_pipelines(dataset, species, parameters):
                                            min_samples_leaf=parameters["min_samples_leaf"],
                                            min_samples_split=parameters["min_samples_split"],
                                            bootstrap=parameters["bootstrap"],
-                                           random_state=100)
-    balancer = SMOTE()
+                                           random_state=SEED
+                                           )
+    balancer = SMOTE(random_state=SEED)
     normalizer = StandardScaler()
     select_kbest = SelectKBest(k=20)
     pca = PCA(n_components=10)
@@ -114,15 +118,15 @@ def plot_features_importance(pipelines, scores, features_description, n):
 
 
 if __name__ == "__main__":
-    # parameters_grid = {"n_estimators": [5, 10, 20],
-    #                    "criterion": ["gini", "entropy"],
-    #                    "max_depth": [5, 10, 20],
-    #                    "max_features": ["sqrt", "log2"],
-    #                    "min_samples_leaf": [3, 5, 7],
-    #                    "min_samples_split": [2, 4, 6],
-    #                    "bootstrap": [False, True]}
-    # random_forest_tuning("resources/datasets/v29-dataset1.csv",
-    #                      ("shark", "manta-ray"), parameters_grid)
+    parameters_grid = {"n_estimators": [5, 10, 20],
+                       "criterion": ["gini", "entropy"],
+                       "max_depth": [5, 10, 20],
+                       "max_features": ["sqrt", "log2"],
+                       "min_samples_leaf": [3, 5, 7],
+                       "min_samples_split": [2, 4, 6],
+                       "bootstrap": [False, True]}
+    random_forest_tuning("resources/datasets/v29-dataset1.csv",
+                         ("shark", "manta-ray"), parameters_grid)
 
     random_forest_pipelines("resources/datasets/v29-dataset1.csv", ("shark", "manta-ray"),
                             {"n_estimators": 10,

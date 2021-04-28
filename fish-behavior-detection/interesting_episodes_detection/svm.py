@@ -15,12 +15,15 @@ from trajectory_reader.visualization import simple_bar_chart, simple_line_plot
 from interesting_episodes_detection.evaluation import holdout_prediction
 
 
+SEED = 0
+
+
 def svm_tuning(dataset, param_grid):
     x, y, feature_labels = load_data(
         dataset, ("shark", "manta-ray")
     )
 
-    x, y = SMOTE(random_state=1000).fit_resample(x, y)
+    x, y = SMOTE(random_state=SEED).fit_resample(x, y)
     x = StandardScaler().fit_transform(x)
 
     models = []
@@ -31,7 +34,7 @@ def svm_tuning(dataset, param_grid):
             for degree in param_grid["degree"]:
                 for gamma in param_grid["gamma"]:
                     model = SVC(C=c, kernel=kernel, degree=degree,
-                                gamma=gamma, random_state=10)
+                                gamma=gamma, random_state=SEED)
                     predictions = holdout_prediction(model, x, y)
 
                     models.append((c, kernel, degree, gamma))
@@ -51,9 +54,10 @@ def svm_tuning(dataset, param_grid):
 def svm_pipelines(dataset, svm_params):
     x, y, _ = load_data(dataset, ("shark", "manta-ray"))
     svm = SVC(C=svm_params["c"], kernel=svm_params["kernel"],
-              degree=svm_params["degree"], gamma=svm_params["gamma"], random_state=10)
+              degree=svm_params["degree"], gamma=svm_params["gamma"],
+              random_state=SEED)
 
-    balancer = SMOTE(random_state=1000)
+    balancer = SMOTE(random_state=SEED)
     normalizer = StandardScaler()
     select_kbest = SelectKBest(k=20)
     pca = PCA(n_components=10)

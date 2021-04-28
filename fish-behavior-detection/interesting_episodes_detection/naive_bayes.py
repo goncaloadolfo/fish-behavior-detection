@@ -12,13 +12,14 @@ from interesting_episodes_detection.evaluation import (METRICS,
                                                        holdout_prediction,
                                                        plot_metrics)
 
+SEED = 0
 
-def compare_gnb_pipelines(species, balance=False):
-    x, y, _ = load_data("resources/datasets/v29-dataset1.csv",
-                        species)
+
+def compare_gnb_pipelines(path_dataset, species, balance=False):
+    x, y, _ = load_data(path_dataset, species)
 
     if balance:
-        x, y = SMOTE().fit_resample(x, y)
+        x, y = SMOTE(random_state=SEED).fit_resample(x, y)
 
     pipelines = (
         # gaussian NB with no pre processing
@@ -72,12 +73,15 @@ def compare_gnb_pipelines(species, balance=False):
 
 
 if __name__ == "__main__":
-    compare_gnb_pipelines(("shark", "manta-ray"))
-    compare_gnb_pipelines(("shark",))
-    compare_gnb_pipelines(("manta-ray",))
+    np.random.seed(0)
+    dataset = "resources/datasets/v29-dataset1.csv"
 
-    compare_gnb_pipelines(("shark", "manta-ray"), balance=True)
-    compare_gnb_pipelines(("shark",), balance=True)
-    compare_gnb_pipelines(("manta-ray",), balance=True)
+    compare_gnb_pipelines(dataset, ("shark", "manta-ray"))
+    compare_gnb_pipelines(dataset, ("shark",))
+    compare_gnb_pipelines(dataset, ("manta-ray",))
+
+    compare_gnb_pipelines(dataset, ("shark", "manta-ray"), balance=True)
+    compare_gnb_pipelines(dataset, ("shark",), balance=True)
+    compare_gnb_pipelines(dataset, ("manta-ray",), balance=True)
 
     plt.show()
