@@ -34,6 +34,33 @@ def simple_bar_chart(ax, xs, ys, title, ylabel, xlabel, label=None, width=0.8):
     ax.bar(xs, ys, align="center", label=label, width=width)
 
 
+def histogram(ax, values, title, ylabel, xlabel):
+    ax.set_title(title)
+    ax.set_ylabel(ylabel)
+    ax.set_xlabel(xlabel)
+    return ax.hist(values)
+
+
+def histogram2d(ax, values, values2, title, ylabel, xlabel, colormap="Blues", cmin=0, with_text=False):
+    ax.set_title(title)
+    ax.set_ylabel(ylabel)
+    ax.set_xlabel(xlabel)
+    counts, binsx, binsy, quad_image = ax.hist2d(
+        values, values2, cmap=colormap, cmin=cmin
+    )
+
+    if with_text:
+        x_interval = binsx[1] - binsx[0]
+        y_interval = binsy[1] - binsy[0]
+
+        for row in range(counts.shape[0]):
+            for col in range(counts.shape[1]):
+                ax.text(binsx[col] + x_interval/2, binsy[row] + y_interval/2, int(counts[row, col]),
+                        color="black", ha="center", va="center")
+
+    return counts, binsx, binsy, quad_image
+
+
 def draw_trajectory(trajectory, frame_size, color, regions=None, frame=None):
     """
     Draws the trajectory on a given frame.

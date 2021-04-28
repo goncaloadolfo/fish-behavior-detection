@@ -11,10 +11,41 @@ of a dataset:
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
-
 from pre_processing.pre_processing import CorrelatedVariablesRemoval, load_data
+from trajectory_reader.trajectories_reader import read_fishes
+from trajectory_reader.visualization import (histogram, histogram2d,
+                                             simple_bar_chart,
+                                             simple_line_plot)
+
 from trajectory_features.trajectory_feature_extraction import read_dataset
-from trajectory_reader.visualization import simple_bar_chart, simple_line_plot
+
+
+def analyze_trajectories(path_fishes_file):
+    fishes = read_fishes(path_fishes_file)
+
+    trajectory_durations = []
+    trajectory_xvalues = []
+    trajectory_yvalues = []
+
+    for fish in fishes:
+        trajectory = fish.trajectory
+        trajectory_durations.append(trajectory[-1][0] - trajectory[0][0])
+        trajectory_xvalues += [data_point[1] for data_point in trajectory]
+        trajectory_yvalues += [data_point[2] for data_point in trajectory]
+
+    plt.figure()
+    _, bins, _ = histogram(plt.gca(), trajectory_durations,
+                           "Trajectory duration", "#trajectories", "duration (frames)")
+    plt.xticks(bins)
+
+    plt.figure()
+    _, binsx, binsy, quad_img = histogram2d(plt.gca(), trajectory_xvalues, trajectory_yvalues,
+                                            "Trajectory position", "y position", "x position",
+                                            cmin=1, with_text=True)
+    plt.gca().set_xticks(binsx)
+    plt.gca().set_yticks(binsy)
+    plt.gca().invert_yaxis()
+    plt.colorbar(quad_img)
 
 
 def full_analysis(samples, gt, features_description):
@@ -216,7 +247,6 @@ def dimensionality_analysis(samples):
 def v29_analysis(path):
     samples, species_gt, features_descriptions = read_dataset(path)
     full_analysis(samples, species_gt, features_descriptions)
-    plt.show()
 
 
 def v29_episodes_analysis(species):
@@ -235,7 +265,9 @@ def v29_episodes_analysis(species):
 
 if __name__ == "__main__":
     # v29_analysis("resources/datasets/v29-dataset1.csv")
-    v29_analysis("resources/datasets/v29-dataset2.csv")
     # v29_episodes_analysis(("shark", "manta-ray"))
     # v29_episodes_analysis(("shark", ))
     # v29_episodes_analysis(("manta-ray", ))
+
+    analyze_trajectories("resources/detections/v29-fishes.json")
+    plt.show()
