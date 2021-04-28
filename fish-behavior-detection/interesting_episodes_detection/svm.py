@@ -1,8 +1,11 @@
 from collections import defaultdict
 
+import cv2
 import numpy as np
 from imblearn.over_sampling import SMOTE
+from labeling.trajectory_labeling import read_episodes
 from matplotlib import pyplot as plt
+from pre_processing.interpolation import fill_gaps_linear
 from pre_processing.pre_processing import CorrelatedVariablesRemoval, load_data
 from sklearn.decomposition import PCA
 from sklearn.feature_selection import SelectKBest
@@ -10,10 +13,13 @@ from sklearn.metrics import accuracy_score
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
-from trajectory_reader.visualization import simple_bar_chart, simple_line_plot
+from trajectory_features.trajectory_feature_extraction import read_dataset
+from trajectory_reader.trajectories_reader import read_fishes
+from trajectory_reader.visualization import (show_fish_trajectory,
+                                             simple_bar_chart,
+                                             simple_line_plot)
 
 from interesting_episodes_detection.evaluation import holdout_prediction
-
 
 SEED = 0
 
@@ -82,6 +88,7 @@ def svm_pipelines(dataset, svm_params):
     original_x = x.copy()
     original_y = y.copy()
     scores = []
+    pipelines_predictions = []
 
     for pipeline in pipelines:
         x = original_x
@@ -91,6 +98,7 @@ def svm_pipelines(dataset, svm_params):
             if pipeline_node[0] == "svm":
                 svm = pipeline_node[1].fit(x, y)
                 predictions = holdout_prediction(svm, x, y)
+                pipelines_predictions.append(predictions)
                 scores.append(accuracy_score(y, predictions))
             elif pipeline_node[0] == "balancer":
                 x, y = pipeline_node[1].fit_resample(x, y)
@@ -106,6 +114,38 @@ def svm_pipelines(dataset, svm_params):
     plt.gca().set_xticks(range(len(pipelines)))
     plt.gca().set_xticklabels(model_descriptions, rotation=30)
     plt.tight_layout()
+    analyze_errors(pipelines_predictions, scores, original_y, dataset)
+
+
+def analyze_errors(predictions, scores, true_y, dataset):
+    best_predictions = predictions[np.argmax(scores)]
+    fishes = list(read_fishes("resources/detections/v29-fishes.json"))
+    fishes.sort(key=lambda x: x.fish_id)
+
+    _, species_gt, _ = read_dataset(dataset)
+    fishes = [fishes[i] for i in range(len(fishes))
+              if species_gt[i] != "tuna"]
+    nr_fishes = len(fishes)
+
+    if len(best_predictions) > nr_fishes:
+        best_predictions = best_predictions[:nr_fishes]
+        true_y = true_y[:nr_fishes]
+
+    nr_errors = np.sum(np.array(best_predictions) != np.array(true_y))
+    counter = 1
+    for i in range(len(true_y)):
+        if true_y[i] != best_predictions[i]:
+            print(f"{counter}/{nr_errors}")
+            fill_gaps_linear(fishes[i].trajectory, fishes[i])
+            show_fish_trajectory(
+                f"Fish {fishes[i].fish_id} true class {true_y[i]}, classified as {best_predictions[i]}",
+                "resources/videos/v29.m4v", fishes[i],
+                read_episodes(
+                    "resources/classification/v29-interesting-moments.csv"
+                )
+            )
+            cv2.destroyAllWindows()
+            counter += 1
 
 
 def plot_tuning_results(models, scores):
