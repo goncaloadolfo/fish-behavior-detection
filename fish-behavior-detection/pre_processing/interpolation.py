@@ -18,15 +18,15 @@ from trajectory_reader.visualization import (draw_position_plots,
 # region interpolation methodologies
 class NewtonInterpolation:
     """
-    Object that allows the trajectory interpolation using a Newton polynomial.  
+    Object that allows the trajectory interpolation using a Newton polynomial.
     """
 
     def __init__(self, example_points):
         """
-        Assigns sample points and calculates newton coefficients independently for x and y positions.   
+        Assigns sample points and calculates newton coefficients independently for x and y positions.
 
         Args:
-            example_points (list of tuples (t, x, y)): list of trajectory' sample points to interpolate 
+            example_points (list of tuples (t, x, y)): list of trajectory' sample points to interpolate
         """
         self.__example_points = example_points
         self.__calculate_coefs()
@@ -46,16 +46,16 @@ class NewtonInterpolation:
 
     def reset(self, example_points):
         """
-        Assigns new sample points and recalculates newton coefficients independently for x and y positions.   
+        Assigns new sample points and recalculates newton coefficients independently for x and y positions.
 
         Args:
-            example_points (list of tuples (t, x, y)): list of trajectory' sample points to interpolate 
+            example_points (list of tuples (t, x, y)): list of trajectory' sample points to interpolate
         """
         self.__init__(example_points)
 
     def predict(self, t):
         """
-        Predicts a new position for a instant time t, using the newton polynomial. 
+        Predicts a new position for a instant time t, using the newton polynomial.
 
         Args:
             t (int): time instant
@@ -71,12 +71,12 @@ class NewtonInterpolation:
     @staticmethod
     def interpolate(coefs, xs, x):
         """
-        Predict a new y value given the value of x, the newton coefficients, and the x values related to each coefficient.  
+        Predict a new y value given the value of x, the newton coefficients, and the x values related to each coefficient.
 
         Args:
-            coefs (float): list of newton coefficients 
-            xs (int): list of x values related to each coefficient 
-            x (int): x value of the prediction 
+            coefs (float): list of newton coefficients
+            xs (int): list of x values related to each coefficient
+            x (int): x value of the prediction
 
         Returns:
             int: y value of the prediction
@@ -116,24 +116,29 @@ class NewtonInterpolation:
         return divided_differences[0]
 
 
-def linear_interpolation(starting_point, ending_point):
+def linear_interpolation(starting_point, ending_point, discretization=True):
     """
-    Returns the predicted position points of the gap, applying a linear interpolation. 
+    Returns the predicted position points of the gap, applying a linear interpolation.
 
     Args:
         starting_point (tuple (t, x, y)): starting point of the gap (left edge)
         ending_point (tuple (t, x, y)): ending point of the gap (right edge)
 
     Returns:
-        list of tuples (t, x, y): predicted gap positions 
+        list of tuples (t, x, y): predicted gap positions
     """
     nr_missing_points = (ending_point[0] - starting_point[0]) - 1
     x_step = (ending_point[1] - starting_point[1]) / (nr_missing_points + 1)
     y_step = (ending_point[2] - starting_point[2]) / (nr_missing_points + 1)
-    gap_points = [[starting_point[0]+i,
-                   starting_point[1] + (i*x_step),
-                   starting_point[2] + (i*y_step)]
-                  for i in range(1, nr_missing_points+1)]
+
+    gap_points = []
+    for i in range(1, nr_missing_points+1):
+        x_value = int(starting_point[1] + (i*x_step)) if discretization \
+            else starting_point[1] + (i*x_step)
+        y_value = int(starting_point[2] + (i*y_step)) if discretization \
+            else starting_point[2] + (i*y_step)
+        gap_points.append([starting_point[0]+i, x_value, y_value])
+
     return gap_points
 # endregion
 
@@ -141,16 +146,16 @@ def linear_interpolation(starting_point, ending_point):
 # region ways to choose sample points
 def near_interpolation_points(trajectory, gap_starting_index, n):
     """
-    The returned sample points using this method are the nearest points to the gap, 
-    taking into account that it can has another gaps close to it. The idea is 
-    to keep the sample points center (according to time) close to the gap center.   
-    It starts by adding the edges of the gap, and iteratively adds the point on the right 
-    or the point on the left, according to the proposed idea, until it gets n+1 points.  
+    The returned sample points using this method are the nearest points to the gap,
+    taking into account that it can has another gaps close to it. The idea is
+    to keep the sample points center (according to time) close to the gap center.
+    It starts by adding the edges of the gap, and iteratively adds the point on the right
+    or the point on the left, according to the proposed idea, until it gets n+1 points.
 
     Args:
         trajectory (list of tuples (t, x, y)): list of positions
         gap_starting_index (int): index of the trajectory list where it was detected a gap
-        n (int): polynomial degree where these points will be used 
+        n (int): polynomial degree where these points will be used
 
     Returns:
         list of tuples (t, x, y): list with the chosen data points
@@ -215,9 +220,9 @@ def equidistant_interpolation_points(trajectory, n):
 
 
 # region generate and fill gaps
-def fill_gaps_linear(trajectory, fish):
+def fill_gaps_linear(trajectory, fish, discretization=True):
     """
-    Detects gaps on the trajectory and fills them using a linear interpolation (on place). 
+    Detects gaps on the trajectory and fills them using a linear interpolation (on place).
 
     Args:
         trajectory (list of tuples (t, x, y)): list of positions
@@ -235,7 +240,7 @@ def fill_gaps_linear(trajectory, fish):
 
         if t2 - t1 > 1:  # gap
             predicted_points = linear_interpolation(
-                previous_point, current_point
+                previous_point, current_point, discretization
             )
             trajectory[i:i] = predicted_points
             i += len(predicted_points) + 1
@@ -249,7 +254,8 @@ def fill_gaps_linear(trajectory, fish):
                 current_bbs = fish.bounding_boxes
                 predicted_bbs = linear_interpolation(
                     (t1, current_bbs[t1].height, current_bbs[t1].width),
-                    (t2, current_bbs[t2].height, current_bbs[t2].width)
+                    (t2, current_bbs[t2].height, current_bbs[t2].width),
+                    discretization
                 )
                 for t, height, width in predicted_bbs:
                     current_bbs[t] = BoundingBox(width, height)
@@ -299,14 +305,14 @@ def fill_gaps_newton(trajectory, n, example_points_methodology):
 def simulate_gap(fish, gap_size, gap_interval=None):
     """
     Generates a gap in the received trajectory. The starting index is randomly chosen.
-    A new trajectory is returned. It is not done in place.  
+    A new trajectory is returned. It is not done in place.
 
     Args:
         trajectory (list of tuples (t, x, y)): list of positions
         gap_size (int): size of the gap
 
     Returns:
-        list of tuples (t, x, y), int, int: 
+        list of tuples (t, x, y), int, int:
             trajectory with a fake gap, initial instant of the gap, final instant of the gap
     """
     trajectory = fish.trajectory

@@ -479,7 +479,7 @@ def build_dataset(fishes_file_path, species_gt_path, regions_path,
 
     for fish in fishes:
         # pre-processing
-        fill_gaps_linear(fish.trajectory, fish)
+        fill_gaps_linear(fish.trajectory, fish, True)
 
         # feature extraction
         fe_obj = extract_features(
@@ -570,13 +570,6 @@ if __name__ == "__main__":
     # moving_average_illustration()
 
     # dataset 1
-    build_dataset("resources/detections/v29-fishes.json",
-                  "resources/classification/species-gt-v29.csv",
-                  "resources/regions-example.json",
-                  1, 24, 0.3,
-                  "resources/datasets/v29-dataset1.csv")
-
-    # dataset 2
     build_dataset("resources/detections/v29-fishes.json",
                   "resources/classification/species-gt-v29.csv",
                   "resources/regions-example.json",
