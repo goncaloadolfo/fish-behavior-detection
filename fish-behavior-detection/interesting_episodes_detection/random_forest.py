@@ -13,7 +13,7 @@ from trajectory_reader.visualization import simple_bar_chart
 from interesting_episodes_detection.evaluation import holdout_prediction
 
 
-SEED = 0
+SEED = 3
 
 
 def random_forest_tuning(dataset, species, parameters_grid):
@@ -43,7 +43,7 @@ def random_forest_pipelines(dataset, species, parameters):
     pca = PCA(n_components=10)
     correlation_removal = CorrelatedVariablesRemoval(0.9)
 
-    pipelines = (
+    pipelines = [
         [("rf", random_forest)],
         [("normalizer", normalizer), ("rf", random_forest)],
         [("balancer", balancer), ("rf", random_forest)],
@@ -57,7 +57,7 @@ def random_forest_pipelines(dataset, species, parameters):
 
         [("balancer", balancer), ("normalizer", normalizer),
          ("correlation removal", correlation_removal), ("rf", random_forest)],
-    )
+    ]
 
     original_x = x.copy()
     original_y = y.copy()
@@ -118,18 +118,19 @@ def plot_features_importance(pipelines, scores, features_description, n):
 
 
 if __name__ == "__main__":
-    parameters_grid = {"n_estimators": [5, 10, 20],
-                       "criterion": ["gini", "entropy"],
-                       "max_depth": [5, 10, 20],
-                       "max_features": ["sqrt", "log2"],
-                       "min_samples_leaf": [3, 5, 7],
-                       "min_samples_split": [2, 4, 6],
-                       "bootstrap": [False, True]}
-    random_forest_tuning("resources/datasets/v29-dataset1.csv",
-                         ("shark", "manta-ray"), parameters_grid)
+    # parameters_grid = {"n_estimators": [5, 10, 20],
+    #                    "criterion": ["gini", "entropy"],
+    #                    "max_depth": [5, 10, 20],
+    #                    "max_features": ["sqrt", "log2"],
+    #                    "min_samples_leaf": [3, 5, 7],
+    #                    "min_samples_split": [2, 4, 6],
+    #                    "bootstrap": [False, True]}
+    # random_forest_tuning("resources/datasets/v29-dataset1.csv",
+    #                      ("shark", "manta-ray"), parameters_grid)
 
+    # seed 1
     random_forest_pipelines("resources/datasets/v29-dataset1.csv", ("shark", "manta-ray"),
-                            {"n_estimators": 10,
+                            {"n_estimators": 5,
                              "criterion": "gini",
                              "max_depth": 5,
                              "max_features": "log2",
