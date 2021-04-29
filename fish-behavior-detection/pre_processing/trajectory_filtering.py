@@ -46,9 +46,22 @@ def segment_trajectory(fish, descontinuity_points):
         return fish
 
 
-def play_trajectory_segments(video_path, fish, descontinuity_points):
+def play_trajectory_segments(video_path, fish, descontinuity_points, write_path=None):
     video_capture = cv2.VideoCapture(video_path)
     video_capture.set(cv2.CAP_PROP_POS_FRAMES, fish.trajectory[0][0])
+
+    if write_path is not None:
+        codec = cv2.VideoWriter_fourcc(*"mp4v")
+        writer = cv2.VideoWriter(write_path,
+                                 apiPreference=cv2.CAP_FFMPEG,
+                                 fourcc=codec, fps=15,
+                                 frameSize=(
+                                     int(video_capture.get(
+                                         cv2.CAP_PROP_FRAME_WIDTH)),
+                                     int(video_capture.get(
+                                         cv2.CAP_PROP_FRAME_HEIGHT))
+                                 )
+                                 )
 
     color = np.random.randint(0, 256, 3)
     color = (int(color[0]), int(color[1]), int(color[2]))
@@ -89,8 +102,12 @@ def play_trajectory_segments(video_path, fish, descontinuity_points):
 
         draw_path(frame, fish.trajectory, t, descontinuities, colors)
         cv2.imshow("trajectory segments", frame)
+        if write_path is not None:
+            writer.write(frame)
         cv2.waitKey(36)
     video_capture.release()
+    if write_path is not None:
+        writer.release()
 
 
 def draw_path(frame, trajectory, current_t, descontinuities, colors):
@@ -383,7 +400,7 @@ def douglass_peucker_test(distance_thr, speed_thr, angle_thr, seed):
     descontinuity_points = smooth_positions_dp_test(example_fish, regions,
                                                     distance_thr, speed_thr, angle_thr)
     play_trajectory_segments("resources/videos/v29.m4v",
-                             example_fish, descontinuity_points)
+                             example_fish, descontinuity_points, "resources/segmentation-example.mp4")
 
 
 def positions_filtering_test(window_size, alpha, features_of_interest, seed):
@@ -427,16 +444,16 @@ def positions_filtering_test(window_size, alpha, features_of_interest, seed):
 
 
 if __name__ == '__main__':
-    positions_filtering_test(window_size=24, alpha=0.01,
-                             features_of_interest=(
-                                 fe_module.TrajectoryFeatureExtraction.SPEEDS_ATR_NAME,
-                                 fe_module.TrajectoryFeatureExtraction.CURVATURES_ATR_NAME,
-                                 fe_module.TrajectoryFeatureExtraction.TAS_ATR_NAME,
-                                 fe_module.TrajectoryFeatureExtraction.CDS_ATR_NAME
-                             ), seed=1
-                             )
+    # positions_filtering_test(window_size=24, alpha=0.01,
+    #                          features_of_interest=(
+    #                              fe_module.TrajectoryFeatureExtraction.SPEEDS_ATR_NAME,
+    #                              fe_module.TrajectoryFeatureExtraction.CURVATURES_ATR_NAME,
+    #                              fe_module.TrajectoryFeatureExtraction.TAS_ATR_NAME,
+    #                              fe_module.TrajectoryFeatureExtraction.CDS_ATR_NAME
+    #                          ), seed=1
+    #                          )
 
-    # douglass_peucker_test(10, 0.75, 20, 1)
+    douglass_peucker_test(10, 0.75, 20, 1)
 
     # douglass_peucker_tuning([10, 20, 30], [0.5, 1, 2], [10, 30, 50], 1)
 
