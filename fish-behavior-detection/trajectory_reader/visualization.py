@@ -34,11 +34,11 @@ def simple_bar_chart(ax, xs, ys, title, ylabel, xlabel, label=None, width=0.8):
     ax.bar(xs, ys, align="center", label=label, width=width)
 
 
-def histogram(ax, values, title, ylabel, xlabel):
+def histogram(ax, values, title, ylabel, xlabel, density=False, cumulative=False):
     ax.set_title(title)
     ax.set_ylabel(ylabel)
     ax.set_xlabel(xlabel)
-    return ax.hist(values)
+    return ax.hist(values, density=density, cumulative=cumulative)
 
 
 def histogram2d(ax, values, values2, title, ylabel, xlabel, colormap="Blues", cmin=0, with_text=False):
