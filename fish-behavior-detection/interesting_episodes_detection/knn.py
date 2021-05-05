@@ -17,9 +17,9 @@ SEED = 2
 
 
 def knn_tuning(dataset, species, parameters_grid):
-    x, y, feature_names = load_data(dataset, species)
-    x = StandardScaler().fit_transform(x, y)
-    x, y = SMOTE(random_state=SEED).fit_resample(x, y)
+    x, y_original, feature_names = load_data(dataset, species)
+    x = StandardScaler().fit_transform(x, y_original)
+    x, y = SMOTE(random_state=SEED).fit_resample(x, y_original)
 
     scores = defaultdict(list)
     ns = parameters_grid["n_neighbors"]
@@ -30,7 +30,9 @@ def knn_tuning(dataset, species, parameters_grid):
             knn = KNeighborsClassifier(n_neighbors=n, metric=metric,
                                        algorithm="brute")
             predictions = holdout_prediction(knn, x, y)
-            scores[metric].append(accuracy_score(y, predictions))
+            scores[metric].append(accuracy_score(
+                y[:len(y_original)], predictions[:len(y_original)]
+            ))
 
     plt.figure()
     for metric in metrics:
@@ -82,7 +84,9 @@ def knn_pipelines(dataset, species, parameters):
             if pipeline_node[0] == "knn":
                 knn = pipeline_node[1].fit(x, y)
                 predictions = holdout_prediction(knn, x, y)
-                scores.append(accuracy_score(y, predictions))
+                scores.append(accuracy_score(
+                    y[:len(original_y)], predictions[:len(original_y)]
+                ))
             elif pipeline_node[0] == "balancer":
                 x, y = pipeline_node[1].fit_resample(x, y)
             else:
