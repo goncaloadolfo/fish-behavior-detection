@@ -61,7 +61,9 @@ def histogram2d(ax, values, values2, title, ylabel, xlabel, colormap="Blues", cm
     return counts, binsx, binsy, quad_image
 
 
-def draw_trajectory(trajectory, frame_size, color, regions=None, frame=None, path=True, interval=24):
+def draw_trajectory(trajectory, frame_size, color,
+                    regions=None, frame=None, path=True,
+                    interval=24, identifier=None):
     """
     Draws the trajectory on a given frame.
 
@@ -87,6 +89,11 @@ def draw_trajectory(trajectory, frame_size, color, regions=None, frame=None, pat
     if regions is not None:
         for region in regions:
             region.draw(frame)
+
+    if identifier is not None:
+        cv2.putText(frame, str(identifier),
+                    (int(trajectory[0][1]), int(trajectory[0][2] - 7)),
+                    cv2.FONT_HERSHEY_COMPLEX, 0.5, color, thickness=1)
 
     return frame
 
