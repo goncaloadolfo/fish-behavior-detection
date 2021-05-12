@@ -10,6 +10,8 @@ from pre_processing.trajectory_filtering import (exponential_weights,
                                                  smooth_positions)
 from trajectory_reader.trajectories_reader import read_fishes
 
+N = 4
+
 
 # region model initialization
 def initialize_parameters(grid, k):
@@ -84,6 +86,9 @@ class GridNode:
         self.__transition_matrix = None
         self.__vectors_variance = None
 
+        self.__Rks = []
+        self.__rks = []
+
     @property
     def node_id(self):
         return self.__node_id
@@ -120,6 +125,14 @@ class GridNode:
     def vectors_variance(self):
         return self.__vectors_variance
 
+    @property
+    def Rks(self):
+        return self.__Rks
+
+    @property
+    def rks(self):
+        return self.__rks
+
     @core_vectors.setter
     def core_vectors(self, value):
         self.__core_vectors = value
@@ -139,6 +152,14 @@ class GridNode:
     @vectors_variance.setter
     def vectors_variance(self, value):
         self.__vectors_variance = value
+
+    @Rks.setter
+    def Rks(self, value):
+        self.__Rks = value
+
+    @rks.setter
+    def rks(self, value):
+        self.__rks = value
 
     def __contains__(self, value):
         return self.__x_limits[0] <= value[0] <= self.__x_limits[1] \
@@ -259,7 +280,7 @@ def update_variances(grid, trajectories, smooth_probs):
                 current_trajectory = trajectories[i]
                 trajectory_probs = smooth_probs[i]
 
-                for j in range(1, len(trajectories[i])):
+                for j in range(1, len(current_trajectory)):
                     last_pos = np.array([current_trajectory[j - 1][1], current_trajectory[j - 1][2]])
                     current_pos = np.array([current_trajectory[j][1], current_trajectory[j][2]])
 
@@ -274,12 +295,66 @@ def update_variances(grid, trajectories, smooth_probs):
                 node.vectors_variance[k][k] = numerator / denominator
 
 
-def update_vectors():
+def update_vectors(grid, trajectories, smooth_probs, alpha):
+    nr_vectors = smooth_probs[0].shape[1]
+    calculate_rs(grid, trajectories, smooth_probs)
+
+    for node in grid:
+        node_center = ((node.x_limits[0] + node.x_limits[1]) / 2,
+                       (node.y_limits[0] + node.y_limits[1]) / 2)
+        vel_diff = calculate_neighbors_velocity_diffs(grid, node, nr_vectors)
+        aux = np.dot(vel_diff.T, vel_diff) / alpha ** 2
+
+        for k in nr_vectors:
+            tk = node.rks[k] / (node.Rks + aux)
+            # idk what x to pass to the basis functions
+            node.core_vectors[k] = np.dot(ts_apply_basis_functions(node_center), tk)
+
+
+def update_transition_matrices(grid, trajectories, smooth_probs, alpha):
     # todo
     raise NotImplementedError()
 
 
-def calculate_rs():
+def calculate_rs(grid, trajectories, smooth_probs):
+    nr_vectors = smooth_probs[0].shape[1]
+
+    for node in grid:
+        Rks_list = []
+        rks_list = []
+
+        for k in nr_vectors:
+            Rks = np.zeros((2 * N, 2 * N))
+            rks = np.zeros((2 * N, 1))
+
+            for i in range(len(trajectories)):
+                current_trajectory = trajectories[i]
+                trajectory_probs = smooth_probs[i]
+
+                for j in range(1, len(current_trajectory)):
+                    last_pos = np.array([current_trajectory[j - 1][1], current_trajectory[j - 1][2]])
+                    current_pos = np.array([current_trajectory[j][1], current_trajectory[j][2]])
+
+                    if current_pos not in node:
+                        continue
+
+                    aux = ts_apply_basis_functions(last_pos)
+                    Rks += trajectory_probs[j][k] / node.vectors_variance[k][k] * np.dot(aux.T, aux)
+                    rks += trajectory_probs[j][k] / node.vectors_variance[k][k] * np.dot(aux.T, current_pos - last_pos)
+
+            Rks_list.append(Rks)
+            rks_list.append(rks)
+
+        node.Rks = np.array(Rks_list)
+        node.rks = np.array(rks_list)
+
+
+def ts_apply_basis_functions(position):
+    # todo
+    raise NotImplementedError()
+
+
+def b_spline_basic_functions(position):
     # todo
     raise NotImplementedError()
 
