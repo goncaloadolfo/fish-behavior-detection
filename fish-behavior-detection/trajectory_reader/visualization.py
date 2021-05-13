@@ -5,6 +5,7 @@ High-level information visualization methods.
 import time
 
 import cv2
+import matplotlib.cm
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -41,7 +42,7 @@ def histogram(ax, values, title, ylabel, xlabel, density=False, cumulative=False
     return ax.hist(values, density=density, cumulative=cumulative)
 
 
-def histogram2d(ax, values, values2, title, ylabel, xlabel, colormap="Blues", cmin=0, with_text=False):
+def histogram2d(ax, values, values2, title, ylabel, xlabel, colormap="Blues", cmin=0, with_text=False, frame=None):
     ax.set_title(title)
     ax.set_ylabel(ylabel)
     ax.set_xlabel(xlabel)
@@ -49,16 +50,26 @@ def histogram2d(ax, values, values2, title, ylabel, xlabel, colormap="Blues", cm
         values, values2, cmap=colormap, cmin=cmin
     )
 
+    cmap = matplotlib.cm.get_cmap("YlOrBr")
+    min_value = np.min(counts)
+    max_value = np.max(counts)
+
     if with_text:
         x_interval = binsx[1] - binsx[0]
         y_interval = binsy[1] - binsy[0]
 
         for row in range(counts.shape[0]):
             for col in range(counts.shape[1]):
-                ax.text(binsx[col] + x_interval/2, binsy[row] + y_interval/2, int(counts[row, col]),
-                        color="black", ha="center", va="center")
+                text_position = (int(binsx[row] + x_interval / 2), int(binsy[col] + y_interval / 2))
+                cell_count = int(counts[row, col])
+                ax.text(text_position[0], text_position[1], cell_count, color="black", ha="center", va="center")
 
-    return counts, binsx, binsy, quad_image
+                if frame is not None:
+                    color = cmap((cell_count - min_value) / (max_value - min_value))
+                    bgr = (int(color[2]*255), int(color[1]*255.0), int(color[0]*255.0))
+                    cv2.putText(frame, str(cell_count), text_position, cv2.FONT_HERSHEY_COMPLEX, 0.5, bgr, thickness=2)
+
+    return counts, binsx, binsy, quad_image, frame
 
 
 def draw_trajectory(trajectory, frame_size, color,
@@ -81,8 +92,8 @@ def draw_trajectory(trajectory, frame_size, color,
         # velocity vector
         if i + step < len(trajectory):
             cv2.arrowedLine(frame, (int(trajectory[i][1]), int(trajectory[i][2])),
-                            (int(trajectory[i+step][1]),
-                             int(trajectory[i+step][2])),
+                            (int(trajectory[i + step][1]),
+                             int(trajectory[i + step][2])),
                             color, thickness=2)
 
     # draw bounding boxes of each region
@@ -112,6 +123,7 @@ def draw_position_plots(trajectory, gap_interval, interpolation_points, with_gap
     Returns:
         matplotlib.axes, matplotlib.axes: axes of the x variation plot and axes of the y variation plot
     """
+
     def plot_variation(xs, ys, title, ylabel, xlabel, interpolation_points):
         plt.figure()
         ax = plt.gca()
@@ -143,13 +155,13 @@ def draw_position_plots(trajectory, gap_interval, interpolation_points, with_gap
 
     # to avoid the line interligating both sides of the gap
     if with_gap:
-        ts.insert(gap_interval[0]+1, np.nan)
-        xs.insert(gap_interval[0]+1, np.nan)
-        ys.insert(gap_interval[0]+1, np.nan)
+        ts.insert(gap_interval[0] + 1, np.nan)
+        xs.insert(gap_interval[0] + 1, np.nan)
+        ys.insert(gap_interval[0] + 1, np.nan)
 
     return plot_variation(ts, xs, "X Position", "x value", "frame", interpolation_points), \
-        plot_variation(ts, ys, "Y Position", "y value",
-                       "frame", interpolation_points)
+           plot_variation(ts, ys, "Y Position", "y value",
+                          "frame", interpolation_points)
 
 
 def show_trajectory(video_path, fish, estimated_trajectory, simulated_gaps,
@@ -161,14 +173,15 @@ def show_trajectory(video_path, fish, estimated_trajectory, simulated_gaps,
     if record is not None:
         codec = cv2.VideoWriter_fourcc(*"mp4v")
         out = cv2.VideoWriter(record, apiPreference=cv2.CAP_FFMPEG, fourcc=codec, fps=15,
-                              frameSize=(int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)), int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))))
+                              frameSize=(
+                              int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)), int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))))
         print("recording...")
 
     # set next frame to be read to the initial timestamp index of the trajectory
     t = estimated_trajectory[0][0]
     cap.set(cv2.CAP_PROP_POS_FRAMES, t)
 
-    while(t < estimated_trajectory[-1][0]):
+    while (t < estimated_trajectory[-1][0]):
         _, frame = cap.read()
         t = cap.get(cv2.CAP_PROP_POS_FRAMES)
 
@@ -186,10 +199,10 @@ def show_trajectory(video_path, fish, estimated_trajectory, simulated_gaps,
             bounding_box_size = fish.bounding_boxes[t]
             cv2.circle(frame, centroid, 5, (0, 255, 0), -1)
             cv2.rectangle(frame,
-                          (int(centroid[0] - (bounding_box_size.width/2)),
-                           int(centroid[1] - bounding_box_size.height/2)),
-                          (int(centroid[0] + (bounding_box_size.width/2)),
-                           int(centroid[1] + bounding_box_size.height/2)),
+                          (int(centroid[0] - (bounding_box_size.width / 2)),
+                           int(centroid[1] - bounding_box_size.height / 2)),
+                          (int(centroid[0] + (bounding_box_size.width / 2)),
+                           int(centroid[1] + bounding_box_size.height / 2)),
                           (0, 255, 0), 2)
 
         else:
@@ -238,10 +251,10 @@ def show_fish_trajectory(frame_description, path_video, fish, episodes):
         bb = fish.bounding_boxes[t]
         centroid = fish.get_position(t)
         cv2.rectangle(frame,
-                      (int(centroid[0] - bb.width/2),
-                       int(centroid[1] - bb.height/2)),
-                      (int(centroid[0] + bb.width/2),
-                       int(centroid[1] + bb.height/2)),
+                      (int(centroid[0] - bb.width / 2),
+                       int(centroid[1] - bb.height / 2)),
+                      (int(centroid[0] + bb.width / 2),
+                       int(centroid[1] + bb.height / 2)),
                       color, thickness=2)
         cv2.imshow(frame_description, frame)
 
@@ -261,9 +274,9 @@ def draw_fishes(frame, fishes, t):
         bounding_box_size = fish.bounding_boxes[t]
         centroid = fish.get_position(t)
         cv2.rectangle(frame,
-                      (int(centroid[0] - (bounding_box_size.width/2)),
-                       int(centroid[1] - bounding_box_size.height/2)),
-                      (int(centroid[0] + (bounding_box_size.width/2)),
-                       int(centroid[1] + bounding_box_size.height/2)),
+                      (int(centroid[0] - (bounding_box_size.width / 2)),
+                       int(centroid[1] - bounding_box_size.height / 2)),
+                      (int(centroid[0] + (bounding_box_size.width / 2)),
+                       int(centroid[1] + bounding_box_size.height / 2)),
                       (0, 255, 0), 2)
     return frame
