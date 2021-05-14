@@ -16,7 +16,7 @@ from itertools import permutations
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
-import pre_processing.trajectory_filtering as tf
+
 from labeling.regions_selector import read_regions
 from labeling.trajectory_labeling import read_species_gt
 from pre_processing.interpolation import fill_gaps_linear
@@ -31,8 +31,20 @@ fe_logger.setLevel(logging.INFO)
 
 
 # region feature extraction
-class TrajectoryFeatureExtraction():
+def exponential_weights(window_size, alpha, forward_only=False):
+    if forward_only:
+        return [alpha * (1 - alpha) ** n for n in range(0, window_size)]
 
+    else:
+        half_window_weights = [
+            alpha * (1 - alpha) ** n for n in range(0, int(window_size / 2))
+        ]
+        reversed_weights = half_window_weights.copy()
+        reversed_weights.reverse()
+        return reversed_weights + [0] + half_window_weights
+
+
+class TrajectoryFeatureExtraction:
     SPEEDS_ATR_NAME = "speed_time_series"
     XSPEED_ATR_NAME = "xspeed_time_series"
     YSPEED_ATR_NAME = "yspeed_time_series"
@@ -55,7 +67,7 @@ class TrajectoryFeatureExtraction():
 
         if sliding_window is not None and alpha is not None:
             self.__sliding_window = sliding_window if sliding_window % 2 == 0 else sliding_window + 1
-            self.__sliding_weights = tf.exponential_weights(
+            self.__sliding_weights = exponential_weights(
                 self.__sliding_window, alpha, True
             )
 
@@ -158,7 +170,7 @@ class TrajectoryFeatureExtraction():
             # region
             if len(regions_key) == 1:
                 vector_description.append(f"region({regions_key[0]})")
-                normalized_value = pass_by_value/total_calculated_frames
+                normalized_value = pass_by_value / total_calculated_frames
                 vector.append(normalized_value)
                 self.__pass_by[regions_key] = normalized_value
 
@@ -234,29 +246,29 @@ class TrajectoryFeatureExtraction():
     @staticmethod
     def statistical_features(time_series, feature_label):
         return ([
-            f"mean-{feature_label}",
-            f"median-{feature_label}",
-            f"std-{feature_label}",
-            f"min-{feature_label}",
-            f"max-{feature_label}",
-            f"quartile1-{feature_label}",
-            f"quartile3-{feature_label}",
-            f"autocorr-{feature_label}",
-        ],
-            [
-            np.mean(time_series),
-            np.median(time_series),
-            np.std(time_series),
-            np.min(time_series),
-            np.max(time_series),
-            np.percentile(time_series, 25),
-            np.percentile(time_series, 75),
-            np.median([1.0] + [np.corrcoef(time_series[:-i], time_series[i:])[0, 1]
-                               for i in range(1, len(time_series) - 1)
-                               if not np.isnan(np.corrcoef(time_series[:-i], time_series[i:])[0, 1])
-                               ]
-                      )
-        ])
+                    f"mean-{feature_label}",
+                    f"median-{feature_label}",
+                    f"std-{feature_label}",
+                    f"min-{feature_label}",
+                    f"max-{feature_label}",
+                    f"quartile1-{feature_label}",
+                    f"quartile3-{feature_label}",
+                    f"autocorr-{feature_label}",
+                ],
+                [
+                    np.mean(time_series),
+                    np.median(time_series),
+                    np.std(time_series),
+                    np.min(time_series),
+                    np.max(time_series),
+                    np.percentile(time_series, 25),
+                    np.percentile(time_series, 75),
+                    np.median([1.0] + [np.corrcoef(time_series[:-i], time_series[i:])[0, 1]
+                                       for i in range(1, len(time_series) - 1)
+                                       if not np.isnan(np.corrcoef(time_series[:-i], time_series[i:])[0, 1])
+                                       ]
+                              )
+                ])
 
     @staticmethod
     def exponential_sliding_average(time_series, sliding_window, weights):
@@ -266,7 +278,7 @@ class TrajectoryFeatureExtraction():
         # calculate new values
         for i in range(len(time_series)):
             time_series[i] = np.average(
-                time_series_copy[i+1: i+1+sliding_window], weights=weights)
+                time_series_copy[i + 1: i + 1 + sliding_window], weights=weights)
 
     def __motion_features(self):
         p1 = self.__calculation_positions[-3]
@@ -303,7 +315,7 @@ class TrajectoryFeatureExtraction():
             self.__yacceleration.append(dy_dt[1] - dy_dt[0])
 
         curvature_numerator = abs(dx2_dt2 * dy_dt[1] - dx_dt[1] * dy2_dt2)
-        curvature_denominator = (dx_dt[1] ** 2 + dy_dt[1] ** 2)**1.5
+        curvature_denominator = (dx_dt[1] ** 2 + dy_dt[1] ** 2) ** 1.5
         self.__curvatures.append(
             curvature_numerator / curvature_denominator if curvature_denominator != 0 else 0
         )
@@ -354,6 +366,8 @@ def extract_features(fish, regions, calculation_period=1, sliding_window=None, a
     fe_obj.set_trajectory(fish.trajectory, fish.bounding_boxes)
     fe_obj.extract_features()
     return fe_obj
+
+
 # endregion
 
 
@@ -424,6 +438,8 @@ def trajectory_illustration(video_path, regions, fish):
 
     # video
     show_trajectory(video_path, fish, fish.trajectory, [], None, "trajectory")
+
+
 # endregion
 
 
@@ -436,7 +452,7 @@ def frequency_analysis(fish, regions, calculation_periods):
 
         # draw speed
         draw_time_series(fe_obj.speed_time_series, descriptions=[
-                         f"Speed frequency={frequency}"])
+            f"Speed frequency={frequency}"])
     plt.show()
 
 
@@ -456,6 +472,8 @@ def moving_average_analysis(fish, sliding_window, alphas, regions, video_path=No
     if video_path is not None and regions is not None:
         trajectory_illustration("resources/videos/v29.m4v", regions, fish)
     plt.show()
+
+
 # endregion
 
 
@@ -526,6 +544,8 @@ def read_dataset(dataset_file_path):
             gt.append(fields[-1].replace('\n', ''))
 
     return (samples, gt, description[:-1])
+
+
 # endregion
 
 
@@ -561,6 +581,8 @@ def moving_average_illustration():
     # analyze results
     moving_average_analysis(example_fish, sliding_window,
                             alphas, regions, "resources/videos/v29.m4v")
+
+
 # endregion
 
 

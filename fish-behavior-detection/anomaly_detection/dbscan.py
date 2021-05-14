@@ -3,26 +3,24 @@ import random
 import cv2
 import numpy as np
 from matplotlib import pyplot as plt
-from pre_processing.interpolation import fill_gaps_linear
-from pre_processing.pre_processing import CorrelatedVariablesRemoval, load_data
-from pre_processing.trajectory_filtering import (exponential_weights,
-                                                 smooth_positions)
 from sklearn.cluster import DBSCAN
 from sklearn.decomposition import PCA
 from sklearn.feature_selection import SelectKBest
 from sklearn.metrics.cluster import silhouette_score
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
+
+from anomaly_detection.anomaly_detector import most_different_features
+from anomaly_detection.kmeans import (species_distribution)
+from pre_processing.interpolation import fill_gaps_linear
+from pre_processing.pre_processing import CorrelatedVariablesRemoval, load_data
+from pre_processing.trajectory_filtering import (exponential_weights,
+                                                 smooth_positions)
 from trajectory_reader.trajectories_reader import read_fishes
 from trajectory_reader.visualization import (draw_trajectory, histogram,
                                              show_fish_trajectory,
                                              simple_bar_chart,
                                              simple_line_plot)
-
-from anomaly_detection.anomaly_detector import most_different_features
-from anomaly_detection.kmeans import (draw_cluster_trajectories,
-                                      species_distribution)
 
 
 def apply_dbscan(video_path, fishes_dataset, dataset, species, min_samples, epsilon,
@@ -186,7 +184,7 @@ def analyze_distances(dataset, species, metric, n, data_preparation_pipeline):
     distances, _ = knn.kneighbors(n_neighbors=n)
     plt.figure()
     pipeline_description = "+".join([step[0]
-                                    for step in data_preparation_pipeline])
+                                     for step in data_preparation_pipeline])
     _, bins, _ = histogram(plt.gca(), distances.flatten(),
                            f"Distance to {n} Nearest Points ({metric})\n{pipeline_description}",
                            "cumulative density", "distance",
@@ -195,9 +193,9 @@ def analyze_distances(dataset, species, metric, n, data_preparation_pipeline):
 
 
 if __name__ == "__main__":
-    video_path = "resources/videos/v29.m4v"
-    fishes = "resources/detections/v29-fishes.json"
-    dataset = "resources/datasets/v29-dataset1.csv"
+    video_path = "../resources/videos/v29.m4v"
+    fishes = "../resources/detections/v29-fishes.json"
+    dataset = "../resources/datasets/v29-dataset1.csv"
     species = ("shark", "manta-ray", "tuna")
 
     pipelines = [

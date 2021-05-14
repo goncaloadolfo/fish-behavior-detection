@@ -10,7 +10,7 @@ import sys
 
 import cv2
 
-CONF_DIR_NAME = "resources"
+CONF_DIR_NAME = "../resources"
 FRAME_NAME = "regions selector"
 SELECTION_COLOR = (0, 0, 255)
 regions_selector_logger = logging.getLogger(__name__)
@@ -42,7 +42,7 @@ class Rectangle():
 
     @property
     def centroid(self):
-        return (int((self.__pt1[0] + self.__pt2[0])/2), int((self.__pt1[1] + self.__pt2[1])/2))
+        return (int((self.__pt1[0] + self.__pt2[0]) / 2), int((self.__pt1[1] + self.__pt2[1]) / 2))
 
     def __contains__(self, v):
         xs = sorted([self.__pt1[0], self.__pt2[0]])

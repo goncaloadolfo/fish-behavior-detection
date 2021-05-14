@@ -1,26 +1,23 @@
 import numpy as np
 from imblearn.over_sampling import SMOTE
 from matplotlib import pyplot as plt
-from pre_processing.pre_processing import CorrelatedVariablesRemoval, load_data
 from sklearn.decomposition import PCA
 from sklearn.ensemble._forest import RandomForestClassifier
 from sklearn.feature_selection import SelectKBest
 from sklearn.metrics import accuracy_score
 from sklearn.model_selection import GridSearchCV, KFold
 from sklearn.preprocessing import StandardScaler
-from trajectory_reader.visualization import simple_bar_chart
 
 from interesting_episodes_detection.evaluation import holdout_prediction
-
-
-SEED = 3
+from pre_processing.pre_processing import CorrelatedVariablesRemoval, load_data
+from trajectory_reader.visualization import simple_bar_chart, simple_hbar_chart
 
 
 def random_forest_tuning(dataset, species, parameters_grid):
     x, y, _ = load_data(dataset, species)
-    random_forest = RandomForestClassifier(random_state=SEED)
+    random_forest = RandomForestClassifier()
     gridsearch_obj = GridSearchCV(estimator=random_forest, param_grid=parameters_grid,
-                                  scoring="accuracy", cv=KFold(n_splits=len(x)), verbose=3.5)
+                                  scoring="accuracy", cv=KFold(n_splits=len(x)), verbose=4)
     gridsearch_obj.fit(x, y)
     print("best parameters: ", gridsearch_obj.best_estimator_)
     print("best score: ", gridsearch_obj.best_score_)
@@ -35,9 +32,9 @@ def random_forest_pipelines(dataset, species, parameters):
                                            min_samples_leaf=parameters["min_samples_leaf"],
                                            min_samples_split=parameters["min_samples_split"],
                                            bootstrap=parameters["bootstrap"],
-                                           random_state=SEED
+                                           random_state=parameters["random_state"]
                                            )
-    balancer = SMOTE(random_state=SEED)
+    balancer = SMOTE()
     normalizer = StandardScaler()
     select_kbest = SelectKBest(k=20)
     pca = PCA(n_components=10)
@@ -70,23 +67,22 @@ def random_forest_pipelines(dataset, species, parameters):
         for pipeline_node in pipeline:
             if pipeline_node[0] == "rf":
                 rf = pipeline_node[1].fit(x, y)
-                predictions = holdout_prediction(rf, x, y)
-                scores.append(accuracy_score(y, predictions))
+                predictions = holdout_prediction(rf, x, y)[:len(original_y)]
+                scores.append(accuracy_score(original_y, predictions))
             elif pipeline_node[0] == "balancer":
                 x, y = pipeline_node[1].fit_resample(x, y)
             else:
                 x = pipeline_node[1].fit_transform(x, y)
 
     plt.figure()
-    simple_bar_chart(plt.gca(), range(len(pipelines)), scores,
-                     "Random Forest pipelines", "accuracy", "pipeline")
     model_descriptions = ['+'.join([n[0] for n in pipeline])
                           for pipeline in pipelines]
+    simple_hbar_chart(plt.gca(), scores[::-1], model_descriptions[::-1],
+                      "Random Forest Pipelines", "accuracy", "pipeline")
+
     plt.grid()
-    plt.gca().set_xticks(range(len(pipelines)))
-    plt.gca().set_xticklabels(model_descriptions, rotation=30)
     plt.tight_layout()
-    plot_features_importance(pipelines, scores, features_description, 10)
+    plt.xlim(0, 1)
 
 
 def plot_features_importance(pipelines, scores, features_description, n):
@@ -117,24 +113,30 @@ def plot_features_importance(pipelines, scores, features_description, n):
     plt.tight_layout()
 
 
-if __name__ == "__main__":
+def main():
     # parameters_grid = {"n_estimators": [5, 10, 20],
     #                    "criterion": ["gini", "entropy"],
     #                    "max_depth": [5, 10, 20],
     #                    "max_features": ["sqrt", "log2"],
     #                    "min_samples_leaf": [3, 5, 7],
     #                    "min_samples_split": [2, 4, 6],
-    #                    "bootstrap": [False, True]}
-    # random_forest_tuning("resources/datasets/v29-dataset1.csv",
+    #                    "bootstrap": [False, True],
+    #                    "random_state": [0, 1, 2, 3, 4]}
+    # random_forest_tuning("../resources/datasets/v29-dataset1.csv",
     #                      ("shark", "manta-ray"), parameters_grid)
 
     # seed 1
-    random_forest_pipelines("resources/datasets/v29-dataset1.csv", ("shark", "manta-ray"),
+    random_forest_pipelines("../resources/datasets/v29-dataset1.csv", ("shark", "manta-ray"),
                             {"n_estimators": 5,
-                             "criterion": "gini",
+                             "criterion": "entropy",
                              "max_depth": 5,
-                             "max_features": "log2",
+                             "max_features": "sqrt",
                              "min_samples_leaf": 3,
                              "min_samples_split": 2,
-                             "bootstrap": False})
+                             "bootstrap": True,
+                             "random_state": 4})
     plt.show()
+
+
+if __name__ == "__main__":
+    main()

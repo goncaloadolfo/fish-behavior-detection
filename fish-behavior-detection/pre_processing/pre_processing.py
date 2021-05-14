@@ -27,7 +27,7 @@ class CorrelatedVariablesRemoval:
             for var2_index in range(var1_index + 1, x.shape[1]):
                 # too high correlation and none of the variables was already erased
                 if abs(self.__correlation_matrix[var1_index, var2_index]) \
-                    >= self.__thr \
+                        >= self.__thr \
                         and var1_index not in variables_to_erase \
                         and var2_index not in variables_to_erase:
                     variables_to_erase.append(var1_index)
@@ -43,7 +43,7 @@ class CorrelatedVariablesRemoval:
 def load_data(dataset_path, species):
     # read dataset
     samples, species_gt, feature_descriptions = read_dataset(
-        "resources/datasets/v29-dataset1.csv"
+        dataset_path
     )
 
     # get samples from species received as argument
@@ -56,7 +56,7 @@ def load_data(dataset_path, species):
 
     return (np.array(x),
             get_episode_gt(fish_ids,
-                           "resources/classification/v29-interesting-moments.csv",
+                           "../resources/classification/v29-interesting-moments.csv",
                            "interesting"
                            ),
             feature_descriptions
@@ -115,11 +115,11 @@ def apply_pca(samples, n_components):
 
 
 if __name__ == "__main__":
-    x_all, _ = load_data("resources/datasets/v29-dataset1.csv",
+    x_all, _ = load_data("../resources/datasets/v29-dataset1.csv",
                          ("shark",))
-    x_sharks, _ = load_data("resources/datasets/v29-dataset1.csv",
+    x_sharks, _ = load_data("../resources/datasets/v29-dataset1.csv",
                             ("shark",))
-    x_mantas, _ = load_data("resources/datasets/v29-dataset1.csv",
+    x_mantas, _ = load_data("../resources/datasets/v29-dataset1.csv",
                             ("manta-ray",))
 
     analyze_pca_components(x_all, "- all species")

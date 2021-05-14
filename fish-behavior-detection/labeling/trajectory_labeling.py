@@ -7,6 +7,7 @@ import sys
 from threading import Thread
 
 import cv2
+
 import trajectory_reader.trajectories_reader as tr
 
 # alias for user input related to behaviors
@@ -96,7 +97,7 @@ class TrajectoryLabeling():
         else:
             # analyze each of the fishes
             for i, fish in enumerate(self.__fishes):
-                print(f"trajectory {i}/{len(self.__fishes)-1}")
+                print(f"trajectory {i}/{len(self.__fishes) - 1}")
                 self.__current_fish = fish
                 if self.__classification_out is not None:
                     Thread(target=self.__get_species_label, daemon=True).start()
@@ -113,7 +114,7 @@ class TrajectoryLabeling():
         t_final = trajectory[-1][0]
         t = t_initial
 
-        while(True):
+        while (True):
             # draw frame showing the fish position
             self.__draw_frame(t)
 

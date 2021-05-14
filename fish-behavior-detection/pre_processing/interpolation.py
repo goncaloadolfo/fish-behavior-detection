@@ -9,6 +9,7 @@ from random import randint
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
+
 import trajectory_reader.trajectories_reader as tr
 from trajectory_reader.visualization import (draw_position_plots,
                                              draw_trajectory, show_trajectory,
@@ -110,9 +111,9 @@ class NewtonInterpolation:
             divided_differences[i][0] = y[i]
         # calculate divided diffs
         for j in range(1, n):
-            for i in range(n-j):  # only half of the table is needed
-                divided_differences[i][j] = (divided_differences[i+1][j-1] - divided_differences[i][j-1]) \
-                    / (x[i+j]-x[i])
+            for i in range(n - j):  # only half of the table is needed
+                divided_differences[i][j] = (divided_differences[i + 1][j - 1] - divided_differences[i][j - 1]) \
+                                            / (x[i + j] - x[i])
         return divided_differences[0]
 
 
@@ -132,14 +133,16 @@ def linear_interpolation(starting_point, ending_point, discretization=True):
     y_step = (ending_point[2] - starting_point[2]) / (nr_missing_points + 1)
 
     gap_points = []
-    for i in range(1, nr_missing_points+1):
-        x_value = int(starting_point[1] + (i*x_step)) if discretization \
-            else starting_point[1] + (i*x_step)
-        y_value = int(starting_point[2] + (i*y_step)) if discretization \
-            else starting_point[2] + (i*y_step)
-        gap_points.append([starting_point[0]+i, x_value, y_value])
+    for i in range(1, nr_missing_points + 1):
+        x_value = int(starting_point[1] + (i * x_step)) if discretization \
+            else starting_point[1] + (i * x_step)
+        y_value = int(starting_point[2] + (i * y_step)) if discretization \
+            else starting_point[2] + (i * y_step)
+        gap_points.append([starting_point[0] + i, x_value, y_value])
 
     return gap_points
+
+
 # endregion
 
 
@@ -162,15 +165,15 @@ def near_interpolation_points(trajectory, gap_starting_index, n):
     """
     points = []
     current_temporal_sum = 0
-    gap_center = (trajectory[gap_starting_index+1][0] +
+    gap_center = (trajectory[gap_starting_index + 1][0] +
                   trajectory[gap_starting_index][0]) / 2
     # add both edge points
     points.extend([trajectory[gap_starting_index],
-                   trajectory[gap_starting_index+1]])
+                   trajectory[gap_starting_index + 1]])
     current_temporal_sum += (trajectory[gap_starting_index]
-                             [0] + trajectory[gap_starting_index+1][0])
-    edge_indexes = [gap_starting_index-1, gap_starting_index+2]
-    for _ in range(n-1):
+                             [0] + trajectory[gap_starting_index + 1][0])
+    edge_indexes = [gap_starting_index - 1, gap_starting_index + 2]
+    for _ in range(n - 1):
         # no more edge points to add
         if edge_indexes[0] < 0 and edge_indexes[1] >= len(trajectory):
             break
@@ -187,10 +190,10 @@ def near_interpolation_points(trajectory, gap_starting_index, n):
             previous_edge_point = trajectory[edge_indexes[0]]
             posterior_edge_point = trajectory[edge_indexes[1]]
             new_average1 = (current_temporal_sum +
-                            previous_edge_point[0]) / (len(points)+1)
+                            previous_edge_point[0]) / (len(points) + 1)
             new_average2 = (current_temporal_sum +
-                            posterior_edge_point[0]) / (len(points)+1)
-            if abs(new_average1-gap_center) < abs(new_average2-gap_center):
+                            posterior_edge_point[0]) / (len(points) + 1)
+            if abs(new_average1 - gap_center) < abs(new_average2 - gap_center):
                 points.insert(0, trajectory[edge_indexes[0]])
                 edge_indexes[0] -= 1
                 current_temporal_sum += previous_edge_point[0]
@@ -216,6 +219,8 @@ def equidistant_interpolation_points(trajectory, n):
     sampling_step = int(len(trajectory) / n)
     points = [trajectory[i] for i in range(0, len(trajectory), sampling_step)]
     return points
+
+
 # endregion
 
 
@@ -228,13 +233,13 @@ def fill_gaps_linear(trajectory, fish, discretization=True):
         trajectory (list of tuples (t, x, y)): list of positions
     """
     i = 0
-    while(i < len(trajectory)):
+    while (i < len(trajectory)):
         if i == 0:
             i += 1
             continue
 
         current_point = trajectory[i]
-        previous_point = trajectory[i-1]
+        previous_point = trajectory[i - 1]
         t1 = previous_point[0]
         t2 = current_point[0]
 
@@ -280,21 +285,21 @@ def fill_gaps_newton(trajectory, n, example_points_methodology):
     """
     i = 0
     example_points = None
-    while(i < len(trajectory)):
+    while (i < len(trajectory)):
         if i == 0:
             i += 1
             continue
         current_point = trajectory[i]
-        previous_point = trajectory[i-1]
+        previous_point = trajectory[i - 1]
         if current_point[0] - previous_point[0] > 1:  # gap
             if example_points_methodology.__name__ == near_interpolation_points.__name__:
-                example_points = example_points_methodology(trajectory, i-1, n)
+                example_points = example_points_methodology(trajectory, i - 1, n)
             else:
                 example_points = example_points_methodology(trajectory, n)
             newton_method = NewtonInterpolation(example_points)
             # obtain near example data points and calculate newton polynomial
             predicted_points = [newton_method.predict(t) for t in range(
-                previous_point[0]+1, current_point[0])]
+                previous_point[0] + 1, current_point[0])]
             trajectory[i:i] = predicted_points
             i += len(predicted_points) + 1
         else:
@@ -321,7 +326,7 @@ def simulate_gap(fish, gap_size, gap_interval=None):
     # specific interval
     if gap_interval is not None:
         start = trajectory_copy.index(
-            [gap_interval[0]+1] + fish.get_position(gap_interval[0]+1)
+            [gap_interval[0] + 1] + fish.get_position(gap_interval[0] + 1)
         )
         end = trajectory_copy.index(
             [gap_interval[1]] + fish.get_position(gap_interval[1])
@@ -331,15 +336,17 @@ def simulate_gap(fish, gap_size, gap_interval=None):
 
     # random initial point
     else:
-        while(True):
-            gap_start_index = randint(1, len(trajectory_copy)-gap_size-2)
+        while (True):
+            gap_start_index = randint(1, len(trajectory_copy) - gap_size - 2)
 
             # no gaps around
-            if trajectory[gap_start_index][0] - trajectory[gap_start_index-1][0] == 1 \
-                    and trajectory[gap_start_index+gap_size][0] - trajectory[gap_start_index+gap_size-1][0] == 1:
-                del trajectory_copy[gap_start_index:gap_start_index+gap_size]
+            if trajectory[gap_start_index][0] - trajectory[gap_start_index - 1][0] == 1 \
+                    and trajectory[gap_start_index + gap_size][0] - trajectory[gap_start_index + gap_size - 1][0] == 1:
+                del trajectory_copy[gap_start_index:gap_start_index + gap_size]
                 break
-        return trajectory_copy, (trajectory[gap_start_index-1][0], trajectory[gap_start_index+gap_size][0])
+        return trajectory_copy, (trajectory[gap_start_index - 1][0], trajectory[gap_start_index + gap_size][0])
+
+
 # endregion
 
 
@@ -356,8 +363,8 @@ def mse(true_trajectory, output_trajectory, gaps):
         gap_size = len(true_gap_values)
         # calculate the square error for each of the missing positions
         for i in range(gap_size):
-            square_errors += (true_gap_values[i][1] - output_values[i][1])**2 + (
-                true_gap_values[i][2] - output_values[i][2])**2
+            square_errors += (true_gap_values[i][1] - output_values[i][1]) ** 2 + (
+                    true_gap_values[i][2] - output_values[i][2]) ** 2
         nr_gap_points += gap_size
     return 0 if nr_gap_points == 0 else square_errors / nr_gap_points
 
@@ -390,7 +397,8 @@ def newton_performance(trajectories_file_path, sample_points_method, degrees, ga
     # plot it
     for degree, mses in results.items():
         simple_line_plot(plt.gca(), gap_sizes, mses,
-                         f"Newton Interpolation Performance\n{sample_points_method.__name__}", "mean MSE", "gap size", marker="o:", label=f"degree={degree}")
+                         f"Newton Interpolation Performance\n{sample_points_method.__name__}", "mean MSE", "gap size",
+                         marker="o:", label=f"degree={degree}")
     plt.gca().legend()
 
 
@@ -416,13 +424,15 @@ def linear_performance(trajectories_file_path, gap_sizes):
     plt.figure()
     simple_line_plot(plt.gca(), gap_sizes, results,
                      "Linear Interpolation Performance", "mean MSE", "gap size", "o:r")
+
+
 # endregion
 
 
 def linear_interpolation_test():
     # read trajectories and choose an example one
     trajectories = tr.read_detections(
-        "resources/detections/detections-v29-sharks-mantas.txt"
+        "../resources/detections/detections-v29-sharks-mantas.txt"
     )
     example_fish = list(trajectories.values())[0]
 
@@ -444,7 +454,7 @@ def linear_interpolation_test():
 def newton_interpolation_test():
     # read trajectories and choose an example one
     trajectories = tr.read_detections(
-        "resources/detections/detections-v29-sharks-mantas.txt"
+        "../resources/detections/detections-v29-sharks-mantas.txt"
     )
     example_fish = list(trajectories.values())[0]
 
@@ -468,7 +478,7 @@ def newton_interpolation_test():
 def draw_estimation_test():
     # read trajectories and choose an example one
     trajectories = tr.read_detections(
-        "resources/detections/detections-v29-sharks-mantas.txt"
+        "../resources/detections/detections-v29-sharks-mantas.txt"
     )
     example_fish = list(trajectories.values())[0]
 
@@ -482,7 +492,7 @@ def draw_estimation_test():
     fill_gaps_linear(trajectory_with_gap, None)
 
     # visualize video, showing interpolation results
-    show_trajectory("resources/videos/v29.m4v",
+    show_trajectory("../resources/videos/v29.m4v",
                     example_fish, trajectory_with_gap, [gap_interval])  # , "interpolation-example1.mp4")
     plt.show()
     cv2.destroyAllWindows()
@@ -491,13 +501,13 @@ def draw_estimation_test():
 def evaluation_test():
     # evaluation results of the different methods
     linear_performance(
-        "resources/detections/detections-v29-sharks-mantas.txt",
+        "../resources/detections/detections-v29-sharks-mantas.txt",
         range(1, 30, 3)
     )
-    newton_performance("resources/detections/detections-v29-sharks-mantas.txt",
+    newton_performance("../resources/detections/detections-v29-sharks-mantas.txt",
                        equidistant_interpolation_points,
                        [4, 5, 6], range(1, 10, 2))
-    newton_performance("resources/detections/detections-v29-sharks-mantas.txt",
+    newton_performance("../resources/detections/detections-v29-sharks-mantas.txt",
                        near_interpolation_points,
                        [4, 5, 6], range(1, 10, 1))
     plt.show()

@@ -1,17 +1,16 @@
 import numpy as np
 from imblearn.over_sampling import SMOTE
 from matplotlib import pyplot as plt
-from pre_processing.pre_processing import CorrelatedVariablesRemoval, load_data
 from sklearn.decomposition import PCA
 from sklearn.feature_selection import SelectKBest
 from sklearn.metrics import accuracy_score
 from sklearn.model_selection import GridSearchCV, KFold
 from sklearn.preprocessing import StandardScaler
 from sklearn.tree import DecisionTreeClassifier, plot_tree
-from trajectory_reader.visualization import simple_bar_chart
 
 from interesting_episodes_detection.evaluation import holdout_prediction
-
+from pre_processing.pre_processing import CorrelatedVariablesRemoval, load_data
+from trajectory_reader.visualization import simple_hbar_chart
 
 SEED = 0
 
@@ -69,22 +68,22 @@ def dt_pipelines(dataset, species, parameters):
         for pipeline_node in pipeline:
             if pipeline_node[0] == "dt":
                 dt = pipeline_node[1].fit(x, y)
-                predictions = holdout_prediction(dt, x, y)
-                scores.append(accuracy_score(y, predictions))
+                predictions = holdout_prediction(dt, x, y)[:len(original_y)]
+                scores.append(accuracy_score(original_y, predictions))
             elif pipeline_node[0] == "balancer":
                 x, y = pipeline_node[1].fit_resample(x, y)
             else:
                 x = pipeline_node[1].fit_transform(x, y)
 
     plt.figure()
-    simple_bar_chart(plt.gca(), range(len(pipelines)), scores,
-                     "Decision tree pipelines", "accuracy", "pipeline")
     model_descriptions = ['+'.join([n[0] for n in pipeline])
                           for pipeline in pipelines]
+    simple_hbar_chart(plt.gca(), scores[::-1], model_descriptions[::-1],
+                      "Decision tree pipelines", "accuracy", "pipeline")
+
     plt.grid()
-    plt.gca().set_xticks(range(len(pipelines)))
-    plt.gca().set_xticklabels(model_descriptions, rotation=30)
     plt.tight_layout()
+    plt.xlim(0, 1)
     plot_best_estimator_tree(pipelines, scores, features_description)
 
 
@@ -96,8 +95,8 @@ def plot_best_estimator_tree(pipelines, scores, features_description):
               feature_names=features_description, fontsize=8, ax=plt.gca())
 
 
-if __name__ == "__main__":
-    dataset = "resources/datasets/v29-dataset2.csv"
+def main():
+    dataset = "../resources/datasets/v29-dataset1.csv"
 
     parameters_grid = {
         "criterion": ["gini", "entropy"],
@@ -116,3 +115,7 @@ if __name__ == "__main__":
                      "min_impurity_decrease": 0
                  })
     plt.show()
+
+
+if __name__ == "__main__":
+    main()

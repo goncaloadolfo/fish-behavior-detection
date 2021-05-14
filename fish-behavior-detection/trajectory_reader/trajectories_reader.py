@@ -10,8 +10,7 @@ import random
 from collections import namedtuple
 
 import cv2
-import numpy as np
-import pre_processing.interpolation as interpolation_module
+
 from trajectory_reader.visualization import draw_trajectory
 
 BoundingBox = namedtuple("BoundingBox", ["width", "height"])
@@ -107,27 +106,27 @@ def read_detections(detections_file_path):
 
         # add the new detected positions to the fish
         for i in range(int(nr_fish)):
-            detection = fields[2+(i*5):2+(i*5)+5]
+            detection = fields[2 + (i * 5):2 + (i * 5) + 5]
 
             # centroid
             data_point = [frame,
-                          int((detection[0] + detection[2])/2),
-                          int((detection[1] + detection[3])/2)]
+                          int((detection[0] + detection[2]) / 2),
+                          int((detection[1] + detection[3]) / 2)]
 
             fish_id = detection[-1]
             if fish_id in trajectories.keys():
                 trajectories[fish_id].add_position(
                     data_point,
-                    abs(detection[0]-detection[2]),
-                    abs(detection[1]-detection[3])
+                    abs(detection[0] - detection[2]),
+                    abs(detection[1] - detection[3])
                 )
 
             # new fish detected
             else:
                 trajectories[fish_id] = Fish(fish_id).add_position(
                     data_point,
-                    abs(detection[0]-detection[2]),
-                    abs(detection[1]-detection[3])
+                    abs(detection[0] - detection[2]),
+                    abs(detection[1] - detection[3])
                 )
 
     return trajectories
@@ -219,7 +218,6 @@ def read_trajectory_test():
         "resources/detections/detections-v29-sharks-mantas.txt"
     )
     example_fish = list(trajectories.values())[0]
-    interpolation_module.fill_gaps_linear(example_fish.trajectory, None)
     # print(example_trajectory)
     trajectory_frame = draw_trajectory(
         example_fish.trajectory, (480, 720), (0, 0, 0), path=False

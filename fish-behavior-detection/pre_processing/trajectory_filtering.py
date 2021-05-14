@@ -3,12 +3,13 @@ import copy
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
-import trajectory_features.trajectory_feature_extraction as fe_module
-import trajectory_reader.trajectories_reader as tr
-from labeling.regions_selector import read_regions
-from trajectory_reader.visualization import draw_trajectory, simple_line_plot
 
+from labeling.regions_selector import read_regions
 from pre_processing.interpolation import fill_gaps_linear
+from trajectory_features.trajectory_feature_extraction import TrajectoryFeatureExtraction, extract_features, \
+    exponential_weights
+from trajectory_reader.trajectories_reader import Fish, get_random_fish
+from trajectory_reader.visualization import draw_trajectory, simple_line_plot
 
 DISTANCE_TAG = "distance"
 SPEED_TAG = "speed"
@@ -17,29 +18,29 @@ ANGLE_TAG = "angle"
 
 def segment_trajectory(fish, descontinuity_points):
     original_trajectory = fish.trajectory
+    original_bbs = fish.bounding_boxes
     original_bbs = copy.deepcopy(original_bbs)
     original_positions = fish.positions
 
     if len(descontinuity_points > 2):
         fishes = []
-        for i in range(len(descontinuity_points)-1):
+        for i in range(len(descontinuity_points) - 1):
             segment_t0 = descontinuity_points[i][0]
-            segment_tf = descontinuity_points[i+1][0]
+            segment_tf = descontinuity_points[i + 1][0]
 
-            segment_trajectory = [data_point for data_point in original_trajectory
-                                  if data_point[0] >= segment_t0 and data_point[0] < segment_tf]
+            segment = [data_point for data_point in original_trajectory
+                       if segment_tf < data_point[0] >= segment_t0]
             segment_bbs = {t: bb for t, bb in original_bbs.items()
-                           if t >= segment_t0 and t < segment_tf}
+                           if segment_tf < t >= segment_t0}
             segment_positions = {t: position for t, position in original_bbs.items()
-                                 if t >= segment_t0 and t < segment_tf}
+                                 if segment_tf < t >= segment_t0}
 
             if i == len(descontinuity_points) - 1:
-                segment_trajectory.append(original_trajectory[-1])
+                segment.append(original_trajectory[-1])
                 segment_bbs[segment_tf] = original_bbs[segment_tf]
                 segment_positions[segment_tf] = original_positions[segment_tf]
 
-            fishes.append(tr.Fish(fish.fish_id), segment_trajectory,
-                          segment_bbs, segment_positions)
+            fishes.append(Fish(fish.fish_id, segment, segment_bbs, segment_positions))
         return fishes
 
     else:
@@ -73,8 +74,6 @@ def play_trajectory_segments(video_path, fish, descontinuity_points, write_path=
     for i in range(len(fish.trajectory)):
         _, frame = video_capture.read()
         t = fish.trajectory[i][0]
-        previous_point = None if i == 0 \
-            else (int(fish.trajectory[i-1][1]), int(fish.trajectory[i-1][2]))
         current_point = (
             int(fish.trajectory[i][1]), int(fish.trajectory[i][2])
         )
@@ -117,14 +116,14 @@ def draw_path(frame, trajectory, current_t, descontinuities, colors):
     for i in range(len(trajectory)):
         if i == 0:
             continue
-        elif trajectory[i-1][0] == current_t:
+        elif trajectory[i - 1][0] == current_t:
             break
 
         if trajectory[i][0] in descontinuities:
             segment_index += 1
             color = colors[segment_index]
 
-        cv2.line(frame, (int(trajectory[i-1][1]), int(trajectory[i-1][2])),
+        cv2.line(frame, (int(trajectory[i - 1][1]), int(trajectory[i - 1][2])),
                  (int(trajectory[i][1]), int(trajectory[i][2])), color, 2)
 
 
@@ -140,7 +139,7 @@ def smooth_positions_dp(fish, geo_regions, distance_thr, speed_thr, angle_thr):
 def resample_trajectory(fish, descontinuity_points):
     descontinuity_ts = [t for t, _ in descontinuity_points]
     i = 0
-    while(i < len(fish.trajectory)):
+    while i < len(fish.trajectory):
         if fish.trajectory[i][0] not in descontinuity_ts:
             del fish.positions[fish.trajectory[i][0]]
             del fish.trajectory[i]
@@ -150,12 +149,12 @@ def resample_trajectory(fish, descontinuity_points):
 
 
 def identify_descontinuity_points(fish, geo_regions, distance_thr, speed_thr, angle_thr):
-    fe_obj = fe_module.extract_features(fish, geo_regions, 1, 24, 0.01)
+    fe_obj = extract_features(fish, geo_regions, 1, 24, 0.01)
     speed_time_series = getattr(
-        fe_obj, fe_module.TrajectoryFeatureExtraction.SPEEDS_ATR_NAME
+        fe_obj, TrajectoryFeatureExtraction.SPEEDS_ATR_NAME
     )
     angle_time_series = getattr(
-        fe_obj, fe_module.TrajectoryFeatureExtraction.TAS_ATR_NAME
+        fe_obj, TrajectoryFeatureExtraction.TAS_ATR_NAME
     )
 
     speed_time_series = _set_timestamps(
@@ -174,8 +173,8 @@ def identify_descontinuity_points(fish, geo_regions, distance_thr, speed_thr, an
 def _sort_moments(moments):
     moments.sort(key=lambda x: x[0])
     i = 1
-    while(i != len(moments)):
-        if moments[i][0] == moments[i-1][0]:
+    while (i != len(moments)):
+        if moments[i][0] == moments[i - 1][0]:
             del moments[i]
         else:
             i += 1
@@ -225,7 +224,6 @@ def smooth_positions(fish, weights):
     fish_copy = copy.deepcopy(fish)
     half_window = int((len(weights) - 1) / 2)
     trajectory = fish.trajectory
-    positions = fish.positions
 
     for i, data_point in enumerate(trajectory):
         t = data_point[0]
@@ -239,26 +237,13 @@ def smooth_positions(fish, weights):
         trajectory[i][2] = new_y
 
 
-def exponential_weights(window_size, alpha, forward_only=False):
-    if forward_only:
-        return [alpha * (1 - alpha)**n for n in range(0, window_size)]
-
-    else:
-        half_window_weights = [
-            alpha * (1 - alpha)**n for n in range(0, int(window_size/2))
-        ]
-        reversed_weights = half_window_weights.copy()
-        reversed_weights.reverse()
-        return reversed_weights + [0] + half_window_weights
-
-
 def _get_edge_positions(fish, t, half_window):
     xs = []
     ys = []
     initial_position = fish.get_position(fish.trajectory[0][0])
     final_position = fish.get_position(fish.trajectory[-1][0])
 
-    for i in range(t-half_window, t+half_window+1):
+    for i in range(t - half_window, t + half_window + 1):
         edge_point = fish.get_position(i)
         if edge_point is None:
             edge_point = initial_position if i < t else final_position
@@ -314,7 +299,7 @@ def _plot_time_series(fe_objs, descriptions, features_of_interest, trajectory_ts
     fig, axs = plt.subplots(ncols=n_cols, nrows=int(n_rows))
 
     for i, feature in enumerate(features_of_interest):
-        row = int(i/2)
+        row = int(i / 2)
         col = int(i % 2)
         ax = axs[row, col] if n_rows > 1 else axs[col]
         for j, fe_obj in enumerate(fe_objs):
@@ -322,8 +307,8 @@ def _plot_time_series(fe_objs, descriptions, features_of_interest, trajectory_ts
 
             if len(trajectory_ts) > len(time_series):
                 trajectory_ts = trajectory_ts[
-                    len(trajectory_ts) - len(time_series):
-                ]
+                                len(trajectory_ts) - len(time_series):
+                                ]
 
             simple_line_plot(ax, trajectory_ts, time_series,
                              f"{feature}", "value", "t", label=descriptions[j])
@@ -331,9 +316,9 @@ def _plot_time_series(fe_objs, descriptions, features_of_interest, trajectory_ts
 
 
 def douglass_peucker_tuning(distance_thrs, speed_thrs, angle_thrs, seed):
-    example_fish = tr.get_random_fish(
-        "resources/detections/v29-fishes.json", seed)
-    regions = read_regions("resources/regions-example.json")
+    example_fish = get_random_fish(
+        "../resources/detections/v29-fishes.json", seed)
+    regions = read_regions("../resources/regions-example.json")
     fill_gaps_linear(example_fish.trajectory, example_fish)
 
     _dp_feature_tuning(example_fish, regions, distance_thrs, DISTANCE_TAG)
@@ -388,9 +373,9 @@ def smooth_positions_dp_test(fish, regions, distance_thr, speed_thr, angle_thr):
 
 
 def douglass_peucker_test(distance_thr, speed_thr, angle_thr, seed):
-    example_fish = tr.get_random_fish(
-        "resources/detections/v29-fishes.json", seed)
-    regions = read_regions("resources/regions-example.json")
+    example_fish = get_random_fish(
+        "../resources/detections/v29-fishes.json", seed)
+    regions = read_regions("../resources/regions-example.json")
     fill_gaps_linear(example_fish.trajectory, example_fish)
 
     _dp_feature_tuning(example_fish, regions, [distance_thr], DISTANCE_TAG)
@@ -399,14 +384,14 @@ def douglass_peucker_test(distance_thr, speed_thr, angle_thr, seed):
 
     descontinuity_points = smooth_positions_dp_test(example_fish, regions,
                                                     distance_thr, speed_thr, angle_thr)
-    play_trajectory_segments("resources/videos/v29.m4v",
-                             example_fish, descontinuity_points, "resources/segmentation-example.mp4")
+    play_trajectory_segments("../resources/videos/v29.m4v",
+                             example_fish, descontinuity_points, "../resources/segmentation-example.mp4")
 
 
 def positions_filtering_test(window_size, alpha, features_of_interest, seed):
-    example_fish = tr.get_random_fish(
-        "resources/detections/v29-fishes.json", seed)
-    regions = read_regions("resources/regions-example.json")
+    example_fish = get_random_fish(
+        "../resources/detections/v29-fishes.json", seed)
+    regions = read_regions("../resources/regions-example.json")
     fill_gaps_linear(example_fish.trajectory, example_fish)
 
     fig, axs = plt.subplots(ncols=2, nrows=2)
@@ -415,7 +400,7 @@ def positions_filtering_test(window_size, alpha, features_of_interest, seed):
     )
 
     ts = [data_point[0] for data_point in example_fish.trajectory]
-    fe_obj_original = fe_module.extract_features(
+    fe_obj_original = extract_features(
         example_fish, regions, 1, 24, 0.01
     )
     frame_original_trajectory = draw_trajectory(
@@ -427,7 +412,7 @@ def positions_filtering_test(window_size, alpha, features_of_interest, seed):
         window_size += 1
     weights = exponential_weights(window_size, alpha)
     smooth_positions(example_fish, weights)
-    fe_obj_filtered = fe_module.extract_features(
+    fe_obj_filtered = extract_features(
         example_fish, regions, 1, 24, 0.01
     )
     frame_filtered_trajectory = draw_trajectory(

@@ -7,8 +7,7 @@ from sklearn.cluster import KMeans
 
 from anomaly_detection.anomaly_detector import most_different_features
 from pre_processing.interpolation import fill_gaps_linear
-from pre_processing.pre_processing import (analyze_pca_components, apply_pca,
-                                           z_normalization)
+from pre_processing.pre_processing import (z_normalization)
 from trajectory_features.trajectory_feature_extraction import read_dataset, read_fishes
 from trajectory_reader.visualization import (draw_trajectory, simple_bar_chart,
                                              simple_line_plot)
@@ -75,7 +74,7 @@ def best_seed(samples, n, k, max_steps):
 
     for _ in range(n):
         # train a new model using a new seed
-        seed = random.randrange(2**32)
+        seed = random.randrange(2 ** 32)
         model = train_model(samples, k, max_steps, 1, seed)
 
         # get distances and cluster indexes
@@ -91,6 +90,8 @@ def best_seed(samples, n, k, max_steps):
             best_seed = (seed, silhouette)
 
     print(f"Best seed: {best_seed[0]}, silhouette: {best_seed[1]}")
+
+
 # endregion
 
 
@@ -110,7 +111,7 @@ def calculate_separations(distances, cluster_info):
         cluster = cluster_info[i]
         # remove distance to its cluster centroid
         aux = np.hstack(
-            (data_point_distances[:cluster], data_point_distances[cluster+1:]))
+            (data_point_distances[:cluster], data_point_distances[cluster + 1:]))
         separations.append(min(aux))
     return separations
 
@@ -126,15 +127,17 @@ def calculate_silhouettes(cohesions, separations):
 
         # silhouette calculation
         if cohesion < separation:
-            silhouettes.append(1 - cohesion/separation)
+            silhouettes.append(1 - cohesion / separation)
 
         elif cohesion == separation:
             silhouettes.append(0)
 
         else:
-            silhouettes.append(separation/cohesion - 1)
+            silhouettes.append(separation / cohesion - 1)
 
     return silhouettes
+
+
 # endregion
 
 
@@ -220,6 +223,8 @@ def species_distribution(species_gt, cluster_info):
     plt.xlabel("cluster")
     plt.ylabel("number of samples")
     plt.legend()
+
+
 # endregion
 
 
@@ -246,7 +251,7 @@ def v29_all_species():
     """
     # read samples
     samples, gt, descriptions = read_dataset(
-        "resources/datasets/v29-dataset1.csv"
+        "../resources/datasets/v29-dataset1.csv"
     )
 
     # pre processing
@@ -264,7 +269,7 @@ def v29_all_species():
                                                max_steps=300, n_init=1, seed=2286868185)
 
     # analysis
-    draw_cluster_trajectories("resources/detections/v29-fishes.json",
+    draw_cluster_trajectories("../resources/detections/v29-fishes.json",
                               resulting_clusters)
     species_distribution(gt, resulting_clusters)
     plot_most_different_features({label: centroid
@@ -272,6 +277,8 @@ def v29_all_species():
                                  descriptions, n=10)
     plt.show()
     cv2.destroyAllWindows()
+
+
 # endregion
 
 

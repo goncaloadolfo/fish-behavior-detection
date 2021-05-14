@@ -1,7 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from imblearn.over_sampling import SMOTE
-from pre_processing.pre_processing import CorrelatedVariablesRemoval, load_data
 from sklearn.decomposition import PCA
 from sklearn.naive_bayes import GaussianNB
 from sklearn.pipeline import Pipeline
@@ -11,6 +10,7 @@ from interesting_episodes_detection.evaluation import (METRICS,
                                                        evaluation_metrics,
                                                        holdout_prediction,
                                                        plot_metrics)
+from pre_processing.pre_processing import CorrelatedVariablesRemoval, load_data
 
 SEED = 0
 
@@ -51,12 +51,12 @@ def compare_gnb_pipelines(path_dataset, species, balance=False):
         results = evaluation_metrics(y, predictions)
 
         # bar positions
-        if i < nr_pipelines/2:
+        if i < nr_pipelines / 2:
             bar_positions = x_positions - bar_width * \
-                (nr_metrics/2 - i) + bar_width/2
+                            (nr_metrics / 2 - i) + bar_width / 2
         else:
             bar_positions = x_positions + bar_width * \
-                (i+1 - nr_metrics/2) - bar_width/2
+                            (i + 1 - nr_metrics / 2) - bar_width / 2
 
         plot_metrics(results, bar_positions,
                      '+'.join(pipeline.named_steps.keys()),
@@ -68,20 +68,21 @@ def compare_gnb_pipelines(path_dataset, species, balance=False):
               f"({','.join(list(species))}, {balance_str})")
     plt.gca().set_xticks(x_positions)
     plt.gca().set_xticklabels(METRICS)
+    plt.ylim(0, 1)
     plt.legend()
     plt.grid()
 
 
 if __name__ == "__main__":
     np.random.seed(0)
-    dataset = "resources/datasets/v29-dataset1.csv"
+    dataset = "../resources/datasets/v29-dataset1.csv"
 
     compare_gnb_pipelines(dataset, ("shark", "manta-ray"))
-    compare_gnb_pipelines(dataset, ("shark",))
-    compare_gnb_pipelines(dataset, ("manta-ray",))
+    # compare_gnb_pipelines(dataset, ("shark",))
+    # compare_gnb_pipelines(dataset, ("manta-ray",))
 
     compare_gnb_pipelines(dataset, ("shark", "manta-ray"), balance=True)
-    compare_gnb_pipelines(dataset, ("shark",), balance=True)
-    compare_gnb_pipelines(dataset, ("manta-ray",), balance=True)
+    # compare_gnb_pipelines(dataset, ("manta-ray",), balance=True)
+    # compare_gnb_pipelines(dataset, ("shark",), balance=True)
 
     plt.show()

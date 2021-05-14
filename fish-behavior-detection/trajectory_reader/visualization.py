@@ -35,6 +35,15 @@ def simple_bar_chart(ax, xs, ys, title, ylabel, xlabel, label=None, width=0.8):
     ax.bar(xs, ys, align="center", label=label, width=width)
 
 
+def simple_hbar_chart(ax, ys, labels, title, ylabel, xlabel):
+    ax.set_title(title)
+    ax.set_ylabel(ylabel)
+    ax.set_xlabel(xlabel)
+    ax.barh(range(len(ys)), ys, align="center")
+    ax.set_yticks(range(len(ys)))
+    ax.set_yticklabels(labels)
+
+
 def histogram(ax, values, title, ylabel, xlabel, density=False, cumulative=False):
     ax.set_title(title)
     ax.set_ylabel(ylabel)
@@ -42,12 +51,12 @@ def histogram(ax, values, title, ylabel, xlabel, density=False, cumulative=False
     return ax.hist(values, density=density, cumulative=cumulative)
 
 
-def histogram2d(ax, values, values2, title, ylabel, xlabel, colormap="Blues", cmin=0, with_text=False, frame=None):
+def histogram2d(ax, values, values2, title, ylabel, xlabel, bins_range, colormap="Blues", with_text=False, frame=None):
     ax.set_title(title)
     ax.set_ylabel(ylabel)
     ax.set_xlabel(xlabel)
     counts, binsx, binsy, quad_image = ax.hist2d(
-        values, values2, cmap=colormap, cmin=cmin
+        values, values2, cmap=colormap, range=bins_range
     )
 
     cmap = matplotlib.cm.get_cmap("YlOrBr")

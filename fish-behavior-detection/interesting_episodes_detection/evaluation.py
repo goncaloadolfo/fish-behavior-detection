@@ -6,7 +6,6 @@ from sklearn.metrics import (accuracy_score, f1_score, precision_score,
 
 from trajectory_reader.visualization import simple_bar_chart
 
-
 METRICS = ["accuracy", "precision", "recall", "f1-score"]
 
 
@@ -54,8 +53,8 @@ def holdout_prediction(model, samples, gt):
 
         # middle samples
         else:
-            x = np.vstack((samples[:i], samples[i+1:]))
-            y = gt[:i] + gt[i+1:]
+            x = np.vstack((samples[:i], samples[i + 1:]))
+            y = gt[:i] + gt[i + 1:]
 
         # fit with the rest of the samples
         model.fit(x, y)

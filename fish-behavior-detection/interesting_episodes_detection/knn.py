@@ -2,24 +2,20 @@ from collections import defaultdict
 
 from imblearn.over_sampling import SMOTE
 from matplotlib import pyplot as plt
-from pre_processing.pre_processing import CorrelatedVariablesRemoval, load_data
 from sklearn.decomposition import PCA
 from sklearn.feature_selection import SelectKBest
 from sklearn.metrics import accuracy_score
-from sklearn.model_selection import GridSearchCV, KFold
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.preprocessing import StandardScaler
-from trajectory_reader.visualization import simple_bar_chart, simple_line_plot
 
 from interesting_episodes_detection.evaluation import holdout_prediction
-
-SEED = 2
+from pre_processing.pre_processing import CorrelatedVariablesRemoval, load_data
+from trajectory_reader.visualization import simple_line_plot, simple_hbar_chart
 
 
 def knn_tuning(dataset, species, parameters_grid):
-    x, y_original, feature_names = load_data(dataset, species)
-    x = StandardScaler().fit_transform(x, y_original)
-    x, y = SMOTE(random_state=SEED).fit_resample(x, y_original)
+    x, y, feature_names = load_data(dataset, species)
+    x = StandardScaler().fit_transform(x, y)
 
     scores = defaultdict(list)
     ns = parameters_grid["n_neighbors"]
@@ -31,7 +27,7 @@ def knn_tuning(dataset, species, parameters_grid):
                                        algorithm="brute")
             predictions = holdout_prediction(knn, x, y)
             scores[metric].append(accuracy_score(
-                y[:len(y_original)], predictions[:len(y_original)]
+                y, predictions
             ))
 
     plt.figure()
@@ -42,6 +38,17 @@ def knn_tuning(dataset, species, parameters_grid):
     plt.grid()
     plt.legend()
 
+    best_score = -1
+    best_k = -1
+    best_metric = "nd"
+    for metric in metrics:
+        for i in range(len(scores[metric])):
+            if scores[metric][i] > best_score:
+                best_score = scores[metric][i]
+                best_k = ns[i]
+                best_metric = metric
+    print(f"Best model: k={best_k} metric:{best_metric} score:{best_score}")
+
 
 def knn_pipelines(dataset, species, parameters):
     x, y, features_description = load_data(dataset, species)
@@ -50,7 +57,7 @@ def knn_pipelines(dataset, species, parameters):
         algorithm="brute",
         metric=parameters["metric"]
     )
-    balancer = SMOTE(random_state=SEED)
+    balancer = SMOTE()
     normalizer = StandardScaler()
     select_kbest = SelectKBest(k=20)
     pca = PCA(n_components=10)
@@ -60,16 +67,16 @@ def knn_pipelines(dataset, species, parameters):
         [("knn", knn)],
         [("normalizer", normalizer), ("knn", knn)],
         [("balancer", balancer), ("knn", knn)],
-        [("normalizer", normalizer), ("balancer", balancer), ("knn", knn)],
+        [("balancer", balancer), ("normalizer", normalizer), ("knn", knn)],
 
-        [("normalizer", normalizer), ("pca", pca),
-         ("balancer", balancer), ("knn", knn)],
+        [("balancer", balancer), ("normalizer", normalizer),
+         ("pca", pca), ("knn", knn)],
 
-        [("normalizer", normalizer), ("select kbest", select_kbest),
-         ("balancer", balancer), ("knn", knn)],
+        [("balancer", balancer), ("normalizer", normalizer),
+         ("select kbest", select_kbest), ("knn", knn)],
 
-        [("normalizer", normalizer), ("correlation removal", correlation_removal),
-         ("balancer", balancer), ("knn", knn)],
+        [("balancer", balancer), ("normalizer", normalizer),
+         ("correlation removal", correlation_removal), ("knn", knn)],
     )
 
     original_x = x.copy()
@@ -93,27 +100,31 @@ def knn_pipelines(dataset, species, parameters):
                 x = pipeline_node[1].fit_transform(x, y)
 
     plt.figure()
-    simple_bar_chart(plt.gca(), range(len(pipelines)), scores,
-                     "KNN Pipelines", "accuracy", "pipeline")
     model_descriptions = ['+'.join([n[0] for n in pipeline])
                           for pipeline in pipelines]
+    simple_hbar_chart(plt.gca(), scores[::-1], model_descriptions[::-1],
+                      "Decision tree pipelines", "accuracy", "pipeline")
+
     plt.grid()
-    plt.gca().set_xticks(range(len(pipelines)))
-    plt.gca().set_xticklabels(model_descriptions, rotation=30)
     plt.tight_layout()
+    plt.xlim(0, 1)
 
 
-if __name__ == "__main__":
-    dataset = "resources/datasets/v29-dataset1.csv"
+def main():
+    dataset = "../resources/datasets/v29-dataset1.csv"
     species = ("shark", "manta-ray")
     knn_tuning(dataset, species,
                {
-                   "n_neighbors": [5, 7, 9],
+                   "n_neighbors": [3, 5, 7, 9],
                    "metric": ["euclidean", "manhattan", "chebyshev"]
                })
     knn_pipelines(dataset, species,
                   {
-                      "n_neighbors": 9,
-                      "metric": "manhattan"
+                      "n_neighbors": 5,
+                      "metric": "euclidean"
                   })
     plt.show()
+
+
+if __name__ == "__main__":
+    main()

@@ -7,11 +7,14 @@ of a dataset:
     - probability density functions
     - correlation
 """
+from collections import defaultdict
+
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
 
+from labeling.trajectory_labeling import read_species_gt
 from pre_processing.pre_processing import CorrelatedVariablesRemoval, load_data
 from trajectory_features.trajectory_feature_extraction import read_dataset
 from trajectory_reader.trajectories_reader import read_fishes
@@ -20,37 +23,59 @@ from trajectory_reader.visualization import (histogram, histogram2d,
                                              simple_line_plot)
 
 
-def analyze_trajectories(video_path, path_fishes_file):
-    fishes = read_fishes(path_fishes_file)
+def analyze_trajectories_by_species(path_fishes, path_species, species_groups, video_path, group_by=False):
+    fishes = read_fishes(path_fishes)
+    species_gt = read_species_gt(path_species)
 
+    fishes_by_species = defaultdict(list)
+    for fish in fishes:
+        species = species_gt[fish.fish_id]
+        if species in species_groups:
+            fishes_by_species[species].append(fish)
+
+    if group_by:
+        for focus_species in species_groups:
+            analyze_trajectories(fishes_by_species[focus_species], focus_species, video_path)
+
+    else:
+        all_focus_species_trajectories = []
+        for focus_species in species_groups:
+            all_focus_species_trajectories += fishes_by_species[focus_species]
+        analyze_trajectories(all_focus_species_trajectories, species_groups, video_path)
+
+
+def analyze_trajectories(fishes, tag, video_path):
     trajectory_durations = []
     trajectory_xvalues = []
     trajectory_yvalues = []
 
     for fish in fishes:
         trajectory = fish.trajectory
-        trajectory_durations.append(trajectory[-1][0] - trajectory[0][0])
+        trajectory_durations.append((trajectory[-1][0] - trajectory[0][0]) / 24.0)
         trajectory_xvalues += [data_point[1] for data_point in trajectory]
         trajectory_yvalues += [data_point[2] for data_point in trajectory]
 
     plt.figure()
     _, bins, _ = histogram(plt.gca(), trajectory_durations,
-                           "Trajectory duration", "#trajectories", "duration (frames)")
+                           f"Trajectory duration {tag}", "#trajectories", "duration (s)")
     plt.xticks(bins)
 
     video_capture = cv2.VideoCapture(video_path)
     _, video_frame = video_capture.read()
+    frame_size = (video_capture.get(cv2.CAP_PROP_FRAME_WIDTH),
+                  video_capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
     video_capture.release()
 
     plt.figure()
     _, binsx, binsy, quad_img, frame = histogram2d(plt.gca(), trajectory_xvalues, trajectory_yvalues,
-                                                   "Positions Distribution", "y position", "x position",
-                                                   cmin=1, with_text=True, frame=video_frame)
+                                                   f"Positions Distribution {tag}", "y position", "x position",
+                                                   bins_range=[[0, frame_size[0]], [0, frame_size[1]]], with_text=True,
+                                                   frame=video_frame)
     plt.gca().set_xticks(binsx)
     plt.gca().set_yticks(binsy)
     plt.gca().invert_yaxis()
     plt.colorbar(quad_img)
-    cv2.imshow("Positions Distribution", frame)
+    cv2.imshow(f"Positions Distribution {tag}", frame)
 
 
 def full_analysis(samples, gt, features_description):
@@ -256,7 +281,7 @@ def v29_analysis(path):
 
 def v29_episodes_analysis(species):
     samples, episodes_gt, features_descriptions = load_data(
-        "resources/datasets/v29-dataset1.csv", species
+        "../resources/datasets/v29-dataset1.csv", species
     )
     general_info(samples, features_descriptions)
     class_balance(episodes_gt, "Interesting episodes")
@@ -274,6 +299,11 @@ if __name__ == "__main__":
     # v29_episodes_analysis(("shark", ))
     # v29_episodes_analysis(("manta-ray", ))
 
-    analyze_trajectories("../resources/videos/v29.m4v", "../resources/detections/v29-fishes.json")
+    analyze_trajectories_by_species("../resources/detections/v29-fishes.json",
+                                    "../resources/classification/species-gt-v29.csv", ("shark", "manta-ray"),
+                                    "../resources/videos/v29.m4v")
+    analyze_trajectories_by_species("../resources/detections/v29-fishes.json",
+                                    "../resources/classification/species-gt-v29.csv", ("shark", "manta-ray"),
+                                    "../resources/videos/v29.m4v", True)
     plt.show()
     cv2.destroyAllWindows()
