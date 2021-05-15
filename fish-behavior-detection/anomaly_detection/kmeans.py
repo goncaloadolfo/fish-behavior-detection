@@ -7,7 +7,7 @@ from sklearn.cluster import KMeans
 
 from anomaly_detection.anomaly_detector import most_different_features
 from pre_processing.interpolation import fill_gaps_linear
-from pre_processing.pre_processing import (z_normalization)
+from pre_processing.pre_processing_functions import (z_normalization)
 from trajectory_features.trajectory_feature_extraction import read_dataset, read_fishes
 from trajectory_reader.visualization import (draw_trajectory, simple_bar_chart,
                                              simple_line_plot)
@@ -70,7 +70,7 @@ def evaluate_model(samples, k, max_steps, n_init, seed=None):
 
 
 def best_seed(samples, n, k, max_steps):
-    best_seed = None
+    best_seed_value = None
 
     for _ in range(n):
         # train a new model using a new seed
@@ -86,10 +86,10 @@ def best_seed(samples, n, k, max_steps):
         separations = calculate_separations(distances, resulting_clusters)
         silhouette = np.mean(calculate_silhouettes(cohesions, separations))
 
-        if best_seed is None or silhouette > best_seed[1]:
-            best_seed = (seed, silhouette)
+        if best_seed_value is None or silhouette > best_seed_value[1]:
+            best_seed_value = (seed, silhouette)
 
-    print(f"Best seed: {best_seed[0]}, silhouette: {best_seed[1]}")
+    print(f"Best seed: {best_seed_value[0]}, silhouette: {best_seed_value[1]}")
 
 
 # endregion

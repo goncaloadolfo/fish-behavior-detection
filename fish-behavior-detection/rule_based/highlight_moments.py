@@ -9,7 +9,7 @@ import trajectory_reader.trajectories_reader as tr
 from labeling.regions_selector import read_regions
 from labeling.trajectory_labeling import read_species_gt
 from pre_processing.interpolation import fill_gaps_linear
-from pre_processing.trajectory_filtering import (_set_timestamps,
+from pre_processing.trajectory_filtering import (set_timestamps,
                                                  exponential_weights,
                                                  smooth_positions)
 from trajectory_features.trajectory_feature_extraction import (
@@ -88,9 +88,9 @@ def highlight_moments(fish, regions, rules, species):
         else:
             time_series_name = RULE_FEATURES_MAPPING[rule.feature]
             new_moments = _search_moments_time_series(
-                _set_timestamps(fish.trajectory[0][0],
-                                len(fish.trajectory),
-                                getattr(fe_obj, time_series_name)),
+                set_timestamps(fish.trajectory[0][0],
+                               len(fish.trajectory),
+                               getattr(fe_obj, time_series_name)),
                 rule
             )
             highlighting_moments = highlighting_moments.union(new_moments)
@@ -128,7 +128,7 @@ def plot_hms(fish, feature, fe_obj, hms):
 
 
 def _search_moments_time_series(time_series, rule):
-    highlight_moments = set()
+    highlight_moments_set = set()
 
     if callable(rule.values[0]):
         func = rule.values[0]
@@ -136,32 +136,32 @@ def _search_moments_time_series(time_series, rule):
         if func.__name__ == min.__name__:
             min_index = np.argmin(time_series, axis=0)[1]
             if time_series[min_index][1] < rule.values[1]:
-                highlight_moments.add(HighlightMoment(time_series[min_index][0],
-                                                      time_series[min_index][0],
-                                                      rule))
+                highlight_moments_set.add(HighlightMoment(time_series[min_index][0],
+                                                          time_series[min_index][0],
+                                                          rule))
         elif func.__name__ == max.__name__:
             max_index = np.argmax(time_series, axis=0)[1]
             if time_series[max_index][1] > rule.values[1]:
-                highlight_moments.add(HighlightMoment(time_series[max_index][0],
-                                                      time_series[max_index][0],
-                                                      rule))
+                highlight_moments_set.add(HighlightMoment(time_series[max_index][0],
+                                                          time_series[max_index][0],
+                                                          rule))
 
     else:
         duration = 0
         for t, value in time_series:
             if (not rule.pass_the_rule(value) or t == time_series[-1][0]) and duration > 0:
                 if duration > rule.duration:
-                    highlight_moments.add(HighlightMoment(t - duration, t - 1, rule))
+                    highlight_moments_set.add(HighlightMoment(t - duration, t - 1, rule))
                 duration = 0
 
             elif rule.pass_the_rule(value):
                 duration += 1
 
-    return highlight_moments
+    return highlight_moments_set
 
 
 def _search_moments_regions(trajectory, regions_time_series, pass_by_results, rules):
-    highlight_moments = set()
+    highlight_moments_set = set()
 
     last_region = -1
     duration = 0
@@ -177,7 +177,7 @@ def _search_moments_regions(trajectory, regions_time_series, pass_by_results, ru
         if (last_region != region or t == trajectory[-1][0]) and duration > 0:
             for rule in rules:
                 if rule.feature == Rule.REGION and rule.values[0] == last_region and rule.duration < duration:
-                    highlight_moments.add(
+                    highlight_moments_set.add(
                         HighlightMoment(t - duration, t - 1, rule)
                     )
             duration = 0
@@ -197,11 +197,11 @@ def _search_moments_regions(trajectory, regions_time_series, pass_by_results, ru
                                     pass_by_results[(transition[1], transition[0])]
 
                 if total_transitions >= rule.duration:
-                    highlight_moments.add(
+                    highlight_moments_set.add(
                         HighlightMoment(None, None, rule)
                     )
 
-    return highlight_moments
+    return highlight_moments_set
 
 
 def highlight_moments_test(rules):

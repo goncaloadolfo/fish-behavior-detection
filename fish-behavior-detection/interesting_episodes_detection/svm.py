@@ -13,7 +13,7 @@ from sklearn.svm import SVC
 from interesting_episodes_detection.evaluation import holdout_prediction
 from labeling.trajectory_labeling import read_episodes
 from pre_processing.interpolation import fill_gaps_linear
-from pre_processing.pre_processing import CorrelatedVariablesRemoval, load_data
+from pre_processing.pre_processing_functions import CorrelatedVariablesRemoval, load_data
 from trajectory_features.trajectory_feature_extraction import read_dataset
 from trajectory_reader.trajectories_reader import read_fishes
 from trajectory_reader.visualization import (show_fish_trajectory,
@@ -205,7 +205,7 @@ def _group_by_parameter(models, parameters_indexes):
     return group_by_results
 
 
-if __name__ == "__main__":
+def main():
     param_grid = {
         "C": [0.01, 0.1, 1, 10, 100],
         "kernel": ["linear", "poly", "rbf", "sigmoid"],
@@ -217,3 +217,7 @@ if __name__ == "__main__":
     svm_pipelines("../resources/datasets/v29-dataset1.csv",
                   {"c": 0.01, "kernel": "poly", "degree": 3, "gamma": 1, "random_state": 0})
     plt.show()
+
+
+if __name__ == "__main__":
+    main()

@@ -11,8 +11,9 @@ class CorrelatedVariablesRemoval:
 
     def __init__(self, thr):
         self.__thr = thr
+        self.__correlation_matrix = None
 
-    def fit(self, x, y):
+    def fit(self, x, _):
         x = np.array(x)
         self.__correlation_matrix = np.corrcoef(x.T)
         return self
@@ -115,12 +116,9 @@ def apply_pca(samples, n_components):
 
 
 if __name__ == "__main__":
-    x_all, _ = load_data("../resources/datasets/v29-dataset1.csv",
-                         ("shark",))
-    x_sharks, _ = load_data("../resources/datasets/v29-dataset1.csv",
-                            ("shark",))
-    x_mantas, _ = load_data("../resources/datasets/v29-dataset1.csv",
-                            ("manta-ray",))
+    x_all, _, _ = load_data("../resources/datasets/v29-dataset1.csv", ("shark",))
+    x_sharks, _, _ = load_data("../resources/datasets/v29-dataset1.csv", ("shark",))
+    x_mantas, _, _ = load_data("../resources/datasets/v29-dataset1.csv", ("manta-ray",))
 
     analyze_pca_components(x_all, "- all species")
     analyze_pca_components(x_sharks, "- sharks")

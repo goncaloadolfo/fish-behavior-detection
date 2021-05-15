@@ -51,6 +51,7 @@ def play_trajectory_segments(video_path, fish, descontinuity_points, write_path=
     video_capture = cv2.VideoCapture(video_path)
     video_capture.set(cv2.CAP_PROP_POS_FRAMES, fish.trajectory[0][0])
 
+    writer = None
     if write_path is not None:
         codec = cv2.VideoWriter_fourcc(*"mp4v")
         writer = cv2.VideoWriter(write_path,
@@ -157,10 +158,10 @@ def identify_descontinuity_points(fish, geo_regions, distance_thr, speed_thr, an
         fe_obj, TrajectoryFeatureExtraction.TAS_ATR_NAME
     )
 
-    speed_time_series = _set_timestamps(
+    speed_time_series = set_timestamps(
         fish.trajectory[0][0], len(fish.trajectory), speed_time_series
     )
-    angle_time_series = _set_timestamps(
+    angle_time_series = set_timestamps(
         fish.trajectory[0][0], len(fish.trajectory), angle_time_series
     )
 
@@ -173,14 +174,14 @@ def identify_descontinuity_points(fish, geo_regions, distance_thr, speed_thr, an
 def _sort_moments(moments):
     moments.sort(key=lambda x: x[0])
     i = 1
-    while (i != len(moments)):
+    while i != len(moments):
         if moments[i][0] == moments[i - 1][0]:
             del moments[i]
         else:
             i += 1
 
 
-def _set_timestamps(initial_t, trajectory_length, time_series):
+def set_timestamps(initial_t, trajectory_length, time_series):
     start_t = initial_t + (trajectory_length - len(time_series))
     return [(start_t + i, time_series[i]) for i in range(len(time_series))]
 
@@ -329,6 +330,8 @@ def douglass_peucker_tuning(distance_thrs, speed_thrs, angle_thrs, seed):
 def _dp_feature_tuning(fish, regions, thrs, feature_tag):
     descontinuity_points_list = []
 
+    speed_time_series = None
+    angle_time_series = None
     for thr in thrs:
         distance_thr = 0 if feature_tag != DISTANCE_TAG else thr
         speed_thr = 0 if feature_tag != SPEED_TAG else thr
@@ -431,14 +434,14 @@ def positions_filtering_test(window_size, alpha, features_of_interest, seed):
 if __name__ == '__main__':
     # positions_filtering_test(window_size=24, alpha=0.01,
     #                          features_of_interest=(
-    #                              fe_module.TrajectoryFeatureExtraction.SPEEDS_ATR_NAME,
-    #                              fe_module.TrajectoryFeatureExtraction.CURVATURES_ATR_NAME,
-    #                              fe_module.TrajectoryFeatureExtraction.TAS_ATR_NAME,
-    #                              fe_module.TrajectoryFeatureExtraction.CDS_ATR_NAME
+    #                              TrajectoryFeatureExtraction.SPEEDS_ATR_NAME,
+    #                              TrajectoryFeatureExtraction.CURVATURES_ATR_NAME,
+    #                              TrajectoryFeatureExtraction.TAS_ATR_NAME,
+    #                              TrajectoryFeatureExtraction.CDS_ATR_NAME
     #                          ), seed=1
     #                          )
 
-    douglass_peucker_test(10, 0.75, 20, 1)
+    douglass_peucker_test(30, 2, 50, 1)
 
     # douglass_peucker_tuning([10, 20, 30], [0.5, 1, 2], [10, 30, 50], 1)
 

@@ -9,7 +9,7 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.preprocessing import StandardScaler
 
 from interesting_episodes_detection.evaluation import holdout_prediction
-from pre_processing.pre_processing import CorrelatedVariablesRemoval, load_data
+from pre_processing.pre_processing_functions import CorrelatedVariablesRemoval, load_data
 from trajectory_reader.visualization import simple_line_plot, simple_hbar_chart
 
 

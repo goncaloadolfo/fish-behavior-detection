@@ -26,7 +26,7 @@ SPECIES_ALIAS = {
 }
 
 
-class Episode():
+class Episode:
     """
     Entity for a behavior episode.
     Described by:
@@ -61,7 +61,7 @@ class Episode():
         return self.__t_final
 
 
-class TrajectoryLabeling():
+class TrajectoryLabeling:
     """
     Visualize fishes and assign
     labels to each one (species and behaviors).
@@ -77,7 +77,7 @@ class TrajectoryLabeling():
         self.__episodes = set()
         self.__classification = {}
         # state
-        self.__current_fish = 0
+        self.__current_fish = None
         self.__running = True
 
     def start(self):
@@ -114,7 +114,7 @@ class TrajectoryLabeling():
         t_final = trajectory[-1][0]
         t = t_initial
 
-        while (True):
+        while True:
             # draw frame showing the fish position
             self.__draw_frame(t)
 
@@ -189,6 +189,8 @@ class TrajectoryLabeling():
                 break
 
         # timestamps
+        t1 = -1
+        t2 = -1
         while True:
             timestamps = input("initial and final timestamps (two integers " +
                                "separated by a space)\n>").strip()
@@ -272,9 +274,9 @@ def read_episodes(file_path):
     try:
         with open(file_path, 'r') as f:
             f.readline()  # description line
-            while (True):
+            while True:
                 line = f.readline().replace(' ', '')
-                if line == None or line == '\n' or line == "":
+                if line is None or line == '\n' or line == "":
                     break
                 # parse every field and instantiate a new episode
                 fields = line.split(",")
@@ -301,9 +303,9 @@ def read_species_gt(file_path):
     try:
         with open(file_path, 'r') as f:
             f.readline()  # description line
-            while (True):
+            while True:
                 line = f.readline().replace(' ', '')
-                if line == None or line == '\n' or line == "":
+                if line is None or line == '\n' or line == "":
                     break
                 # parse fields
                 fields = line.split(",")

@@ -10,7 +10,7 @@ from interesting_episodes_detection.evaluation import (METRICS,
                                                        evaluation_metrics,
                                                        holdout_prediction,
                                                        plot_metrics)
-from pre_processing.pre_processing import CorrelatedVariablesRemoval, load_data
+from pre_processing.pre_processing_functions import CorrelatedVariablesRemoval, load_data
 
 SEED = 0
 

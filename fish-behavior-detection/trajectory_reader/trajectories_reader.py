@@ -88,7 +88,7 @@ def read_detections(detections_file_path):
     Read the detections ground truth from a file.
 
     Args:
-        detections_file ([type]): [description]
+        detections_file_path ([type]): [description]
 
     Returns:
         [type]: [description]
@@ -168,12 +168,11 @@ def read_fishes(fishes_file_path):
     Read fishes contained in the file with the received path.
 
     Args:
-        trajectories_file_path ([type]): [description]
+        fishes_file_path ([type]): [description]
 
     Returns:
         [type]: [description]
     """
-    fishes = set()
     with open(fishes_file_path) as f:
         # dict with all fishes
         fishes = json.load(f)
@@ -215,7 +214,7 @@ def get_random_fish(fishes_file_path, seed=None):
 
 def read_trajectory_test():
     trajectories = read_detections(
-        "resources/detections/detections-v29-sharks-mantas.txt"
+        "../resources/detections/detections-v29-sharks-mantas.txt"
     )
     example_fish = list(trajectories.values())[0]
     # print(example_trajectory)
@@ -228,7 +227,7 @@ def read_trajectory_test():
 
 
 def read_fishes_test():
-    fishes = read_fishes("resources/detections/v29-fishes.json")
+    fishes = read_fishes("../resources/detections/v29-fishes.json")
     print("number of fishes: ", len(fishes))
     example_fish = fishes.pop()
     print("example fish: ", example_fish.fish_id)
@@ -239,6 +238,6 @@ def read_fishes_test():
 if __name__ == "__main__":
     read_trajectory_test()
     # read_fishes_test()
-    # union_gt("resources/detections/detections-joao-v29.txt",
-    #          "resources/detections/detections-v29-sharks-mantas.txt",
-    #          output_path="resources/detections/v29-fishes.json")
+    # union_gt("../resources/detections/detections-joao-v29.txt",
+    #          "../resources/detections/detections-v29-sharks-mantas.txt",
+    #          output_path="../resources/detections/v29-fishes.json")

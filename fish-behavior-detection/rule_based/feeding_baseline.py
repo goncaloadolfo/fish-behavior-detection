@@ -6,14 +6,14 @@ Module that implements the ability to detect feeding periods and fish with lack 
 import logging
 import random
 import time
-from random import randint
 
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
-from pre_processing.interpolation import fill_gaps_linear
 from scipy.spatial import Delaunay
 from scipy.spatial.qhull import QhullError
+
+from pre_processing.interpolation import fill_gaps_linear
 from trajectory_reader.trajectories_reader import read_detections
 from trajectory_reader.visualization import draw_fishes, simple_line_plot
 
@@ -21,7 +21,7 @@ feeding_baseline_logger = logging.getLogger(__name__)
 feeding_baseline_logger.addHandler(logging.StreamHandler())
 
 
-class Triangle():
+class Triangle:
 
     def __init__(self, p1, p2, p3):
         self.__points = [p1, p2, p3]
@@ -41,12 +41,12 @@ class Triangle():
     def edges(self):
         edges = []
         for i in range(3):
-            for j in range(i+1, 3):
+            for j in range(i + 1, 3):
                 edges.append([self.__points[i], self.__points[j]])
         return edges
 
 
-class FeedingBaseline():
+class FeedingBaseline:
 
     def __init__(self, mesh_thr):
         self.reset()
@@ -102,7 +102,7 @@ class FeedingBaseline():
             for i in range(len(self.__mesh) - 1):
                 cv2.line(frame,
                          pt1=(self.__mesh[i][0], self.__mesh[i][1]),
-                         pt2=(self.__mesh[i+1][0], self.__mesh[i+1][1]),
+                         pt2=(self.__mesh[i + 1][0], self.__mesh[i + 1][1]),
                          color=(175, 0, 0),
                          thickness=2)
         return frame
@@ -163,7 +163,7 @@ class FeedingBaseline():
         for i in range(1, len(sorted_positions)):
             self.__mesh.append(sorted_positions[i])
             self.__flocking_index += np.linalg.norm(
-                sorted_positions[i-1] - sorted_positions[i]
+                sorted_positions[i - 1] - sorted_positions[i]
             )
 
     def __calculate_flocking_index(self):
@@ -189,7 +189,7 @@ def detections_at_t(fishes, t):
 
 def analyze_fiffb(gt_path, initial_t, final_t):
     fishes = read_detections(gt_path).values()
-    ts = range(initial_t, final_t+1)
+    ts = range(initial_t, final_t + 1)
     fiffbs = []
     feeding_baseline_obj = FeedingBaseline(mesh_thr=50)
     for t in ts:
@@ -222,7 +222,7 @@ def delaunay_test(vertical_range, logging_level=logging.DEBUG, show=True):
         positions.append((random.randint(1, 720), random.randint(
             vertical_range[0],
             vertical_range[1]))
-        )
+                         )
     feeding_baseline_obj = FeedingBaseline(40)
     feeding_baseline_obj.set_positions(positions)
 
@@ -254,9 +254,9 @@ def delaunay_real_data_test():
 
     # read GT and video file
     fishes = read_detections(
-        "resources/detections/detections-v37.txt").values()
+        "../resources/detections/detections-v37.txt").values()
     feeding_baseline_logger.debug(f"number of trajectories: {len(fishes)}")
-    video_capture = cv2.VideoCapture("resources/videos/v37.m4v")
+    video_capture = cv2.VideoCapture("../resources/videos/v37.m4v")
 
     # pre process trajectories
     for fish in fishes:
@@ -265,7 +265,7 @@ def delaunay_real_data_test():
     # get a frame at a random timestamp
     random_t = random.randint(
         0,
-        int(video_capture.get(cv2.CAP_PROP_FRAME_COUNT)-1)
+        int(video_capture.get(cv2.CAP_PROP_FRAME_COUNT) - 1)
     )
     video_capture.set(cv2.CAP_PROP_POS_FRAMES, random_t)
     _, frame = video_capture.read()
@@ -296,7 +296,7 @@ def delaunay_real_data_test():
 
 def fiffb_analysis_test():
     feeding_baseline_logger.setLevel(logging.INFO)
-    analyze_fiffb("resources/detections/detections-v37.txt", 0, 6400)
+    analyze_fiffb("../resources/detections/detections-v37.txt", 0, 6400)
     plt.show()
 
 

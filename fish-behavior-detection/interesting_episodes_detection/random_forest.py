@@ -9,7 +9,7 @@ from sklearn.model_selection import GridSearchCV, KFold
 from sklearn.preprocessing import StandardScaler
 
 from interesting_episodes_detection.evaluation import holdout_prediction
-from pre_processing.pre_processing import CorrelatedVariablesRemoval, load_data
+from pre_processing.pre_processing_functions import CorrelatedVariablesRemoval, load_data
 from trajectory_reader.visualization import simple_bar_chart, simple_hbar_chart
 
 

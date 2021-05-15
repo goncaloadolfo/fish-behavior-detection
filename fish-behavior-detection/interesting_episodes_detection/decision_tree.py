@@ -9,7 +9,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.tree import DecisionTreeClassifier, plot_tree
 
 from interesting_episodes_detection.evaluation import holdout_prediction
-from pre_processing.pre_processing import CorrelatedVariablesRemoval, load_data
+from pre_processing.pre_processing_functions import CorrelatedVariablesRemoval, load_data
 from trajectory_reader.visualization import simple_hbar_chart
 
 SEED = 0

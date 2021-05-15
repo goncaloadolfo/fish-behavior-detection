@@ -18,7 +18,7 @@ regions_selector_logger.setLevel(logging.INFO)
 regions_selector_logger.addHandler(logging.StreamHandler())
 
 
-class Rectangle():
+class Rectangle:
 
     def __init__(self):
         self.__pt1 = None
@@ -42,12 +42,12 @@ class Rectangle():
 
     @property
     def centroid(self):
-        return (int((self.__pt1[0] + self.__pt2[0]) / 2), int((self.__pt1[1] + self.__pt2[1]) / 2))
+        return int((self.__pt1[0] + self.__pt2[0]) / 2), int((self.__pt1[1] + self.__pt2[1]) / 2)
 
     def __contains__(self, v):
         xs = sorted([self.__pt1[0], self.__pt2[0]])
         ys = sorted([self.__pt1[1], self.__pt2[1]])
-        return v[0] >= xs[0] and v[0] <= xs[1] and v[1] >= ys[0] and v[1] <= ys[1]
+        return xs[1] >= v[0] >= xs[0] and ys[1] >= v[1] >= ys[0]
 
 
 def rectangle_decoder(rectangle_dict):
@@ -57,7 +57,7 @@ def rectangle_decoder(rectangle_dict):
     return rect
 
 
-class Region():
+class Region:
 
     def __init__(self, region_id, region_tag):
         self.__region_id = region_id
@@ -147,23 +147,23 @@ class RegionEncoder(json.JSONEncoder):
             return super().default(obj)
 
 
-def regions_decoder(dict):
+def regions_decoder(region_dict):
     # region obj
-    if "region-id" in dict:
+    if "region-id" in region_dict:
         # instantiate new region
-        region_obj = Region(dict['region-id'], dict['region-tag'])
-        region_obj.color = tuple(dict['color'])
+        region_obj = Region(region_dict['region-id'], region_dict['region-tag'])
+        region_obj.color = tuple(region_dict['color'])
         # decode region rectangles
-        rectangles = dict['rectangles']
+        rectangles = region_dict['rectangles']
         for rect_dict in rectangles:
             region_obj.append(rectangle_decoder(rect_dict))
         return region_obj
     # main dict or rectangle dict
     else:
-        return dict
+        return region_dict
 
 
-class RegionsSelector():
+class RegionsSelector:
 
     def __init__(self, input_file_path, output_filename, video_input_type=False):
         self.__regions = {}
@@ -228,7 +228,7 @@ class RegionsSelector():
         for region in self.__regions.values():
             region.draw(frame_copy)
         # if cropping
-        if self.__croping == True:
+        if self.__croping:
             cv2.rectangle(frame_copy,
                           self.__rectangle.pt1,
                           self.__mouse_position,

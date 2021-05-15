@@ -13,7 +13,7 @@ from sklearn.preprocessing import StandardScaler
 from anomaly_detection.anomaly_detector import most_different_features
 from anomaly_detection.kmeans import (species_distribution)
 from pre_processing.interpolation import fill_gaps_linear
-from pre_processing.pre_processing import CorrelatedVariablesRemoval, load_data
+from pre_processing.pre_processing_functions import CorrelatedVariablesRemoval, load_data
 from pre_processing.trajectory_filtering import (exponential_weights,
                                                  smooth_positions)
 from trajectory_reader.trajectories_reader import read_fishes
@@ -125,7 +125,7 @@ def dbscan_tuning(dataset, species, min_samples, epsilons, metric, data_preparat
 def analyze_outliers(x, clusters, dbscan, feature_descriptions, fishes_dataset,
                      show_feature_diffs=False):
     fishes = list(read_fishes(fishes_dataset))
-    fishes.sort(key=lambda x: x.fish_id)
+    fishes.sort(key=lambda item: item.fish_id)
     fishes = np.array(fishes)
 
     for fish in fishes:
@@ -164,7 +164,7 @@ def analyze_outliers(x, clusters, dbscan, feature_descriptions, fishes_dataset,
     return outlier_fishes
 
 
-def analyze_distances_pipelines(dataset, species, n, pipelines):
+def analyze_distances_pipelines(dataset, species, pipelines):
     for pipeline in pipelines:
         dp_pipeline = pipeline.copy()[:-1]
         analyze_distances(dataset, species, "manhattan", 7, dp_pipeline)
@@ -192,7 +192,7 @@ def analyze_distances(dataset, species, metric, n, data_preparation_pipeline):
     plt.xticks(bins)
 
 
-if __name__ == "__main__":
+def main():
     video_path = "../resources/videos/v29.m4v"
     fishes = "../resources/detections/v29-fishes.json"
     dataset = "../resources/datasets/v29-dataset1.csv"
@@ -241,3 +241,7 @@ if __name__ == "__main__":
                  "euclidean", pipelines[2][:-1])
     plt.show()
     cv2.destroyAllWindows()
+
+
+if __name__ == "__main__":
+    main()

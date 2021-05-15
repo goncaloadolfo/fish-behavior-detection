@@ -2,8 +2,6 @@
 High-level information visualization methods.
 """
 
-import time
-
 import cv2
 import matplotlib.cm
 import matplotlib.pyplot as plt
@@ -13,14 +11,6 @@ import numpy as np
 def simple_line_plot(ax, xs, ys, title, ylabel, xlabel, marker='-', label=None):
     """
     Draws a line plot on the received axes.
-
-    Args:
-        ax ([matplotlib.axes]): entity with figure elements
-        xs ([list of numbers]): x values
-        ys ([list of numbers]): y values
-        title ([str]): title of the plot
-        ylabel ([str]): label of the y axis
-        xlabel ([str]): label of the x axis
     """
     ax.set_title(title)
     ax.set_ylabel(ylabel)
@@ -75,7 +65,7 @@ def histogram2d(ax, values, values2, title, ylabel, xlabel, bins_range, colormap
 
                 if frame is not None:
                     color = cmap((cell_count - min_value) / (max_value - min_value))
-                    bgr = (int(color[2]*255), int(color[1]*255.0), int(color[0]*255.0))
+                    bgr = (int(color[2] * 255), int(color[1] * 255.0), int(color[0] * 255.0))
                     cv2.putText(frame, str(cell_count), text_position, cv2.FONT_HERSHEY_COMPLEX, 0.5, bgr, thickness=2)
 
     return counts, binsx, binsy, quad_image, frame
@@ -85,12 +75,7 @@ def draw_trajectory(trajectory, frame_size, color,
                     regions=None, frame=None, path=True,
                     interval=24, identifier=None):
     """
-    Draws the trajectory on a given frame.
-
-    Args:
-        trajectory (list of tuples (t, x, y)): list of positions
-        frame_size (tuple (height, width)): frame resolution
-        color (tuple (b, g, r)): color of the trajectory points in rgb format
+    Draws the trajectory on a given frame
     """
     # declare frame matrix if not already set
     if frame is None:
@@ -133,25 +118,25 @@ def draw_position_plots(trajectory, gap_interval, interpolation_points, with_gap
         matplotlib.axes, matplotlib.axes: axes of the x variation plot and axes of the y variation plot
     """
 
-    def plot_variation(xs, ys, title, ylabel, xlabel, interpolation_points):
+    def plot_variation(xs_list, ys_list, title, ylabel, xlabel, interpolation_points_list):
         plt.figure()
         ax = plt.gca()
-        simple_line_plot(ax, xs, ys, title, ylabel, xlabel)
+        simple_line_plot(ax, xs_list, ys_list, title, ylabel, xlabel)
 
-        # example points highliting
-        if interpolation_points is not None:
-            ts, values = [], []
-            for data_point in interpolation_points:
+        # example points highlighting
+        if interpolation_points_list is not None:
+            ts_list, values = [], []
+            for current_data_point in interpolation_points_list:
                 value_index = 1 if title == "X Position" else 2
-                ts.append(data_point[0])
-                values.append(data_point[value_index])
-            ax.scatter(ts, values, s=10, c="g", marker="o",
+                ts_list.append(current_data_point[0])
+                values.append(current_data_point[value_index])
+            ax.scatter(ts_list, values, s=10, c="g", marker="o",
                        label="interpolation point")
 
         # circles in the gap edges
-        ax.scatter(gap_interval[0], ys[xs.index(
+        ax.scatter(gap_interval[0], ys_list[xs_list.index(
             gap_interval[0])], s=10, c="r", marker="o", label="gap edge")
-        ax.scatter(gap_interval[1], ys[xs.index(
+        ax.scatter(gap_interval[1], ys_list[xs_list.index(
             gap_interval[1])], s=10, c="r", marker="o")
         ax.legend()
         return ax
@@ -169,8 +154,7 @@ def draw_position_plots(trajectory, gap_interval, interpolation_points, with_gap
         ys.insert(gap_interval[0] + 1, np.nan)
 
     return plot_variation(ts, xs, "X Position", "x value", "frame", interpolation_points), \
-           plot_variation(ts, ys, "Y Position", "y value",
-                          "frame", interpolation_points)
+           plot_variation(ts, ys, "Y Position", "y value", "frame", interpolation_points)
 
 
 def show_trajectory(video_path, fish, estimated_trajectory, simulated_gaps,
@@ -183,21 +167,21 @@ def show_trajectory(video_path, fish, estimated_trajectory, simulated_gaps,
         codec = cv2.VideoWriter_fourcc(*"mp4v")
         out = cv2.VideoWriter(record, apiPreference=cv2.CAP_FFMPEG, fourcc=codec, fps=15,
                               frameSize=(
-                              int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)), int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))))
+                                  int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)), int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))))
         print("recording...")
 
     # set next frame to be read to the initial timestamp index of the trajectory
     t = estimated_trajectory[0][0]
     cap.set(cv2.CAP_PROP_POS_FRAMES, t)
 
-    while (t < estimated_trajectory[-1][0]):
+    while t < estimated_trajectory[-1][0]:
         _, frame = cap.read()
         t = cap.get(cv2.CAP_PROP_POS_FRAMES)
 
         # check if it is part of a generated gap
         is_simulated_gap = False
         for gap in simulated_gaps:
-            if t >= gap[0] and t <= gap[1]:
+            if gap[1] >= t >= gap[0]:
                 is_simulated_gap = True
                 break
 
@@ -252,7 +236,7 @@ def show_fish_trajectory(frame_description, path_video, fish, episodes):
 
         is_between_interesting = False
         for episode in fish_episodes:
-            if t >= episode.t_initial and t <= episode.t_final:
+            if episode.t_final >= t >= episode.t_initial:
                 is_between_interesting = True
                 break
         color = (0, 0, 255) if is_between_interesting else (0, 255, 0)

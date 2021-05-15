@@ -15,7 +15,7 @@ import numpy as np
 import seaborn as sns
 
 from labeling.trajectory_labeling import read_species_gt
-from pre_processing.pre_processing import CorrelatedVariablesRemoval, load_data
+from pre_processing.pre_processing_functions import CorrelatedVariablesRemoval, load_data
 from trajectory_features.trajectory_feature_extraction import read_dataset
 from trajectory_reader.trajectories_reader import read_fishes
 from trajectory_reader.visualization import (histogram, histogram2d,

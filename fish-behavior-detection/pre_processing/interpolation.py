@@ -72,12 +72,13 @@ class NewtonInterpolation:
     @staticmethod
     def interpolate(coefs, xs, x):
         """
-        Predict a new y value given the value of x, the newton coefficients, and the x values related to each coefficient.
+        Predict a new y value given the value of x, the newton coefficients,
+        and the x values related to each coefficient.
 
         Args:
-            coefs (float): list of newton coefficients
-            xs (int): list of x values related to each coefficient
-            x (int): x value of the prediction
+            coefs: list of newton coefficients
+            xs : list of x values related to each coefficient
+            x : x value of the prediction
 
         Returns:
             int: y value of the prediction
@@ -97,8 +98,8 @@ class NewtonInterpolation:
         Newton coefficients calculation. These are the divided differences' values.
 
         Args:
-            x (int): list of x values for the sample points
-            y (int): list of y values for the sample points
+            x : list of x values for the sample points
+            y : list of y values for the sample points
 
         Returns:
             list of floats: list of newton coefficients (number of sample points-1 values)
@@ -120,10 +121,6 @@ class NewtonInterpolation:
 def linear_interpolation(starting_point, ending_point, discretization=True):
     """
     Returns the predicted position points of the gap, applying a linear interpolation.
-
-    Args:
-        starting_point (tuple (t, x, y)): starting point of the gap (left edge)
-        ending_point (tuple (t, x, y)): ending point of the gap (right edge)
 
     Returns:
         list of tuples (t, x, y): predicted gap positions
@@ -228,12 +225,9 @@ def equidistant_interpolation_points(trajectory, n):
 def fill_gaps_linear(trajectory, fish, discretization=True):
     """
     Detects gaps on the trajectory and fills them using a linear interpolation (on place).
-
-    Args:
-        trajectory (list of tuples (t, x, y)): list of positions
     """
     i = 0
-    while (i < len(trajectory)):
+    while i < len(trajectory):
         if i == 0:
             i += 1
             continue
@@ -285,7 +279,7 @@ def fill_gaps_newton(trajectory, n, example_points_methodology):
     """
     i = 0
     example_points = None
-    while (i < len(trajectory)):
+    while i < len(trajectory):
         if i == 0:
             i += 1
             continue
@@ -312,10 +306,6 @@ def simulate_gap(fish, gap_size, gap_interval=None):
     Generates a gap in the received trajectory. The starting index is randomly chosen.
     A new trajectory is returned. It is not done in place.
 
-    Args:
-        trajectory (list of tuples (t, x, y)): list of positions
-        gap_size (int): size of the gap
-
     Returns:
         list of tuples (t, x, y), int, int:
             trajectory with a fake gap, initial instant of the gap, final instant of the gap
@@ -336,7 +326,7 @@ def simulate_gap(fish, gap_size, gap_interval=None):
 
     # random initial point
     else:
-        while (True):
+        while True:
             gap_start_index = randint(1, len(trajectory_copy) - gap_size - 2)
 
             # no gaps around
@@ -357,9 +347,9 @@ def mse(true_trajectory, output_trajectory, gaps):
     for t_initial, t_final in gaps:
         # get the portion of the trajectory relative to this gap
         true_gap_values = list(filter(
-            lambda x: x[0] >= t_initial and x[0] <= t_final, true_trajectory))
+            lambda x: t_final >= x[0] >= t_initial, true_trajectory))
         output_values = list(filter(
-            lambda x: x[0] >= t_initial and x[0] <= t_final, output_trajectory))
+            lambda x: t_final >= x[0] >= t_initial, output_trajectory))
         gap_size = len(true_gap_values)
         # calculate the square error for each of the missing positions
         for i in range(gap_size):

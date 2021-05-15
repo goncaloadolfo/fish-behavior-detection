@@ -470,7 +470,7 @@ def moving_average_analysis(fish, sliding_window, alphas, regions, video_path=No
 
     # show trajectory and plot
     if video_path is not None and regions is not None:
-        trajectory_illustration("resources/videos/v29.m4v", regions, fish)
+        trajectory_illustration("../resources/videos/v29.m4v", regions, fish)
     plt.show()
 
 
@@ -494,6 +494,7 @@ def build_dataset(fishes_file_path, species_gt_path, regions_path,
     # dataset
     samples = []
     gt = []
+    features_description = []
 
     for fish in fishes:
         # pre-processing
@@ -517,7 +518,7 @@ def build_dataset(fishes_file_path, species_gt_path, regions_path,
                 f.write(
                     ','.join(np.array(samples[i]).astype(np.str)) + f",{gt[i]}\n")
 
-    return (samples, gt, features_description)
+    return samples, gt, features_description
 
 
 def read_dataset(dataset_file_path):
@@ -529,7 +530,7 @@ def read_dataset(dataset_file_path):
         samples = []
         gt = []
 
-        while (True):
+        while True:
             line = f.readline()
 
             # end of the file
@@ -543,7 +544,7 @@ def read_dataset(dataset_file_path):
             # ground truth
             gt.append(fields[-1].replace('\n', ''))
 
-    return (samples, gt, description[:-1])
+    return samples, gt, description[:-1]
 
 
 # endregion
@@ -551,9 +552,9 @@ def read_dataset(dataset_file_path):
 
 # region experiences
 def analyze_trajectory_demo():
-    fishes = read_fishes("resources/detections/v29-fishes.json")
-    regions = read_regions("resources/regions-example.json")
-    analyze_trajectory("resources/videos/v29.m4v",
+    fishes = read_fishes("../resources/detections/v29-fishes.json")
+    regions = read_regions("../resources/regions-example.json")
+    analyze_trajectory("../resources/videos/v29.m4v",
                        regions,
                        fishes.pop(),
                        calculation_period=1,
@@ -563,8 +564,8 @@ def analyze_trajectory_demo():
 
 
 def frequency_impact_demo():
-    fishes = read_fishes("resources/detections/v29-fishes.json")
-    regions = read_regions("resources/regions-example.json")
+    fishes = read_fishes("../resources/detections/v29-fishes.json")
+    regions = read_regions("../resources/regions-example.json")
     frequency_analysis(fishes.pop(), regions, calculation_periods=[1, 12, 24])
 
 
@@ -574,27 +575,27 @@ def moving_average_illustration():
     alphas = [1, 0.5, 0.3, 0.1, 0.01]
 
     # get an example fish
-    fishes = read_fishes("resources/detections/v29-fishes.json")
-    regions = read_regions("resources/regions-example.json")
+    fishes = read_fishes("../resources/detections/v29-fishes.json")
+    regions = read_regions("../resources/regions-example.json")
     example_fish = random.choice(list(fishes))
 
     # analyze results
     moving_average_analysis(example_fish, sliding_window,
-                            alphas, regions, "resources/videos/v29.m4v")
+                            alphas, regions, "../resources/videos/v29.m4v")
 
 
 # endregion
 
 
 if __name__ == "__main__":
-    # analyze_trajectory_demo()
+    analyze_trajectory_demo()
     # frequency_impact_demo()
     # moving_average_illustration()
 
     # dataset 1
-    build_dataset("resources/detections/v29-fishes.json",
-                  "resources/classification/species-gt-v29.csv",
-                  "resources/regions-example.json",
-                  1, 24, 0.3,
-                  "resources/datasets/v29-dataset2.csv",
-                  True)
+    # build_dataset("../resources/detections/v29-fishes.json",
+    #               "../resources/classification/species-gt-v29.csv",
+    #               "../resources/regions-example.json",
+    #               1, 24, 0.3,
+    #               "../resources/datasets/v29-dataset2.csv",
+    #               True)
