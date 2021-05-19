@@ -41,7 +41,8 @@ class CorrelatedVariablesRemoval:
         return self.transform(x)
 
 
-def load_data(dataset_path, species):
+def load_data(dataset_path, species,
+              moments_path="resources/classification/v29-interesting-moments.csv"):
     # read dataset
     samples, species_gt, feature_descriptions = read_dataset(
         dataset_path
@@ -57,7 +58,7 @@ def load_data(dataset_path, species):
 
     return (np.array(x),
             get_episode_gt(fish_ids,
-                           "../resources/classification/v29-interesting-moments.csv",
+                           moments_path,
                            "interesting"
                            ),
             feature_descriptions
@@ -116,9 +117,12 @@ def apply_pca(samples, n_components):
 
 
 if __name__ == "__main__":
-    x_all, _, _ = load_data("../resources/datasets/v29-dataset1.csv", ("shark",))
-    x_sharks, _, _ = load_data("../resources/datasets/v29-dataset1.csv", ("shark",))
-    x_mantas, _, _ = load_data("../resources/datasets/v29-dataset1.csv", ("manta-ray",))
+    x_all, _, _ = load_data(
+        "../resources/datasets/v29-dataset1.csv", ("shark",))
+    x_sharks, _, _ = load_data(
+        "../resources/datasets/v29-dataset1.csv", ("shark",))
+    x_mantas, _, _ = load_data(
+        "../resources/datasets/v29-dataset1.csv", ("manta-ray",))
 
     analyze_pca_components(x_all, "- all species")
     analyze_pca_components(x_sharks, "- sharks")

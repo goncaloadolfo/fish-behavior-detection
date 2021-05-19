@@ -119,6 +119,10 @@ class FeedingBaseline:
     def flocking_index(self):
         return self.__flocking_index
 
+    @property
+    def mesh(self):
+        return self.__mesh
+
     def __detect_outliers(self):
         # median centroid (feeding center of mass)
         self.__center_of_mass = np.median(self.__positions, axis=0)
@@ -136,25 +140,21 @@ class FeedingBaseline:
         self.__positions = self.__positions[non_outlier_mask]
 
     def __triangular_mesh(self):
-        try:
-            # calculate triangles
-            delaunay_result = Delaunay(
-                self.__positions,
-                qhull_options="QJ Qc")
-            # get triangles and calculate flocking index
-            self.__flocking_index = 0
-            feeding_baseline_logger.debug(
-                f"delaunay mesh:\n {delaunay_result.simplices}")
-            for p1_i, p2_i, p3_i in delaunay_result.simplices:
-                triangle = Triangle(
-                    self.__positions[p1_i],
-                    self.__positions[p2_i],
-                    self.__positions[p3_i])
-                self.__mesh.append(triangle)
-                self.__flocking_index += triangle.perimeter
-        except QhullError as e:
-            feeding_baseline_logger.warning(
-                f"not able to calculate delaunay triangulation: {e}")
+        # calculate triangles
+        delaunay_result = Delaunay(
+            self.__positions,
+            qhull_options="QJ Qc")
+        # get triangles and calculate flocking index
+        self.__flocking_index = 0
+        feeding_baseline_logger.debug(
+            f"delaunay mesh:\n {delaunay_result.simplices}")
+        for p1_i, p2_i, p3_i in delaunay_result.simplices:
+            triangle = Triangle(
+                self.__positions[p1_i],
+                self.__positions[p2_i],
+                self.__positions[p3_i])
+            self.__mesh.append(triangle)
+            self.__flocking_index += triangle.perimeter
 
     def __line_mesh(self):
         sorted_positions = sorted(self.__positions, key=lambda x: x[0])
@@ -170,7 +170,8 @@ class FeedingBaseline:
         min_y = self.__positions.min(axis=0)[1]
         max_y = self.__positions.max(axis=0)[1]
         vertical_distance = max_y - min_y
-        if vertical_distance < self.__mesh_thr:
+        
+        if vertical_distance < self.__mesh_thr or len(self.__positions) - len(self.__outliers) <= 3:
             self.__line_mesh()
         else:
             self.__triangular_mesh()
@@ -213,6 +214,35 @@ def analyze_fiffb(gt_path, initial_t, final_t):
     simple_line_plot(plt.gca(), ts, fiffbs, "Aggregation Index", "FIFFB", "t")
 
 
+def fiffb_time_series(fishes, initial_t, final_t):
+    fiffbs = {}
+    meshes = {}
+    outliers = {}
+
+    feeding_baseline_obj = FeedingBaseline(mesh_thr=0)
+    ts = range(initial_t, final_t + 1)
+
+    for t in ts:
+        _, positions = detections_at_t(fishes, t)
+
+        if len(positions) >= 3:
+            feeding_baseline_obj.reset()
+            feeding_baseline_obj.set_positions(positions)
+            feeding_baseline_obj.predict()
+
+            if feeding_baseline_obj.flocking_index != -1:
+                fiffbs[t] = feeding_baseline_obj.flocking_index
+                outliers[t] = np.array(feeding_baseline_obj.outlier_positions).tolist()
+                
+                if isinstance(feeding_baseline_obj.mesh[0], Triangle):
+                    meshes[t] = np.array([edge for triangle in feeding_baseline_obj.mesh 
+                                for edge in triangle.edges]).tolist()
+                else:
+                    meshes[t] = np.array(feeding_baseline_obj.mesh).tolist()
+
+    return fiffbs, meshes, outliers
+
+
 def delaunay_test(vertical_range, logging_level=logging.DEBUG, show=True):
     feeding_baseline_logger.setLevel(logging_level)
 
@@ -222,7 +252,7 @@ def delaunay_test(vertical_range, logging_level=logging.DEBUG, show=True):
         positions.append((random.randint(1, 720), random.randint(
             vertical_range[0],
             vertical_range[1]))
-                         )
+        )
     feeding_baseline_obj = FeedingBaseline(40)
     feeding_baseline_obj.set_positions(positions)
 

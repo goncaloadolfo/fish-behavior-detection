@@ -193,9 +193,9 @@ def analyze_distances(dataset, species, metric, n, data_preparation_pipeline):
 
 
 def main():
-    video_path = "../resources/videos/v29.m4v"
-    fishes = "../resources/detections/v29-fishes.json"
-    dataset = "../resources/datasets/v29-dataset1.csv"
+    video_path = "resources/videos/v29.m4v"
+    fishes = "resources/detections/v29-fishes.json"
+    dataset = "resources/datasets/v29-dataset1.csv"
     species = ("shark", "manta-ray", "tuna")
 
     pipelines = [
@@ -235,10 +235,10 @@ def main():
     # dbscan_tuning(dataset, species, [5, 7, 9],
     #               np.arange(8, 14, 1.4), "euclidean", pipelines[4][:-1])
 
-    # apply_dbscan(video_path, fishes, dataset, species, 5, 29,
-    #              "manhattan", pipelines[3][:-1])
-    apply_dbscan(video_path, fishes, dataset, species, 7, 11,
-                 "euclidean", pipelines[2][:-1])
+    apply_dbscan(video_path, fishes, dataset, species, 5, 29,
+                 "manhattan", pipelines[3][:-1])
+    # apply_dbscan(video_path, fishes, dataset, species, 7, 11,
+    #              "euclidean", pipelines[2][:-1])
     plt.show()
     cv2.destroyAllWindows()
 

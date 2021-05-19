@@ -87,7 +87,7 @@ class TrajectoryFeatureExtraction:
         self.__pass_by = {k: 0 for k in self.__pass_by_description}
         self.__normalized_bounding_boxes = []
         self.__regions_time_series = []
-        self.__features_order = ["speed", "acceleration", "turning-angle",
+        self.__features_order  = ["speed", "acceleration", "turning-angle",
                                  "curvature", "centered-distance", "normalized-bb"]
         self.__time_series_list = [self.__speeds, self.__accelerations, self.__turning_angles,
                                    self.__curvatures, self.__centered_distances, self.__normalized_bounding_boxes]

@@ -21,15 +21,16 @@ def segment_trajectory(fish, descontinuity_points):
     original_bbs = fish.bounding_boxes
     original_bbs = copy.deepcopy(original_bbs)
     original_positions = fish.positions
-
-    if len(descontinuity_points > 2):
+    segment_motifs = [aux[1] for aux in descontinuity_points]
+    
+    if len(descontinuity_points) > 2:
         fishes = []
         for i in range(len(descontinuity_points) - 1):
             segment_t0 = descontinuity_points[i][0]
             segment_tf = descontinuity_points[i + 1][0]
 
             segment = [data_point for data_point in original_trajectory
-                       if segment_tf < data_point[0] >= segment_t0]
+                       if segment_tf > data_point[0] >= segment_t0]
             segment_bbs = {t: bb for t, bb in original_bbs.items()
                            if segment_tf < t >= segment_t0}
             segment_positions = {t: position for t, position in original_bbs.items()
@@ -41,10 +42,10 @@ def segment_trajectory(fish, descontinuity_points):
                 segment_positions[segment_tf] = original_positions[segment_tf]
 
             fishes.append(Fish(fish.fish_id, segment, segment_bbs, segment_positions))
-        return fishes
+        return fishes, segment_motifs
 
     else:
-        return fish
+        return [fish], ()
 
 
 def play_trajectory_segments(video_path, fish, descontinuity_points, write_path=None):

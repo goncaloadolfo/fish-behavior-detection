@@ -123,7 +123,7 @@ def svm_pipelines(dataset, svm_params):
 
 def analyze_errors(predictions, scores, true_y, dataset):
     best_predictions = predictions[np.argmax(scores)]
-    fishes = list(read_fishes("../resources/detections/v29-fishes.json"))
+    fishes = list(read_fishes("resources/detections/v29-fishes.json"))
     fishes.sort(key=lambda x: x.fish_id)
 
     _, species_gt, _ = read_dataset(dataset)
@@ -143,9 +143,9 @@ def analyze_errors(predictions, scores, true_y, dataset):
             fill_gaps_linear(fishes[i].trajectory, fishes[i])
             show_fish_trajectory(
                 f"Fish {fishes[i].fish_id} true class {true_y[i]}, classified as {best_predictions[i]}",
-                "../resources/videos/v29.m4v", fishes[i],
+                "resources/videos/v29.m4v", fishes[i],
                 read_episodes(
-                    "../resources/classification/v29-interesting-moments.csv"
+                    "resources/classification/v29-interesting-moments.csv"
                 )
             )
             cv2.destroyAllWindows()
@@ -213,8 +213,8 @@ def main():
         "gamma": [0.01, 0.1, 1],
         "random_state": [0, 1, 2, 3, 4]
     }
-    svm_tuning("../resources/datasets/v29-dataset1.csv", param_grid)
-    svm_pipelines("../resources/datasets/v29-dataset1.csv",
+    svm_tuning("resources/datasets/v29-dataset1.csv", param_grid)
+    svm_pipelines("resources/datasets/v29-dataset1.csv",
                   {"c": 0.01, "kernel": "poly", "degree": 3, "gamma": 1, "random_state": 0})
     plt.show()
 

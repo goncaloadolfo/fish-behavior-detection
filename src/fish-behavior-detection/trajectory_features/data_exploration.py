@@ -35,13 +35,15 @@ def analyze_trajectories_by_species(path_fishes, path_species, species_groups, v
 
     if group_by:
         for focus_species in species_groups:
-            analyze_trajectories(fishes_by_species[focus_species], focus_species, video_path)
+            analyze_trajectories(
+                fishes_by_species[focus_species], focus_species, video_path)
 
     else:
         all_focus_species_trajectories = []
         for focus_species in species_groups:
             all_focus_species_trajectories += fishes_by_species[focus_species]
-        analyze_trajectories(all_focus_species_trajectories, species_groups, video_path)
+        analyze_trajectories(all_focus_species_trajectories,
+                             species_groups, video_path)
 
 
 def analyze_trajectories(fishes, tag, video_path):
@@ -51,7 +53,8 @@ def analyze_trajectories(fishes, tag, video_path):
 
     for fish in fishes:
         trajectory = fish.trajectory
-        trajectory_durations.append((trajectory[-1][0] - trajectory[0][0]) / 24.0)
+        trajectory_durations.append(
+            (trajectory[-1][0] - trajectory[0][0]) / 24.0)
         trajectory_xvalues += [data_point[1] for data_point in trajectory]
         trajectory_yvalues += [data_point[2] for data_point in trajectory]
 
@@ -76,6 +79,25 @@ def analyze_trajectories(fishes, tag, video_path):
     plt.gca().invert_yaxis()
     plt.colorbar(quad_img)
     cv2.imshow(f"Positions Distribution {tag}", frame)
+
+
+def duration_histogram(fishes, fps):
+    durations = [len(fish.trajectory) / fps for fish in fishes]
+    return np.histogram(durations)
+
+
+def positions_histogram(fishes, frame_size):
+    xs = []
+    ys = []
+    for fish in fishes:
+        for t, x, y in fish.trajectory:
+            xs.append(x)
+            ys.append(y)
+
+    return np.histogram2d(xs, ys,
+                          range=[[0, frame_size[0]],
+                                 [0, frame_size[1]]]
+                          )
 
 
 def full_analysis(samples, gt, features_description):
@@ -300,10 +322,12 @@ if __name__ == "__main__":
     # v29_episodes_analysis(("manta-ray", ))
 
     analyze_trajectories_by_species("../resources/detections/v29-fishes.json",
-                                    "../resources/classification/species-gt-v29.csv", ("shark", "manta-ray"),
+                                    "../resources/classification/species-gt-v29.csv", (
+                                        "shark", "manta-ray"),
                                     "../resources/videos/v29.m4v")
     analyze_trajectories_by_species("../resources/detections/v29-fishes.json",
-                                    "../resources/classification/species-gt-v29.csv", ("shark", "manta-ray"),
+                                    "../resources/classification/species-gt-v29.csv", (
+                                        "shark", "manta-ray"),
                                     "../resources/videos/v29.m4v", True)
     plt.show()
     cv2.destroyAllWindows()

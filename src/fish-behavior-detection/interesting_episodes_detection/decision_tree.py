@@ -96,7 +96,7 @@ def plot_best_estimator_tree(pipelines, scores, features_description):
 
 
 def main():
-    dataset = "../resources/datasets/v29-dataset1.csv"
+    dataset = "resources/datasets/v29-dataset1.csv"
 
     parameters_grid = {
         "criterion": ["gini", "entropy"],
