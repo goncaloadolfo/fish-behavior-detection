@@ -40,15 +40,15 @@ def provide_surface_warnings(fishes, species_gt, regions, surface_tag, min_durat
 
 
 def surface_warnings_test():
-    fishes = read_fishes("../resources/detections/v29-fishes.json")
-    species_gt = read_species_gt("../resources/classification/species-gt-v29.csv")
+    fishes = read_fishes("resources/detections/v29-fishes.json")
+    species_gt = read_species_gt("resources/classification/species-gt-v29.csv")
 
     exp_weights = exponential_weights(24, 0.01)
     for fish in fishes:
         if species_gt[fish.fish_id] == "shark":
             fill_gaps_linear(fish.trajectory, fish, True)
             smooth_positions(fish, exp_weights)
-    regions = read_regions("../resources/regions-example.json")
+    regions = read_regions("resources/regions-example.json")
 
     detected_warnings = provide_surface_warnings(fishes, species_gt, regions, "surface", 1)
     print("Detected warnings:")
