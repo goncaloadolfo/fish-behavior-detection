@@ -2,22 +2,20 @@ from os import path
 from collections import defaultdict
 
 import pymongo
-from sklearn.tree._classes import DecisionTreeClassifier
-from sklearn.cluster import DBSCAN
-from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import StandardScaler
-from sklearn.feature_selection import SelectKBest
-from imblearn.over_sampling import SMOTE
-from sklearn.svm import SVC
-import numpy as np
 import json
+import numpy as np
+from django.db import models
+from imblearn.over_sampling import SMOTE
+from sklearn.preprocessing import StandardScaler
+from sklearn.svm import SVC
+from sklearn.feature_selection import SelectKBest
+from sklearn.cluster import DBSCAN
 
 
 def import_bdm():
     import sys
     sys.path.append(path.abspath("../fish-behavior-detection"))
-    
-    
+
 import_bdm()
 from pre_processing.pre_processing_functions import load_data
 from pre_processing.interpolation import fill_gaps_linear
@@ -27,11 +25,28 @@ from trajectory_features.trajectory_feature_extraction import extract_features, 
 from trajectory_features.data_exploration import duration_histogram, positions_histogram
 from labeling.regions_selector import read_regions
 from rule_based.feeding_baseline import fiffb_time_series
+from rule_based.highlight_moments import highlight_moments
+from rule_based.surface_warnings import provide_surface_warnings
 from anomaly_detection.anomaly_detector import most_different_features
 
-
-URL = "mongodb://localhost:27017/"
 BDM_MODULE = "../fish-behavior-detection/"
+URL = "mongodb://localhost:27017/"
+
+
+def get_surface_warnings(fishes, species, min_duration):
+    regions = read_regions(path.join(BDM_MODULE, "resources/regions-example.json"))
+    return provide_surface_warnings(fishes, species, regions, "surface", min_duration)
+
+
+def discover_highlighting_moments(fishes, rules, species_gt):
+    regions = read_regions(path.join(BDM_MODULE, "resources/regions-example.json"))
+    hms = {}
+    
+    for fish in fishes:
+        print("processing fish ", fish.fish_id)
+        hms[fish.fish_id] = highlight_moments(fish, regions, rules, species_gt[fish.fish_id])[0]
+    
+    return hms
 
 
 def process_video(fishes_dict, species_gt, video_info):
@@ -201,3 +216,4 @@ class ProcessingModels:
     @property
     def interesting_moments_clf(self):
         return self.__interesting_moments_clf
+    

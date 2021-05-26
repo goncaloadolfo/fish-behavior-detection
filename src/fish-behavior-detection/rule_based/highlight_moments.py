@@ -41,6 +41,9 @@ class Rule:
     REGION = "region"
     TRANSITION = "transition"
 
+    RECOGNIZED_FEATURES = [SPEED, XSPEED, YSPEED, ACCELERATION, XACCELERATION, YACCELERATION,
+                            DIRECTION, CURVATURE, ASPECT_RATIO, REGION, TRANSITION]
+    
     def __init__(self, feature, values, duration):
         self.feature = feature
         self.values = values

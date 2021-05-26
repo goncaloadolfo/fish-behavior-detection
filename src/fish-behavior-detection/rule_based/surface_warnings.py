@@ -32,7 +32,7 @@ def provide_surface_warnings(fishes, species_gt, regions, surface_tag, min_durat
             if (x, y) not in surface_region and consecutive_frames > 0 or t == fish.trajectory[-1][0] \
                     and consecutive_frames > 0:
                 if consecutive_frames >= min_duration:
-                    swarns.append((fish, t_initial, t - 1))
+                    swarns.append([fish, t_initial, t - 1])
                 t_initial = -1
                 consecutive_frames = 0
 
