@@ -163,7 +163,7 @@ class GridNode:
 
     def __contains__(self, value):
         return self.__x_limits[0] <= value[0] <= self.__x_limits[1] \
-               and self.__y_limits[0] <= value[1] <= self.__y_limits[1]
+            and self.__y_limits[0] <= value[1] <= self.__y_limits[1]
 
     def __str__(self):
         result = ""
@@ -196,7 +196,7 @@ def create_grid(nr_nodes, frame_shape):
 
 
 # region expectation phase
-def trajectory_expectation(grid, trajectory):
+def calculate_ys(grid, trajectory):
     active_vectors = get_active_vectors(grid, trajectory)
     k = len(active_vectors[0][0].core_vectors)
 
@@ -218,7 +218,8 @@ def forward_probs(active_vectors, k):
             t_probs = node_initial_probs * fprobs_t[i]
 
         else:
-            t_probs = np.dot(active_vectors[i][0].transition_matrix, fprobs_t[i:np.newaxis].T)
+            t_probs = np.dot(
+                active_vectors[i][0].transition_matrix, fprobs_t[i:np.newaxis].T)
 
         normalized_probs = t_probs / np.sum(t_probs)
         fprobs_t[i + 1] = normalized_probs
@@ -236,7 +237,8 @@ def backward_probs(active_vectors, k):
             t_probs = node_initial_probs * bprobs_t[i + 1]
 
         else:
-            t_probs = np.dot(active_vectors[i][0].transition_matrix, bprobs_t[i + 1:np.newaxis].T)
+            t_probs = np.dot(
+                active_vectors[i][0].transition_matrix, bprobs_t[i + 1:np.newaxis].T)
 
         normalized_probs = t_probs / np.sum(t_probs)
         bprobs_t[i] = normalized_probs
@@ -267,9 +269,10 @@ def most_likely_vector(node, motion_vector):
 
 # endregion
 
+
 # region maximization phase
-def update_variances(grid, trajectories, smooth_probs):
-    nr_vectors = smooth_probs[0].shape[1]
+def update_variances(grid, trajectories, ys):
+    nr_vectors = ys[0].shape[1]
 
     for node in grid:
         for k in nr_vectors:
@@ -278,16 +281,19 @@ def update_variances(grid, trajectories, smooth_probs):
 
             for i in range(len(trajectories)):
                 current_trajectory = trajectories[i]
-                trajectory_probs = smooth_probs[i]
+                trajectory_probs = ys[i]
 
                 for j in range(1, len(current_trajectory)):
-                    last_pos = np.array([current_trajectory[j - 1][1], current_trajectory[j - 1][2]])
-                    current_pos = np.array([current_trajectory[j][1], current_trajectory[j][2]])
+                    last_pos = np.array(
+                        [current_trajectory[j - 1][1], current_trajectory[j - 1][2]])
+                    current_pos = np.array(
+                        [current_trajectory[j][1], current_trajectory[j][2]])
 
                     if current_pos not in node:
                         continue
 
-                    motion_diff_norm = np.linalg.norm(current_pos - last_pos - node.core_vectors[k])
+                    motion_diff_norm = np.linalg.norm(
+                        current_pos - last_pos - node.core_vectors[k])
                     numerator += trajectory_probs[j][k] * motion_diff_norm ** 2
                     denominator += trajectory_probs[j][k]
 
@@ -295,9 +301,9 @@ def update_variances(grid, trajectories, smooth_probs):
                 node.vectors_variance[k][k] = numerator / denominator
 
 
-def update_vectors(grid, trajectories, smooth_probs, alpha):
-    nr_vectors = smooth_probs[0].shape[1]
-    calculate_rs(grid, trajectories, smooth_probs)
+def update_vectors(grid, trajectories, ys, alpha):
+    nr_vectors = ys[0].shape[1]
+    calculate_rs(grid, trajectories, ys)
 
     for node in grid:
         node_center = ((node.x_limits[0] + node.x_limits[1]) / 2,
@@ -308,7 +314,8 @@ def update_vectors(grid, trajectories, smooth_probs, alpha):
         for k in nr_vectors:
             tk = node.rks[k] / (node.Rks + aux)
             # idk what x to pass to the basis functions
-            node.core_vectors[k] = np.dot(ts_apply_basis_functions(node_center), tk)
+            node.core_vectors[k] = np.dot(
+                ts_apply_basis_functions(node_center), tk)
 
 
 def update_transition_matrices(grid, trajectories, smooth_probs, alpha):
@@ -332,15 +339,19 @@ def calculate_rs(grid, trajectories, smooth_probs):
                 trajectory_probs = smooth_probs[i]
 
                 for j in range(1, len(current_trajectory)):
-                    last_pos = np.array([current_trajectory[j - 1][1], current_trajectory[j - 1][2]])
-                    current_pos = np.array([current_trajectory[j][1], current_trajectory[j][2]])
+                    last_pos = np.array(
+                        [current_trajectory[j - 1][1], current_trajectory[j - 1][2]])
+                    current_pos = np.array(
+                        [current_trajectory[j][1], current_trajectory[j][2]])
 
                     if current_pos not in node:
                         continue
 
                     aux = ts_apply_basis_functions(last_pos)
-                    Rks += trajectory_probs[j][k] / node.vectors_variance[k][k] * np.dot(aux.T, aux)
-                    rks += trajectory_probs[j][k] / node.vectors_variance[k][k] * np.dot(aux.T, current_pos - last_pos)
+                    Rks += trajectory_probs[j][k] / \
+                        node.vectors_variance[k][k] * np.dot(aux.T, aux)
+                    rks += trajectory_probs[j][k] / node.vectors_variance[k][k] * \
+                        np.dot(aux.T, current_pos - last_pos)
 
             Rks_list.append(Rks)
             rks_list.append(rks)
@@ -369,7 +380,8 @@ def calculate_neighbors_velocity_diffs(grid, node, k):
 
 def get_neighbors_nodes(grid, node_id):
     length = len(grid) ** 0.5
-    neighbors_ids = [node_id - length, node_id - 1, node_id + 1, node_id + length]
+    neighbors_ids = [node_id - length, node_id -
+                     1, node_id + 1, node_id + length]
     return [node for node in grid if node.node_id in neighbors_ids]
 
 
