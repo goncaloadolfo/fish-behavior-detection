@@ -1,3 +1,4 @@
+import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.decomposition import PCA
@@ -5,6 +6,29 @@ from sklearn.decomposition import PCA
 from labeling.trajectory_labeling import read_episodes
 from trajectory_features.trajectory_feature_extraction import read_dataset
 from trajectory_reader.visualization import simple_line_plot
+
+
+def video_resolution(video_path):
+    video_capture = cv2.VideoCapture(video_path)
+    resolution = (video_capture.get(cv2.CAP_PROP_FRAME_HEIGHT), 
+                  video_capture.get(cv2.CAP_PROP_FRAME_WIDTH)) 
+    video_capture.release()
+    return resolution
+
+
+def background_image_estimation(video_path, number_of_frames):
+    video_capture = cv2.VideoCapture(video_path)
+    frames = np.empty((number_of_frames,
+                       int(video_capture.get(cv2.CAP_PROP_FRAME_HEIGHT)),
+                       int(video_capture.get(cv2.CAP_PROP_FRAME_WIDTH)),
+                       3), dtype=np.uint8)
+
+    for i in range(number_of_frames):
+        _, frame = video_capture.read()
+        frames[i] = frame
+    video_capture.release()
+
+    return np.median(frames, axis=0).astype(np.uint8)
 
 
 class CorrelatedVariablesRemoval:
