@@ -11,6 +11,7 @@ from collections import namedtuple
 
 import cv2
 
+import labeling.trajectory_labeling as labeling_module
 from trajectory_reader.visualization import draw_trajectory
 
 BoundingBox = namedtuple("BoundingBox", ["width", "height"])
@@ -184,6 +185,12 @@ def read_fishes(fishes_file_path):
             fish_instance.decode(fish_dict)
             fishes_set.add(fish_instance)
     return fishes_set
+
+
+def read_fishes_filter(fishes_file_path, species_file_path, species_of_interest):
+    fishes = read_fishes(fishes_file_path)
+    species = labeling_module.read_species_gt(species_file_path)
+    return [fish for fish in fishes if species[fish.fish_id] in species_of_interest]
 
 
 def union_gt(*detection_file_paths, output_path):
