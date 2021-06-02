@@ -31,9 +31,10 @@ def joint_probability(grid, trajectory):
     node = grid.grid_matrix[node_indexes[1]][node_indexes[0]]
 
     previous_field = active_vector(node, position_t0, position_t1)
-    prob = node.motion_vectors_priors[previous_field]
-
-    for i in range(2, len(trajectory)):
+    prob = node.motion_vectors_priors[previous_field] 
+    step = 1 if len(trajectory) < 50 else int(len(trajectory) / 50)
+    
+    for i in range(2, len(trajectory), step):
         previous_position = np.array([trajectory[i-1][1], trajectory[i-1][2]],
                                      dtype=np.float)
         current_position = np.array([trajectory[i][1], trajectory[i][2]],
@@ -44,9 +45,15 @@ def joint_probability(grid, trajectory):
         current_field = active_vector(
             node, previous_position, current_position)
 
-        prob *= position_normal_prob(node, current_field,
+        position_prob = position_normal_prob(node, current_field,
                                      previous_position, current_position)
-        prob *= node.transition_matrix[previous_field][current_field]
+        transition_prob = node.transition_matrix[previous_field][current_field]
+        
+        if position_prob != 0.0 and transition_prob != 0.0:
+            prob *= position_prob
+            prob *= transition_prob
+        else:
+            prob *= 0.01
         previous_field = current_field
 
     return prob
@@ -75,9 +82,8 @@ def calculate_forward_probabilities(grid, trajectory):
         node = grid.grid_matrix[node_indexes[1]][node_indexes[0]]
         node_transition_matrix = node.transition_matrix
 
-        previous_probs = forward_probabilities[:, i].reshape(
-            (grid.nr_fields, 1))
-        aux = np.dot(node_transition_matrix, previous_probs).flatten()
+        previous_probs = forward_probabilities[:, i].flatten()
+        aux = np.dot(previous_probs, node_transition_matrix)
         current_probabilities = normalize_vector(aux)
         forward_probabilities[:, i+1] = current_probabilities
 
@@ -94,9 +100,8 @@ def calculate_backward_probabilities(grid, trajectory):
         node = grid.grid_matrix[node_indexes[1]][node_indexes[0]]
         node_transition_matrix = node.transition_matrix
 
-        previous_probs = backward_probabilities[:,
-                                                i + 1].reshape((grid.nr_fields, 1))
-        aux = np.dot(node_transition_matrix, previous_probs).flatten()
+        previous_probs = backward_probabilities[:, i + 1].flatten()
+        aux = np.dot(previous_probs, node_transition_matrix)
         current_probabilities = normalize_vector(aux)
         backward_probabilities[:, i] = current_probabilities
 
