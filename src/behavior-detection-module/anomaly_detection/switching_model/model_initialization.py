@@ -68,6 +68,10 @@ class GridNode:
     @motion_vectors.setter
     def motion_vectors(self, value):
         self.__motion_vectors = value
+        
+    @transition_matrix.setter
+    def transition_matrix(self, value):
+        self.__transition_matrix = value
 
     @motion_vectors_priors.setter
     def motion_vectors_priors(self, value):
@@ -101,6 +105,7 @@ class SquareGrid:
     def __init__(self, width, height, nr_nodes, nr_fields):
         self.__width = width
         self.__height = height
+        self.__nr_nodes = nr_nodes
         self.__side = int(nr_nodes ** 0.5)
         self.__x_interval = width / self.__side
         self.__y_interval = height / self.__side
@@ -115,6 +120,10 @@ class SquareGrid:
     @property
     def height(self):
         return self.__height
+
+    @property
+    def nr_nodes(self):
+        return self.__nr_nodes
 
     @property
     def side(self):
@@ -198,6 +207,8 @@ def initialize_fields(grid, trajectories):
                     label_count_tuples[i][0]]
                 node.motion_vectors_priors[i] = label_count_tuples[i][1] / \
                     len(data)
+                node.transition_matrix[:, i] = [
+                    node.motion_vectors_priors[i]] * grid.nr_fields
 
         else:
             random_vectors = 2 * \
@@ -292,4 +303,4 @@ if __name__ == "__main__":
     test_initialization("resources/videos/v29.m4v",
                         "resources/detections/v29-fishes.json",
                         "resources/classification/species-gt-v29.csv",
-                        36, 4)
+                        16, 4)
