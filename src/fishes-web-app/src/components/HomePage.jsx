@@ -1,81 +1,88 @@
 import logo from "../images/oceanarium-logo.png";
-import tracking_demo from "../videos/tracking-demo.webm";
-import interesting_moment from "../videos/interesting-moment-example.mp4";
-import segmentation_example from "../videos/segmentation-example.webm";
-import interpolation_example from "../videos/interpolation-example.webm";
-
-function play_video(e) {
-  e.preventDefault();
-  let video_element = e.target;
-  if (video_element.paused) video_element.play();
-}
-
-function pause_video(e) {
-  e.preventDefault();
-  let video_element = e.target;
-  if (!video_element.paused) video_element.pause();
-}
+import trackingDemo from "../videos/tracking-demo.webm";
+import segmentationExample from "../videos/segmentation-example.webm";
+import interpolationExample from "../videos/interpolation-example.webm";
+import { useState } from "react";
 
 const HomePage = () => {
+  const VIDEOS = [trackingDemo, segmentationExample, interpolationExample];
+
+  const [currentVideo, setCurrentVideo] = useState(
+    Math.floor(Math.random() * VIDEOS.length)
+  );
+
+  const updateVideo = (e) => {
+    e.target.currentTime = 0;
+    setCurrentVideo((currentVideo + 1) % VIDEOS.length);
+  };
+
   return (
-    <div className="container-fluid">
-      <div className="row">
-        <div className="col">
-          <img src={logo} alt="oceanarium logo"></img>
-          <h1 className="display-6">Fish Behavior Detection</h1>
-          <h3>“A pond full of fish is better than a river full of stones.”</h3>
-          <p>Matshona Dhliwayo</p>
+    <div className="container-fluid home-container">
+      <div
+        className="row align-items-center"
+        style={{
+          width: `${window.innerWidth}px`,
+          height: `${window.innerHeight}px`,
+        }}
+      >
+        <div className="col-6">
+          <img src={logo} width="20%" alt="oceanarium logo"></img>
 
-          <a href="http://localhost:3000/">
-            <button>Ask for an account</button>
-          </a>
-          <a href="http://localhost:3000/">
-            <button>Login</button>
-          </a>
+          <h1 id="homepage-title" className="display-6 fw-bold">
+            Fish Behavior Detection
+          </h1>
+
+          <figure id="citation-zone">
+            <blockquote className="blockquote">
+              <p className="fs-4 fw-bolder">
+                “A pond full of fish is better than a river full of stones.”
+              </p>
+            </blockquote>
+            <figcaption className="blockquote-footer fs-7">
+              Matshona Dhliwayo
+            </figcaption>
+          </figure>
+
+          <div className="text-center">
+            <a href="http://localhost:3000/">
+              <button
+                id="account-btn"
+                type="button"
+                className="btn btn-outline-primary btn-lg"
+              >
+                Ask for an account
+              </button>
+            </a>
+            <br />
+            <a href="http://localhost:3000/">
+              <button
+                id="login-btn"
+                type="button"
+                className="btn btn-outline-secondary btn-lg"
+              >
+                Login
+              </button>
+            </a>
+          </div>
         </div>
 
-        <div className="col">
-          <video
-            width="100%"
-            src={tracking_demo}
-            type="video/webm"
-            loop
-            muted
-            onMouseEnter={play_video}
-            onMouseLeave={pause_video}
-          ></video>
-
-          <video
-            width="100%"
-            src={interesting_moment}
-            type="video/mp4"
-            loop
-            muted
-            onMouseEnter={play_video}
-            onMouseLeave={pause_video}
-          ></video>
-        </div>
-
-        <div className="col">
-          <video
-            width="100%"
-            src={segmentation_example}
-            type="video/webm"
-            loop
-            muted
-            onMouseEnter={play_video}
-            onMouseLeave={pause_video}
-          ></video>
-
-          <video
-            width="100%"
-            src={interpolation_example}
-            type="video/webm"
-            loop
-            muted
-            onMouseEnter={play_video}
-            onMouseLeave={pause_video}
-          ></video>
+        <div className="col-6 videos-col">
+          {VIDEOS.map((x, index) => {
+            return (
+              <video
+                key={index}
+                style={{
+                  width: `${window.innerWidth / 2}px`,
+                  display: index === currentVideo ? "block" : "none",
+                }}
+                src={x}
+                type="video/webm"
+                autoPlay
+                muted
+                onEnded={updateVideo}
+              ></video>
+            );
+          })}
         </div>
       </div>
     </div>
