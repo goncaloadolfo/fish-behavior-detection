@@ -9,6 +9,8 @@ from trajectory_reader.trajectories_reader import read_fishes_filter
 from pre_processing.interpolation import fill_gaps_linear
 from pre_processing.trajectory_filtering import smooth_positions
 from trajectory_features.trajectory_feature_extraction import exponential_weights
+from copy import deepcopy
+import json
 
 
 def init_transition_matrix(nr_fields):
@@ -68,7 +70,7 @@ class GridNode:
     @motion_vectors.setter
     def motion_vectors(self, value):
         self.__motion_vectors = value
-        
+
     @transition_matrix.setter
     def transition_matrix(self, value):
         self.__transition_matrix = value
@@ -80,6 +82,28 @@ class GridNode:
     @init_position_prior.setter
     def init_position_prior(self, value):
         self.__init_position_prior = value
+
+    def encode(self):
+        return {
+            "centroid": self.__centroid.tolist(),
+            "x_limits": self.__x_limits,
+            "y_limits": self.y_limits,
+            "motion_vectors": self.__motion_vectors.tolist(),
+            "transition_matrix": self.__transition_matrix.tolist(),
+            "motion_vectors_variance": self.__motion_vectors_variances.tolist(),
+            "motion_vectors_priors": self.__motion_vectors_priors.tolist(),
+            "init_position_prior": self.__init_position_prior
+        }
+
+    def decode(self, grid_node_dict):
+        self.__centroid = np.array(grid_node_dict["centroid"], dtype=np.float)
+        self.__x_limits = grid_node_dict["x_limits"]
+        self.__y_limits = grid_node_dict["y_limits"]
+        self.__motion_vectors = np.array(grid_node_dict["motion_vectors"], dtype=np.float)
+        self.__transition_matrix = np.array(grid_node_dict["transition_matrix"], dtype=np.float)
+        self.__motion_vectors_variances = np.array(grid_node_dict["motion_vectors_variance"], dtype=np.float)
+        self.__motion_vectors_priors = np.array(grid_node_dict["motion_vectors_priors"], dtype=np.float)
+        self.__init_position_prior = grid_node_dict["init_position_prior"]
 
     def pretty_print(self):
         for attribute_description, attribute_value in self.__dict__.items():
@@ -144,6 +168,40 @@ class SquareGrid:
     @property
     def nr_fields(self):
         return self.__nr_fields
+
+    def encode(self):
+        encoded_nodes = deepcopy(self.__grid_matrix)
+        for i in range(len(encoded_nodes)):
+            for j in range(len(encoded_nodes[i])):
+                encoded_nodes[i][j] = encoded_nodes[i][j].encode()
+
+        return {
+            "width": self.__width,
+            "height": self.__height,
+            "nr_nodes": self.__nr_nodes,
+            "side": self.__side,
+            "x_interval": self.__x_interval,
+            "y_interval": self.__y_interval,
+            "nr_fields": self.__nr_fields,
+            "grid_matrix": encoded_nodes.tolist()
+        }
+
+    def decode(self, grid_dict):
+        self.__width = grid_dict["width"]
+        self.__height = grid_dict["height"]
+        self.__nr_nodes = grid_dict["nr_nodes"]
+        self.__side = grid_dict["side"]
+        self.__x_interval = grid_dict["x_interval"]
+        self.__y_interval = grid_dict["y_interval"]
+        self.__nr_fields = grid_dict["nr_fields"]
+
+        encoded_matrix = grid_dict["grid_matrix"]
+        self.__grid_matrix = create_grid_matrix(self.__width, self.__height,
+                                                self.__side, self.__nr_fields)
+
+        for i in range(self.__side):
+            for j in range(self.__side):
+                self.__grid_matrix[i][j].decode(encoded_matrix[i][j])
 
 
 def identify_position_node(grid, pos):
@@ -236,6 +294,21 @@ def create_grid(video_path, fishes_path, species_path,
     return grid if not return_trajectories else grid, trajectories
 
 
+def save_model_to_file(grid, file_path):
+    encoded_grid = grid.encode()
+    with open(file_path, "w") as file:
+        json.dump(encoded_grid, file, indent=4)
+
+
+def load_model_from_file(file_path):
+    with open(file_path, "r") as file:
+        encoded_model = json.load(file)
+        square_grid = SquareGrid(encoded_model["width"], encoded_model["height"],
+                                 encoded_model["nr_nodes"], encoded_model["nr_fields"])
+        square_grid.decode(encoded_model)
+        return square_grid
+
+
 def draw_grid(frame, grid):
     frame_copy = frame.copy()
 
@@ -299,8 +372,21 @@ def test_initialization(video_path, fishes_path, species_path, nr_nodes, nr_fiel
     cv2.destroyAllWindows()
 
 
+def test_model_saving(video_path, fishes_path, species_path, nr_nodes, nr_fields):
+    grid = create_grid(video_path, fishes_path, species_path,
+                       ("shark", "manta-ray"), nr_nodes, nr_fields, return_trajectories=True)[0]
+    save_model_to_file(grid, "resources/models/test-model.model")
+    model = load_model_from_file("resources/models/test-model.model")
+    pretty_print_parameters(model)
+
+
 if __name__ == "__main__":
-    test_initialization("resources/videos/v29.m4v",
-                        "resources/detections/v29-fishes.json",
-                        "resources/classification/species-gt-v29.csv",
-                        16, 4)
+    # test_initialization("resources/videos/v29.m4v",
+    #                     "resources/detections/v29-fishes.json",
+    #                     "resources/classification/species-gt-v29.csv",
+    #                     16, 4)
+
+    test_model_saving("resources/videos/v29.m4v",
+                      "resources/detections/v29-fishes.json",
+                      "resources/classification/species-gt-v29.csv",
+                      16, 4)
