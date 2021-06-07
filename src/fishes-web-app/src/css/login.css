@@ -1,0 +1,21 @@
+#login-container > *,
+#login-container > form > * {
+  margin-bottom: 30px;
+}
+
+#login-container > form > * {
+  width: 90%;
+}
+
+#login-container > form > input {
+  height: 50px;
+  font-size: 1.05em;
+}
+
+#newAccountLink {
+  text-decoration: none;
+}
+
+#newAccountLink:hover {
+  text-decoration: underline;
+}

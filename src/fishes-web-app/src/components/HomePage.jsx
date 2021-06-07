@@ -3,6 +3,7 @@ import trackingDemo from "../videos/tracking-demo.webm";
 import segmentationExample from "../videos/segmentation-example.webm";
 import interpolationExample from "../videos/interpolation-example.webm";
 import { useState } from "react";
+import { Link } from "react-router-dom";
 
 const HomePage = () => {
   const VIDEOS = [trackingDemo, segmentationExample, interpolationExample];
@@ -44,25 +45,26 @@ const HomePage = () => {
           </figure>
 
           <div className="text-center">
-            <a href="http://localhost:3000/">
-              <button
-                id="account-btn"
-                type="button"
-                className="btn btn-outline-primary btn-lg"
-              >
-                Ask for an account
-              </button>
-            </a>
+            <button
+              id="account-btn"
+              type="button"
+              className="btn btn-outline-primary btn-lg"
+              style={{ width: "50%" }}
+            >
+              Ask for an account
+            </button>
+
             <br />
-            <a href="http://localhost:3000/">
+            <Link to="/login">
               <button
                 id="login-btn"
                 type="button"
                 className="btn btn-outline-secondary btn-lg"
+                style={{ width: "50%" }}
               >
                 Login
               </button>
-            </a>
+            </Link>
           </div>
         </div>
 
