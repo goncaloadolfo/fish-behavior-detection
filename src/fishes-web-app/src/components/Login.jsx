@@ -1,6 +1,5 @@
 import logo from "../images/oceanarium-logo.png";
 import "../css/login.css";
-import { Link } from "react-router-dom";
 import { useState } from "react";
 import $ from "jquery";
 
@@ -10,18 +9,37 @@ const Login = () => {
 
   const handleFieldChange = (e) => {
     e.preventDefault();
-    if (e.target.type === "username") setUsername(e.target.value);
-    else setPassword(e.target.value);
+    if (e.target.id === "username-input") setUsername(e.target.value);
+    else if (e.target.id === "pass-input") setPassword(e.target.value);
   };
 
-  const handleLoginSubmission = () => {
-    if (username.trim === "") {
-      // not working...
-      $("#username-input").style.border = "2px red";
+  const handleLoginSubmission = (e) => {
+    e.preventDefault();
+    let usernameInput = $("#username-input");
+    let passwordInput = $("#pass-input");
+
+    let invalidUsername = $("#invalid-username");
+    let invalidPassword = $("#invalid-password");
+    let invalidCredentials = $("#invalid-login");
+
+    if (username.trim() === "") {
+      usernameInput.css("border", "1.5px solid red");
+      invalidUsername.css("display", "block");
+    } else {
+      usernameInput.css("border", "1.5px solid gray");
+      invalidUsername.css("display", "none");
     }
+
     if (password === "") {
-      // not working...
-      $("#password-input").style.border = "2px red";
+      passwordInput.css("border", "1.5px solid red");
+      invalidPassword.css("display", "block");
+    } else {
+      passwordInput.css("border", "1.5px solid gray");
+      invalidPassword.css("display", "none");
+    }
+
+    if (username.trim() !== "" && password !== "") {
+      // todo - authentication request
     }
   };
 
@@ -33,7 +51,7 @@ const Login = () => {
       <div id="login-container">
         <img src={logo} width="20%" alt="oceanarium logo"></img>
         <h2 className="fw-bold">Fish Behavior Detection</h2>
-        <form onSubmit={handleLoginSubmission}>
+        <form>
           <p id="invalid-login" className="invalid-feedback">
             Invalid credentials.
           </p>
@@ -43,6 +61,7 @@ const Login = () => {
             placeholder="username"
             onChange={handleFieldChange}
           ></input>
+          <br />
           <p id="invalid-username" className="invalid-feedback">
             Provide a username.
           </p>
@@ -52,21 +71,21 @@ const Login = () => {
             placeholder="password"
             onChange={handleFieldChange}
           ></input>
+          <br />
           <p id="invalid-password" className="invalid-feedback">
             Provide a password.
           </p>
           <button
             id="login-btn"
-            type="submit"
+            onClick={handleLoginSubmission}
             className="btn btn-outline-secondary"
           >
             Login
           </button>
         </form>
         <div className="text-center">
-          <Link id="newAccountLink" to="/">
-            Ask for an account
-          </Link>
+          <span id="newAccountSpan">Ask for an account</span>
+          <span id="forgotMyPassSpan">Forgot my password</span>
         </div>
       </div>
     </div>

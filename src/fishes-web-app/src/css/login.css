@@ -1,6 +1,7 @@
 #login-container > *,
-#login-container > form > * {
-  margin-bottom: 30px;
+#login-container > form > input,
+button {
+  margin-top: 20px;
 }
 
 #login-container > form > * {
@@ -12,10 +13,17 @@
   font-size: 1.05em;
 }
 
-#newAccountLink {
-  text-decoration: none;
+#newAccountSpan {
+  margin-right: 10px;
 }
 
-#newAccountLink:hover {
+#newAccountSpan,
+#forgotMyPassSpan {
+  color: #0000ee;
+}
+
+#newAccountSpan:hover,
+#forgotMyPassSpan:hover {
   text-decoration: underline;
+  cursor: pointer;
 }
