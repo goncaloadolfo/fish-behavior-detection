@@ -221,6 +221,6 @@ def evaluate_models():
 
 if __name__ == "__main__":
     # train_models()
-    # evaluate_models()
-    tuning_models("normal")
+    evaluate_models()
+    # tuning_models("normal")
     # tuning_models("interesting")
