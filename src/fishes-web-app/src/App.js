@@ -20,6 +20,8 @@ function App() {
               nMantas={data.nmantas}
               sharkDurationHist={data["shark-duration-hist"]}
               mantasDurationHist={data["manta-ray-duration-hist"]}
+              sharkPositionsHist={data["shark-positions-hist"]}
+              mantasPositionsHist={data["manta-ray-positions-hist"]}
             ></VideoCard>
           </Route>
           <Route path="/login">
