@@ -11,10 +11,11 @@ from sklearn.svm import SVC
 from sklearn.feature_selection import SelectKBest
 from sklearn.cluster import DBSCAN
 
+BDM_MODULE = "../behavior-detection-module/"
 
 def import_bdm():
     import sys
-    sys.path.append(path.abspath("../fish-behavior-detection"))
+    sys.path.append(path.abspath(BDM_MODULE))
 
 import_bdm()
 from pre_processing.pre_processing_functions import load_data
@@ -29,7 +30,6 @@ from rule_based.highlight_moments import highlight_moments
 from rule_based.surface_warnings import provide_surface_warnings
 from anomaly_detection.anomaly_detector import most_different_features
 
-BDM_MODULE = "../fish-behavior-detection/"
 URL = "mongodb://localhost:27017/"
 
 

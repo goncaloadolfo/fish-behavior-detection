@@ -95,8 +95,8 @@ def positions_histogram(fishes, frame_size):
             ys.append(y)
 
     return np.histogram2d(xs, ys,
-                          range=[[0, frame_size[0]],
-                                 [0, frame_size[1]]]
+                          range=[[0, frame_size[1]],
+                                 [0, frame_size[0]]]
                           )
 
 
