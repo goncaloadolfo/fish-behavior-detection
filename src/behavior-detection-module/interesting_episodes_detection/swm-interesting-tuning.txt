@@ -1,0 +1,255 @@
+Model:  0
+        number of nodes:  25
+        number of fields:  6
+        delta:  250
+        alpha:  1
+        number of iterations:  10
+        complete log likelihood:  -8197.805237209277
+
+Model:  1
+        number of nodes:  16
+        number of fields:  6
+        delta:  250
+        alpha:  2
+        number of iterations:  10
+        complete log likelihood:  -8188.769712831874
+
+Model:  2
+        number of nodes:  25
+        number of fields:  6
+        delta:  250
+        alpha:  2
+        number of iterations:  30
+        complete log likelihood:  -7955.8198366846855
+
+Model:  3
+        number of nodes:  16
+        number of fields:  6
+        delta:  250
+        alpha:  2
+        number of iterations:  30
+        complete log likelihood:  -7947.09094151275
+
+Model:  4
+        number of nodes:  25
+        number of fields:  6
+        delta:  250
+        alpha:  2
+        number of iterations:  10
+        complete log likelihood:  -7935.796116535451
+
+Model:  5
+        number of nodes:  25
+        number of fields:  6
+        delta:  250
+        alpha:  1
+        number of iterations:  30
+        complete log likelihood:  -7931.297279114402
+
+Model:  6
+        number of nodes:  16
+        number of fields:  6
+        delta:  250
+        alpha:  1
+        number of iterations:  10
+        complete log likelihood:  -7911.1444772929835
+
+Model:  7
+        number of nodes:  16
+        number of fields:  6
+        delta:  250
+        alpha:  1
+        number of iterations:  30
+        complete log likelihood:  -7854.276876775009
+
+Model:  8
+        number of nodes:  25
+        number of fields:  4
+        delta:  250
+        alpha:  2
+        number of iterations:  10
+        complete log likelihood:  -7679.973113777166
+
+Model:  9
+        number of nodes:  16
+        number of fields:  4
+        delta:  250
+        alpha:  2
+        number of iterations:  30
+        complete log likelihood:  -7467.296763659262
+
+Model:  10
+        number of nodes:  25
+        number of fields:  4
+        delta:  250
+        alpha:  2
+        number of iterations:  30
+        complete log likelihood:  -7249.780029468107
+
+Model:  11
+        number of nodes:  25
+        number of fields:  4
+        delta:  250
+        alpha:  1
+        number of iterations:  30
+        complete log likelihood:  -7233.104739389912
+
+Model:  12
+        number of nodes:  16
+        number of fields:  4
+        delta:  250
+        alpha:  1
+        number of iterations:  30
+        complete log likelihood:  -7217.0052320238265
+
+Model:  13
+        number of nodes:  16
+        number of fields:  4
+        delta:  250
+        alpha:  2
+        number of iterations:  10
+        complete log likelihood:  -7203.718575793769
+
+Model:  14
+        number of nodes:  25
+        number of fields:  4
+        delta:  250
+        alpha:  1
+        number of iterations:  10
+        complete log likelihood:  -7105.429282881167
+
+Model:  15
+        number of nodes:  16
+        number of fields:  4
+        delta:  250
+        alpha:  1
+        number of iterations:  10
+        complete log likelihood:  -6924.339559253658
+
+Model:  16
+        number of nodes:  25
+        number of fields:  6
+        delta:  125
+        alpha:  1
+        number of iterations:  10
+        complete log likelihood:  -6036.655266347283
+
+Model:  17
+        number of nodes:  25
+        number of fields:  6
+        delta:  125
+        alpha:  2
+        number of iterations:  10
+        complete log likelihood:  -6022.806189959057
+
+Model:  18
+        number of nodes:  25
+        number of fields:  6
+        delta:  125
+        alpha:  1
+        number of iterations:  30
+        complete log likelihood:  -5993.132874842829
+
+Model:  19
+        number of nodes:  25
+        number of fields:  6
+        delta:  125
+        alpha:  2
+        number of iterations:  30
+        complete log likelihood:  -5992.353021937554
+
+Model:  20
+        number of nodes:  16
+        number of fields:  6
+        delta:  125
+        alpha:  1
+        number of iterations:  30
+        complete log likelihood:  -5963.78171692426
+
+Model:  21
+        number of nodes:  16
+        number of fields:  6
+        delta:  125
+        alpha:  1
+        number of iterations:  10
+        complete log likelihood:  -5963.369302324567
+
+Model:  22
+        number of nodes:  16
+        number of fields:  6
+        delta:  125
+        alpha:  2
+        number of iterations:  10
+        complete log likelihood:  -5962.252363524556
+
+Model:  23
+        number of nodes:  16
+        number of fields:  6
+        delta:  125
+        alpha:  2
+        number of iterations:  30
+        complete log likelihood:  -5941.333355370463
+
+Model:  24
+        number of nodes:  16
+        number of fields:  4
+        delta:  125
+        alpha:  2
+        number of iterations:  10
+        complete log likelihood:  -5706.581427194026
+
+Model:  25
+        number of nodes:  16
+        number of fields:  4
+        delta:  125
+        alpha:  1
+        number of iterations:  10
+        complete log likelihood:  -5706.535614968886
+
+Model:  26
+        number of nodes:  16
+        number of fields:  4
+        delta:  125
+        alpha:  1
+        number of iterations:  30
+        complete log likelihood:  -5699.009454837311
+
+Model:  27
+        number of nodes:  16
+        number of fields:  4
+        delta:  125
+        alpha:  2
+        number of iterations:  30
+        complete log likelihood:  -5696.866690116478
+
+Model:  28
+        number of nodes:  25
+        number of fields:  4
+        delta:  125
+        alpha:  2
+        number of iterations:  10
+        complete log likelihood:  -5569.0856796543085
+
+Model:  29
+        number of nodes:  25
+        number of fields:  4
+        delta:  125
+        alpha:  1
+        number of iterations:  10
+        complete log likelihood:  -5568.6219034346495
+
+Model:  30
+        number of nodes:  25
+        number of fields:  4
+        delta:  125
+        alpha:  2
+        number of iterations:  30
+        complete log likelihood:  -5551.311259398299
+
+Model:  31
+        number of nodes:  25
+        number of fields:  4
+        delta:  125
+        alpha:  1
+        number of iterations:  30
+        complete log likelihood:  -5548.766018223407
