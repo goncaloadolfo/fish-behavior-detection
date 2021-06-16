@@ -4,9 +4,13 @@ import { ChevronBarDown, ChevronBarUp } from "react-bootstrap-icons";
 import * as d3 from "d3";
 import { max, scaleLinear } from "d3";
 
-const plotMargin = { top: 30, right: 30, bottom: 70, left: 60 };
-const plotWidth = 480 - plotMargin.left - plotMargin.right;
-const plotHeight = 400 - plotMargin.top - plotMargin.bottom;
+const heatmapMargin = { top: 40, right: 0, bottom: 70, left: 0 };
+const barchartMargin = { top: 40, right: 20, bottom: 70, left: 60 };
+
+const heatmapWidth = 480 - heatmapMargin.left - heatmapMargin.right;
+const heatmapHeight = 400 - heatmapMargin.top - heatmapMargin.bottom;
+const barchartWidth = 400 - barchartMargin.left - barchartMargin.right;
+const barchartHeight = 400 - barchartMargin.top - barchartMargin.bottom;
 
 class VideoCard extends Component {
   constructor(props) {
@@ -53,13 +57,13 @@ class VideoCard extends Component {
   setBarchartXAxis = () => {
     let xAxis = d3
       .scaleBand()
-      .range([0, plotWidth])
+      .range([0, barchartWidth])
       .domain(this.getBarchartLabels())
       .padding(0.2);
     this.barchartSvg
       .append("g")
       .attr("class", "barchart-axis")
-      .attr("transform", `translate(0, ${plotHeight})`)
+      .attr("transform", `translate(0, ${barchartHeight})`)
       .call(d3.axisBottom(xAxis));
     this.barchartXAxis = xAxis;
   };
@@ -67,24 +71,24 @@ class VideoCard extends Component {
   setHeatmapXAxis = () => {
     let heatmapXAxis = d3
       .scaleBand()
-      .range([0, plotWidth])
+      .range([0, heatmapWidth])
       .domain(this.props.sharkPositionsHist["xbin_values"])
       .padding(0.05);
     this.heatmapXAxis = heatmapXAxis;
 
-    this.heatmapSvg
-      .append("g")
-      .style("font-size", 15)
-      .attr("transform", "translate(0," + plotHeight + ")")
-      .call(d3.axisBottom(heatmapXAxis).tickSize(0))
-      .select(".domain")
-      .remove();
+    // this.heatmapSvg
+    //   .append("g")
+    //   .style("font-size", 15)
+    //   .attr("transform", "translate(0," + heatmapHeight + ")")
+    //   .call(d3.axisBottom(heatmapXAxis).tickSize(0))
+    //   .select(".domain")
+    //   .remove();
   };
 
   setBarchartYAxis = () => {
     let yAxis = scaleLinear()
       .domain([0, this.getBarchartMaxValue() + 5])
-      .range([plotHeight, 0]);
+      .range([barchartHeight, 0]);
     this.barchartSvg
       .append("g")
       .attr("class", "barchart-axis")
@@ -95,17 +99,17 @@ class VideoCard extends Component {
   setupHeatmapYAxis = () => {
     let heatmapYAxis = d3
       .scaleBand()
-      .range([plotHeight, 0])
+      .range([heatmapHeight, 0])
       .domain(this.props.sharkPositionsHist["ybin_values"])
       .padding(0.05);
     this.heatmapYAxis = heatmapYAxis;
 
-    this.heatmapSvg
-      .append("g")
-      .style("font-size", 15)
-      .call(d3.axisLeft(heatmapYAxis).tickSize(0))
-      .select(".domain")
-      .remove();
+    // this.heatmapSvg
+    //   .append("g")
+    //   .style("font-size", 15)
+    //   .call(d3.axisLeft(heatmapYAxis).tickSize(0))
+    //   .select(".domain")
+    //   .remove();
   };
 
   cleanupBarchartAxis = () => {
@@ -136,10 +140,16 @@ class VideoCard extends Component {
     let svg = d3
       .select("#duration-hist")
       .append("svg")
-      .attr("width", plotWidth + plotMargin.left + plotMargin.right)
-      .attr("height", plotHeight + plotMargin.top + plotMargin.bottom)
+      .attr("width", barchartWidth + barchartMargin.left + barchartMargin.right)
+      .attr(
+        "height",
+        barchartHeight + barchartMargin.top + barchartMargin.bottom
+      )
       .append("g")
-      .attr("transform", `translate(${plotMargin.left}, ${plotMargin.top})`);
+      .attr(
+        "transform",
+        `translate(${barchartMargin.left}, ${barchartMargin.top})`
+      );
 
     this.barchartSvg = svg;
     this.setBarchartXAxis();
@@ -147,18 +157,18 @@ class VideoCard extends Component {
 
     svg
       .append("text")
-      .attr("class", "title")
+      .attr("class", "h5")
       .attr("text-anchor", "end")
-      .attr("x", plotWidth / 2)
+      .attr("x", barchartWidth * 0.8)
       .attr("y", 0)
-      .text("Trajectories Duration");
+      .text("Trajectories' positions");
 
     svg
       .append("text")
       .attr("class", "x-label")
       .attr("text-anchor", "end")
-      .attr("x", plotWidth)
-      .attr("y", plotHeight + 45)
+      .attr("x", barchartWidth)
+      .attr("y", barchartHeight + 45)
       .text("trajectory time (s)");
 
     svg
@@ -175,13 +185,22 @@ class VideoCard extends Component {
     this.heatmapSvg = d3
       .select("#positions-heatmap")
       .append("svg")
-      .attr("width", plotWidth + plotMargin.left + plotMargin.right)
-      .attr("height", plotHeight + plotMargin.top + plotMargin.bottom)
+      .attr("width", heatmapWidth + heatmapMargin.left + heatmapMargin.right)
+      .attr("height", heatmapHeight + heatmapMargin.top + heatmapMargin.bottom)
       .append("g")
       .attr(
         "transform",
-        "translate(" + plotMargin.left + "," + plotMargin.top + ")"
+        "translate(" + heatmapMargin.left + "," + heatmapMargin.top + ")"
       );
+
+    this.heatmapSvg
+      .append("text")
+      .attr("class", "h5")
+      .attr("text-anchor", "end")
+      .attr("x", heatmapWidth * 0.75)
+      .attr("y", 0)
+      .text("Most frequented regions");
+
     this.setHeatmapXAxis();
     this.setupHeatmapYAxis();
     this.setupHeatmapColorScale();
@@ -228,7 +247,7 @@ class VideoCard extends Component {
       .attr("x", (d) => this.barchartXAxis(d.label))
       .attr("y", (d) => this.barchartYAxis(d.count))
       .attr("width", this.barchartXAxis.bandwidth())
-      .attr("height", (d) => plotHeight - this.barchartYAxis(d.count))
+      .attr("height", (d) => barchartHeight - this.barchartYAxis(d.count))
       .attr("fill", "#69b3a2")
       .attr("transform", `translate(${this.barchartXAxis.bandwidth() / 2}, 0)`);
   };
@@ -241,8 +260,9 @@ class VideoCard extends Component {
   heatmapCellMousemove = function (e) {
     d3.select(".tooltip")
       .html(`value: ${e.target.__data__.count}`)
-      .style("left", e.x + "px")
-      .style("bottom", e.y + "px");
+      .style("position", "absolute")
+      .style("left", e.clientX + "px")
+      .style("bottom", window.innerHeight - e.clientY + "px");
   };
 
   heatmapCellMouseleave = function () {
@@ -262,10 +282,13 @@ class VideoCard extends Component {
         data.push({
           count: heatmapData.counts[j][i],
           x: heatmapData["xbin_values"][j],
-          y: heatmapData["ybin_values"][i],
+          y: heatmapData["ybin_values"][heatmapData.counts[i].length - i - 1],
         });
       }
     }
+
+    let cellWidth = this.heatmapXAxis.bandwidth();
+    let cellHeight = this.heatmapYAxis.bandwidth();
 
     this.heatmapSvg
       .selectAll()
@@ -274,8 +297,8 @@ class VideoCard extends Component {
       })
       .enter()
       .append("rect")
-      .attr("x", (d) => this.heatmapXAxis(d.x))
-      .attr("y", (d) => this.heatmapYAxis(d.y))
+      .attr("x", (d) => this.heatmapXAxis(d.x) + cellWidth / 2)
+      .attr("y", (d) => this.heatmapYAxis(d.y) - cellHeight / 2)
       .attr("rx", 4)
       .attr("ry", 4)
       .attr("width", this.heatmapXAxis.bandwidth())
@@ -298,7 +321,7 @@ class VideoCard extends Component {
 
   render() {
     return (
-      <div className="card" style={{ width: "50%" }}>
+      <div className="card" style={{ width: "75%" }}>
         <h5 className="card-title">{this.props.videoDate}</h5>
         <h6 className="card-subtitle">
           {this.props.nSharks} Sharks {this.props.nMantas} Mantas
@@ -320,8 +343,16 @@ class VideoCard extends Component {
         >
           <button onClick={this.updateFocusSpecies}>Sharks</button>
           <button onClick={this.updateFocusSpecies}>Mantas</button>
-          <div id="duration-hist"></div>
-          <div id="positions-heatmap"></div>
+          <div className="container">
+            <div className="row">
+              <div className="col">
+                <div id="positions-heatmap"></div>
+              </div>
+              <div className="col">
+                <div id="duration-hist"></div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     );
