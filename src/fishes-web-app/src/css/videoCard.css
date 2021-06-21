@@ -1,0 +1,56 @@
+.card {
+  padding: 0;
+  margin: 5px;
+}
+
+.card > * {
+  margin-left: 40px;
+  margin-right: 10px;
+}
+
+.card-title {
+  margin-top: 10px;
+}
+
+.time-diff {
+  font-size: 80%;
+  color: gray;
+}
+
+.card-subtitle {
+  margin-bottom: 10px;
+}
+
+.expand-icon {
+  margin-top: 5px;
+  margin-bottom: 5px;
+}
+
+.expand-icon:hover {
+  cursor: pointer;
+}
+
+.video-video-card {
+  border-radius: 5px;
+}
+
+.sharks-btn {
+  margin-right: 10px;
+}
+
+.species-btn {
+  border-radius: 15px;
+  border-color: #56a3a6;
+  color: #56a3a6;
+}
+
+.species-btn:hover {
+  border-color: #56a3a6;
+  color: #56a3a6;
+  background-color: #f2efea;
+}
+
+.species-btn:focus {
+  box-shadow: none !important;
+  outline: 0;
+}

@@ -1,18 +1,24 @@
 import testVideo from "../test-data/v29.m4v";
+import "../css/videoCard.css";
 import { Component } from "react";
 import { ChevronBarDown, ChevronBarUp } from "react-bootstrap-icons";
 import * as d3 from "d3";
 import { max, scaleLinear } from "d3";
 
+var moment = require("moment");
+
 const heatmapMargin = { top: 40, right: 0, bottom: 70, left: 0 };
 const barchartMargin = { top: 40, right: 20, bottom: 70, left: 60 };
 
-const heatmapWidth = 480 - heatmapMargin.left - heatmapMargin.right;
-const heatmapHeight = 400 - heatmapMargin.top - heatmapMargin.bottom;
-const barchartWidth = 400 - barchartMargin.left - barchartMargin.right;
-const barchartHeight = 400 - barchartMargin.top - barchartMargin.bottom;
+const heatmapWidth = 460 - heatmapMargin.left - heatmapMargin.right;
+const heatmapHeight = 380 - heatmapMargin.top - heatmapMargin.bottom;
+const barchartWidth = 350 - barchartMargin.left - barchartMargin.right;
+const barchartHeight = 350 - barchartMargin.top - barchartMargin.bottom;
 
 class VideoCard extends Component {
+  TRANSITION_TIME = 0.3;
+  TRANSITION_STEP = 1;
+
   constructor(props) {
     super(props);
     this.state = {
@@ -138,7 +144,7 @@ class VideoCard extends Component {
 
   createBarChart = () => {
     let svg = d3
-      .select("#duration-hist")
+      .select(`#duration-hist-${this.props.videoId}`)
       .append("svg")
       .attr("width", barchartWidth + barchartMargin.left + barchartMargin.right)
       .attr(
@@ -183,7 +189,7 @@ class VideoCard extends Component {
 
   createHeatmap = () => {
     this.heatmapSvg = d3
-      .select("#positions-heatmap")
+      .select(`#positions-heatmap-${this.props.videoId}`)
       .append("svg")
       .attr("width", heatmapWidth + heatmapMargin.left + heatmapMargin.right)
       .attr("height", heatmapHeight + heatmapMargin.top + heatmapMargin.bottom)
@@ -208,7 +214,53 @@ class VideoCard extends Component {
   };
 
   updatePlotsStatus = () => {
-    this.setState({ visiblePlots: !this.state.visiblePlots });
+    this.setState({ visiblePlots: !this.state.visiblePlots }, () => {
+      let cardElem = document.getElementById(`video-${this.props.videoId}`);
+      let currentWidth = parseFloat(cardElem.style.width, 10);
+      let step = this.TRANSITION_STEP;
+
+      if (this.state.visiblePlots) {
+        let widthDiff = 100 - currentWidth;
+        let timeoutTime = (this.TRANSITION_TIME / (widthDiff / step)) * 1000;
+        setTimeout(this.increaseCardWidth, 0, cardElem, timeoutTime, step);
+      } else {
+        let widthDiff = currentWidth - 40;
+        let timeoutTime = (this.TRANSITION_TIME / (widthDiff / step)) * 1000;
+        setTimeout(this.decreaseCardWidth, 0, cardElem, timeoutTime, step);
+      }
+    });
+  };
+
+  increaseCardWidth = (cardElem, timeoutTime, step) => {
+    let currentWidth = parseInt(cardElem.style.width, 10);
+    let newWidth = currentWidth + step;
+    if (newWidth > 100) newWidth = 100;
+    cardElem.style.width = `${newWidth}%`;
+
+    if (newWidth !== 100)
+      setTimeout(
+        this.increaseCardWidth,
+        timeoutTime,
+        cardElem,
+        timeoutTime,
+        step
+      );
+  };
+
+  decreaseCardWidth = (cardElem, timeoutTime, step) => {
+    let currentWidth = parseInt(cardElem.style.width, 10);
+    let newWidth = currentWidth - step;
+    if (newWidth < 49) newWidth = 49;
+    cardElem.style.width = `${newWidth}%`;
+
+    if (newWidth !== 49)
+      setTimeout(
+        this.decreaseCardWidth,
+        timeoutTime,
+        cardElem,
+        timeoutTime,
+        step
+      );
   };
 
   updateFocusSpecies = (e) => {
@@ -258,9 +310,9 @@ class VideoCard extends Component {
   };
 
   heatmapCellMousemove = function (e) {
+    // bug: not working
     d3.select(".tooltip")
       .html(`value: ${e.target.__data__.count}`)
-      .style("position", "absolute")
       .style("left", e.clientX + "px")
       .style("bottom", window.innerHeight - e.clientY + "px");
   };
@@ -312,6 +364,17 @@ class VideoCard extends Component {
       .on("mouseleave", this.heatmapCellMouseleave);
   };
 
+  dateDisplay = (dateTimeString) => {
+    let dateObj = moment(dateTimeString);
+    return dateObj.format("LLL");
+  };
+
+  timeDiffDisplay = (dateTimeString) => {
+    let nowDate = moment(new Date());
+    let dateObj = moment(dateTimeString);
+    return dateObj.from(nowDate);
+  };
+
   componentDidMount() {
     this.createBarChart();
     this.createHeatmap();
@@ -321,18 +384,35 @@ class VideoCard extends Component {
 
   render() {
     return (
-      <div className="card" style={{ width: "75%" }}>
-        <h5 className="card-title">{this.props.videoDate}</h5>
+      <div
+        id={`video-${this.props.videoId}`}
+        className="card"
+        style={{ width: "49%" }}
+      >
+        <h5 className="card-title">
+          {this.dateDisplay(this.props.videoDate)}
+          <span className="time-diff">
+            {` ${this.timeDiffDisplay(this.props.videoDate)}`}
+          </span>
+        </h5>
         <h6 className="card-subtitle">
           {this.props.nSharks} Sharks {this.props.nMantas} Mantas
         </h6>
-        <video src={testVideo} controls></video>
+        <video className="video-video-card" src={testVideo} controls></video>
 
         {this.state.visiblePlots && (
-          <ChevronBarUp onClick={this.updatePlotsStatus} />
+          <ChevronBarUp
+            className="expand-icon"
+            size={20}
+            onClick={this.updatePlotsStatus}
+          />
         )}
         {!this.state.visiblePlots && (
-          <ChevronBarDown onClick={this.updatePlotsStatus} />
+          <ChevronBarDown
+            className="expand-icon"
+            size={20}
+            onClick={this.updatePlotsStatus}
+          />
         )}
 
         <div
@@ -341,15 +421,31 @@ class VideoCard extends Component {
             this.state.visiblePlots ? { display: "block" } : { display: "none" }
           }
         >
-          <button onClick={this.updateFocusSpecies}>Sharks</button>
-          <button onClick={this.updateFocusSpecies}>Mantas</button>
+          <button
+            className="sharks-btn species-btn btn btn-outline-secondary"
+            style={{
+              borderWidth: this.state.focusSpecies === "shark" ? "5px" : "2px",
+            }}
+            onClick={this.updateFocusSpecies}
+          >
+            Sharks
+          </button>
+          <button
+            className="species-btn btn btn-outline-secondary"
+            style={{
+              borderWidth: this.state.focusSpecies === "shark" ? "2px" : "5px",
+            }}
+            onClick={this.updateFocusSpecies}
+          >
+            Mantas
+          </button>
           <div className="container">
             <div className="row">
               <div className="col">
-                <div id="positions-heatmap"></div>
+                <div id={`positions-heatmap-${this.props.videoId}`}></div>
               </div>
               <div className="col">
-                <div id="duration-hist"></div>
+                <div id={`duration-hist-${this.props.videoId}`}></div>
               </div>
             </div>
           </div>

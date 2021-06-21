@@ -1,9 +1,11 @@
 import logo from "../images/oceanarium-logo.png";
 import "../css/login.css";
 import { useState } from "react";
+import { useHistory } from "react-router";
 import $ from "jquery";
 
 const Login = () => {
+  const history = useHistory();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
 
@@ -39,7 +41,8 @@ const Login = () => {
     }
 
     if (username.trim() !== "" && password !== "") {
-      // todo - authentication request
+      if (username === "abc" && password === "abc")
+        history.push("/videos-list");
     }
   };
 
