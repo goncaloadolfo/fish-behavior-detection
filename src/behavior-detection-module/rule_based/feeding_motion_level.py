@@ -98,21 +98,21 @@ def get_example_motion_frames(video_capture, motion_thr, feeding_warnings):
 
 
 def evaluate_motion_method(video_capture, motion_thr, feeding_thr, duration, ground_truth):
-    confusion_matrix = np.zeros((2, 2), dtype=int)
+    confusion_matrix = np.zeros((2, 2), dtype=np.int)
     motion_time_series = calculate_motion_time_series(video_capture,
                                                       motion_thr)
-    y = motion_time_series[::30]
+    y = motion_time_series
     smoothed_y = y.copy()
     TrajectoryFeatureExtraction.exponential_sliding_average(smoothed_y, 30,
                                                             exponential_weights(30, 0.1,
                                                                                 forward_only=True))
     feeding_warnings = extract_feeding_warnings(smoothed_y, feeding_thr,
-                                                duration)
+                                                duration*30)
     total_frames = video_capture.get(cv2.CAP_PROP_FRAME_COUNT)
 
     for t in range(len(smoothed_y)):
-        predicted_class = _get_predicted_class(t*30, feeding_warnings)
-        true_class = _get_true_class(t*30, ground_truth)
+        predicted_class = _get_predicted_class(t, feeding_warnings)
+        true_class = _get_true_class(t, ground_truth)
         confusion_matrix[predicted_class][true_class] += 1
 
     return confusion_matrix
@@ -202,6 +202,7 @@ def _calculate_diff_frame(video_capture, motion_thr, t):
 if __name__ == "__main__":
     video_capture = cv2.VideoCapture("resources/videos/feeding-v1-trim.mp4")
     video_test1 = cv2.VideoCapture("resources/videos/feeding-v1-trim2.mp4")
+    video_test2 = cv2.VideoCapture("resources/videos/feeding-v2.mp4")
 
     # tune_motion_thr(video_capture, [40, 50, 60, 70])
 
@@ -210,12 +211,22 @@ if __name__ == "__main__":
     #                          show_frames=True, show_feeding_results=True)
 
     results = evaluate_motion_method(video_test1, 40, 650_000, 20, [])
+    results2 = evaluate_motion_method(video_test2, 40, 650_000, 20,
+                                      [(0, 12550)])
+
     plt.figure()
     plt.title("Results Test Video 1")
-    seaborn.heatmap(results, ax=plt.gca(), vmin=0,
-                    vmax=np.sum(results), annot=True)
-    print(results)
+    plt.xlabel("true class")
+    plt.ylabel("predicted class")
+    seaborn.heatmap(results, annot=True, cmap="YlGnBu")
+
+    plt.figure()
+    plt.title("Results Test Video 2")
+    plt.xlabel("true class")
+    plt.ylabel("predicted class")
+    seaborn.heatmap(results2, annot=True, cmap="YlGnBu")
 
     plt.show()
     video_capture.release()
     video_test1.release()
+    video_test2.release()
