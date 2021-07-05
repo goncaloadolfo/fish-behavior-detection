@@ -212,7 +212,7 @@ if __name__ == "__main__":
 
     results = evaluate_motion_method(video_test1, 40, 650_000, 20, [])
     results2 = evaluate_motion_method(video_test2, 40, 650_000, 20,
-                                      [(0, 12550)])
+                                      [(0, 16500)])
 
     plt.figure()
     plt.title("Results Test Video 1")
