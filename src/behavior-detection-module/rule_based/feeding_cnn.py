@@ -1,8 +1,11 @@
 import os
 
 import cv2
+from keras.models import Sequential
+from keras.layers import Conv2D, MaxPooling2D, Flatten, Dense
 import matplotlib.pyplot as plt
 import numpy as np
+import seaborn
 from sklearn.model_selection._split import train_test_split
 
 
@@ -63,7 +66,7 @@ def read_dataset(training_dir, testing_dir):
             # update images and gt
             folder_imgs.append(cv2.imread(folder + img_name))
             filename = img_name.split(".")[0]
-            imgs_gt.append(1 if filename.endswith("feeding") else 0)
+            imgs_gt.append(1.0 if filename.endswith("feeding") else 0.0)
 
             # progress control
             processed_frames += 1
@@ -94,6 +97,63 @@ def plot_class_balance(data):
 
     plt.xticks(sets_center, ["training set", "testing set"])
     plt.legend()
+
+
+def define_layers():
+    model = Sequential()
+
+    # convolution layers
+    model.add(Conv2D(5, kernel_size=5, activation='relu', input_shape=(50, 80, 3)))
+    model.add(MaxPooling2D(pool_size=(2, 2)))
+    model.add(Conv2D(10, kernel_size=5, activation='relu'))
+    model.add(MaxPooling2D(pool_size=(2, 2)))
+
+    # classification layers
+    model.add(Flatten())
+    model.add(Dense(120, activation='relu'))
+    model.add(Dense(84, activation='relu'))
+    model.add(Dense(1))
+
+    # compile model
+    model.compile(optimizer="adam", loss="mean_squared_error",
+                  metrics=["accuracy"])
+
+    return model
+
+
+def training_plots(history):
+    # plot loss and training accuracy along epochs
+    features = ["loss", "accuracy"]
+
+    for feature in features:
+        feature_values = history.history[feature]
+        plt.figure()
+        plt.title(f"{feature.title()} Along Training Epochs")
+        plt.xlabel("epoch")
+        plt.ylabel(feature)
+        plt.plot(range(len(feature_values)), feature_values)
+
+
+def model_evaluation(model, x_test, y_test):
+    # evaluate model on a testing set and plot confusion matrix
+
+    # calculate confusion matrix and accuracy
+    predictions = model.predict(x_test)
+    confusion_matrix = np.zeros((2, 2))
+    for i in range(len(predictions)):
+        classification_label = 1 if predictions[i][0] > 0.5 else 0
+        confusion_matrix[int(y_test[i])][classification_label] += 1
+    accuracy = (confusion_matrix[0][0] +
+                confusion_matrix[1][1]) / len(predictions)
+
+    # heatmap
+    plt.figure()
+    plt.title(f"Results test set - accuracy={accuracy}")
+    plt.xlabel("true class")
+    plt.ylabel("predicted class")
+    seaborn.heatmap(confusion_matrix.astype(np.int),
+                    annot=True, cmap="YlGnBu", fmt='d')
+    plt.tight_layout()
 
 
 def create_folders(dataset_base_dir, training_dir, test_dir):
@@ -147,9 +207,7 @@ def gt_flat_array(video_captures, ground_truth):
     return final_gt.astype(np.int)
 
 
-def main():
-    # script entry point
-
+def test_case1():
     # build dataset
     # build_dataset(["./resources/videos/feeding-v1-trim.mp4",
     #                "./resources/videos/feeding-v1-trim2.mp4",
@@ -166,7 +224,52 @@ def main():
         print("images shape: ", data_set[0].shape)
         print("gt shape: ", data_set[1].shape)
     plot_class_balance(data)
+
+    # train model
+    model = define_layers()
+    model.summary()
+
+    x_train, y_train = data[0]
+    x_test, y_test = data[1]
+    training_history = model.fit(x_train, y_train, epochs=10, batch_size=40)
+    training_plots(training_history)
+    model_evaluation(model, x_test, y_test)
+
     plt.show()
+
+
+def test_case2():
+    # build dataset
+    # build_dataset(["./resources/videos/feeding-v3.mp4"],
+    #               [[(0, 40600)]], (80, 50),
+    #               "./resources/datasets/feeding-surface-dataset/",
+    #               "./resources/datasets/feeding-surface-dataset/train-samples/",
+    #               "./resources/datasets/feeding-surface-dataset/test-samples/")
+
+    # read data
+    data = read_dataset("./resources/datasets/feeding-surface-dataset/train-samples/",
+                        "./resources/datasets/feeding-surface-dataset/test-samples/")
+    for data_set in data:
+        print("images shape: ", data_set[0].shape)
+        print("gt shape: ", data_set[1].shape)
+    plot_class_balance(data)
+
+    # train model
+    model = define_layers()
+    model.summary()
+
+    x_train, y_train = data[0]
+    x_test, y_test = data[1]
+    training_history = model.fit(x_train, y_train, epochs=10, batch_size=40)
+    training_plots(training_history)
+    model_evaluation(model, x_test, y_test)
+
+    plt.show()
+
+
+def main():
+    # script entry point
+    test_case2()
 
 
 if __name__ == '__main__':

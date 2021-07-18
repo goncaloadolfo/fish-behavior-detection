@@ -204,11 +204,11 @@ if __name__ == "__main__":
     video_test1 = cv2.VideoCapture("resources/videos/feeding-v1-trim2.mp4")
     video_test2 = cv2.VideoCapture("resources/videos/feeding-v2.mp4")
 
-    # tune_motion_thr(video_capture, [40, 50, 60, 70])
+    tune_motion_thr(video_capture, [40, 50, 60, 70])
 
-    # video_capture.set(cv2.CAP_PROP_POS_FRAMES, 0)
-    # analyze_training_results(video_capture, 40, 625_000, 20,
-    #                          show_frames=True, show_feeding_results=True)
+    video_capture.set(cv2.CAP_PROP_POS_FRAMES, 0)
+    analyze_training_results(video_capture, 40, 625_000, 20,
+                             show_frames=True, show_feeding_results=True)
 
     results = evaluate_motion_method(video_test1, 40, 650_000, 20, [])
     results2 = evaluate_motion_method(video_test2, 40, 650_000, 20,
@@ -218,13 +218,14 @@ if __name__ == "__main__":
     plt.title("Results Test Video 1")
     plt.xlabel("true class")
     plt.ylabel("predicted class")
-    seaborn.heatmap(results, annot=True, cmap="YlGnBu")
+    seaborn.heatmap(results.astype(np.int), annot=True, cmap="YlGnBu", fmt='d')
 
     plt.figure()
     plt.title("Results Test Video 2")
     plt.xlabel("true class")
     plt.ylabel("predicted class")
-    seaborn.heatmap(results2, annot=True, cmap="YlGnBu")
+    seaborn.heatmap(results2.astype(np.int),
+                    annot=True, cmap="YlGnBu", fmt='d')
 
     plt.show()
     video_capture.release()
