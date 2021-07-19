@@ -20,7 +20,10 @@ def build_dataset(videos, ground_truth, resize_resolution,
 
     # convert gt information into a flat 1D ground truth
     gt_flat = gt_flat_array(video_captures, ground_truth)
-    train_split, test_split = dataset_split_class(gt_flat, 0.8)
+    train_split, test_split = dataset_split_class(video_captures,
+                                                  gt_flat, 0.8)
+    print("train samples: ", len(train_split))
+    print("test samples: ", len(test_split))
     frame_counter = 0
 
     # for each video
@@ -164,10 +167,43 @@ def create_folders(dataset_base_dir, training_dir, test_dir):
             os.mkdir(folder)
 
 
-def dataset_split_class(ground_truth, train_split_percentage):
+def dataset_split_class(video_captures, gt_flat, train_split_percentage):
     # split samples into train set and test set
-    # maintaining class balance
-    return train_test_split(list(range(len(ground_truth))), train_size=train_split_percentage)
+    # maintaining class balance and avoiding consecutive frames
+    train_set = np.array([], dtype=np.int)
+    test_set = np.array([], dtype=np.int)
+    video_sizes = [0] + [int(video_capture.get(cv2.CAP_PROP_FRAME_COUNT))
+                         for video_capture in video_captures]
+
+    for i in range(len(video_sizes)-1):
+        # get flat gt for the frames of this video
+        gt_start_index = sum(video_sizes[:i+1])
+        gt_end_index = sum(video_sizes[:i+1]) + video_sizes[i+1]
+        video_gt = gt_flat[gt_start_index: gt_end_index]
+        print("video frames: ", len(video_gt))
+
+        # train-test split each of the classes
+        for feeding_class in [0, 1]:
+            # class indexes
+            class_frames_indexes = np.where(video_gt == feeding_class)[0]
+            print(f"class {feeding_class} samples: ",
+                  len(class_frames_indexes))
+            if len(class_frames_indexes) != 0:
+                class_start = class_frames_indexes[0] + gt_start_index
+                class_end = class_frames_indexes[-1] + gt_start_index
+
+                # split train-test
+                train_split, test_split = train_test_split(
+                    list(range(class_start, class_end+1)), shuffle=False,
+                    train_size=int(len(class_frames_indexes)
+                                   * train_split_percentage)
+                )
+                print("train samples: ", len(train_split))
+                print("test samples: ", len(test_split))
+                train_set = np.hstack((train_set, train_split))
+                test_set = np.hstack((test_set, test_split))
+
+    return train_set, test_set
 
 
 def is_feeding_frame(ground_truth, frame_index):
@@ -207,69 +243,56 @@ def gt_flat_array(video_captures, ground_truth):
     return final_gt.astype(np.int)
 
 
-def test_case1():
-    # build dataset
-    # build_dataset(["./resources/videos/feeding-v1-trim.mp4",
-    #                "./resources/videos/feeding-v1-trim2.mp4",
-    #                "./resources/videos/feeding-v2.mp4"],
-    #               [[(5370, 9090)], [], [(0, 16550)]], (80, 50),
-    #               "./resources/datasets/feeding-dataset/",
-    #               "./resources/datasets/feeding-dataset/train-samples/",
-    #               "./resources/datasets/feeding-dataset/test-samples/")
+def build_datasets():
+    # bottom feeding dataset
+    build_dataset(["./resources/videos/feeding-v1-trim.mp4",
+                   "./resources/videos/feeding-v1-trim2.mp4",
+                   "./resources/videos/feeding-v2.mp4"],
+                  [[(5370, 9090)], [], [(0, 16550)]], (80, 50),
+                  "./resources/datasets/feeding-dataset/",
+                  "./resources/datasets/feeding-dataset/train-samples/",
+                  "./resources/datasets/feeding-dataset/test-samples/")
 
-    # read data
-    data = read_dataset("./resources/datasets/feeding-dataset/train-samples/",
-                        "./resources/datasets/feeding-dataset/test-samples/")
-    for data_set in data:
-        print("images shape: ", data_set[0].shape)
-        print("gt shape: ", data_set[1].shape)
-    plot_class_balance(data)
+    # surface feeding dataset
+    build_dataset(["./resources/videos/feeding-v3.mp4"],
+                  [[(0, 40600)]], (80, 50),
+                  "./resources/datasets/feeding-surface-dataset/",
+                  "./resources/datasets/feeding-surface-dataset/train-samples/",
+                  "./resources/datasets/feeding-surface-dataset/test-samples/")
 
-    # train model
+
+def train_and_evaluate(train_data, test_data):
+    # define model
     model = define_layers()
     model.summary()
 
-    x_train, y_train = data[0]
-    x_test, y_test = data[1]
+    # train
+    x_train, y_train = train_data
+    x_test, y_test = test_data
     training_history = model.fit(x_train, y_train, epochs=10, batch_size=40)
+
+    # evaluate
     training_plots(training_history)
     model_evaluation(model, x_test, y_test)
-
-    plt.show()
-
-
-def test_case2():
-    # build dataset
-    # build_dataset(["./resources/videos/feeding-v3.mp4"],
-    #               [[(0, 40600)]], (80, 50),
-    #               "./resources/datasets/feeding-surface-dataset/",
-    #               "./resources/datasets/feeding-surface-dataset/train-samples/",
-    #               "./resources/datasets/feeding-surface-dataset/test-samples/")
-
-    # read data
-    data = read_dataset("./resources/datasets/feeding-surface-dataset/train-samples/",
-                        "./resources/datasets/feeding-surface-dataset/test-samples/")
-    for data_set in data:
-        print("images shape: ", data_set[0].shape)
-        print("gt shape: ", data_set[1].shape)
-    plot_class_balance(data)
-
-    # train model
-    model = define_layers()
-    model.summary()
-
-    x_train, y_train = data[0]
-    x_test, y_test = data[1]
-    training_history = model.fit(x_train, y_train, epochs=10, batch_size=40)
-    training_plots(training_history)
-    model_evaluation(model, x_test, y_test)
-
-    plt.show()
 
 
 def main():
-    # script entry point
-    test_case2()
+    # datasets
+    build_datasets()
+
+    # bottom dataset
+    bottom_data = read_dataset("./resources/datasets/feeding-dataset/train-samples/",
+                               "./resources/datasets/feeding-dataset/test-samples/")
+    plot_class_balance(bottom_data)
+    train_and_evaluate(bottom_data[0], bottom_data[1])
+
+    # surface dataset
+    surface_data = read_dataset("./resources/datasets/feeding-surface-dataset/train-samples/",
+                                "./resources/datasets/feeding-surface-dataset/test-samples/")
+    plot_class_balance(surface_data)
+    train_and_evaluate(surface_data[0], surface_data[1])
+
+    plt.show()
 
 
 if __name__ == '__main__':
