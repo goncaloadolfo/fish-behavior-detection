@@ -124,6 +124,29 @@ def define_layers():
     return model
 
 
+def define_custom_layers(nr_conv_layers, nr_fc_layers, nr_perceptrons, nr_filters):
+    # create a custom model
+    model = Sequential()
+
+    # convolutional layers
+    for _ in range(nr_conv_layers):
+        model.add(Conv2D(nr_filters, kernel_size=5,
+                         activation='relu', input_shape=(50, 80, 3)))
+        model.add(MaxPooling2D(pool_size=(2, 2)))
+
+    # classification layers
+    model.add(Flatten())
+    for _ in range(nr_fc_layers):
+        model.add(Dense(nr_perceptrons, activation='relu'))
+    model.add(Dense(1))
+
+    # compile model
+    model.compile(optimizer="adam", loss="mean_squared_error",
+                  metrics=["accuracy"])
+
+    return model
+
+
 def training_plots(history):
     # plot loss and training accuracy along epochs
     features = ["loss", "accuracy"]
@@ -137,7 +160,36 @@ def training_plots(history):
         plt.plot(range(len(feature_values)), feature_values)
 
 
-def model_evaluation(model, x_test, y_test):
+def check_different_architectures(arch_parameters, train_data, test_data):
+    # evaluate different models in terms of net architecture
+    nr_conv_layers, nr_fc_layers, nr_perc, nr_filters = arch_parameters
+    total_models = len(nr_conv_layers) * len(nr_fc_layers) * \
+        len(nr_perc) * len(nr_filters)
+    current_model = 1
+    results = []
+
+    # grid search
+    for ncl in nr_conv_layers:
+        for nfl in nr_fc_layers:
+            for nrp in nr_perc:
+                for nrf in nr_filters:
+                    print(f"model [{current_model}/{total_models}]")
+                    model = define_custom_layers(ncl, nfl, nrp, nrf)
+                    model.fit(train_data[0], train_data[1],
+                              epochs=10, batch_size=40)
+                    acc = model_evaluation(model, test_data[0],
+                                           test_data[1], plot=False)
+                    results.append((ncl, nfl, nrp, nrf, acc))
+                    current_model += 1
+
+    # print all results
+    results.sort(key=lambda x: x[-1])
+    print("--- Search Results ---")
+    for model_results in results:
+        print(f"\t- {model_results}")
+
+
+def model_evaluation(model, x_test, y_test, plot=True):
     # evaluate model on a testing set and plot confusion matrix
 
     # calculate confusion matrix and accuracy
@@ -149,14 +201,17 @@ def model_evaluation(model, x_test, y_test):
     accuracy = (confusion_matrix[0][0] +
                 confusion_matrix[1][1]) / len(predictions)
 
-    # heatmap
-    plt.figure()
-    plt.title(f"Results test set - accuracy={accuracy}")
-    plt.xlabel("true class")
-    plt.ylabel("predicted class")
-    seaborn.heatmap(confusion_matrix.astype(np.int),
-                    annot=True, cmap="YlGnBu", fmt='d')
-    plt.tight_layout()
+    if plot:
+        # heatmap
+        plt.figure()
+        plt.title(f"Results test set - accuracy={accuracy}")
+        plt.xlabel("true class")
+        plt.ylabel("predicted class")
+        seaborn.heatmap(confusion_matrix.astype(np.int),
+                        annot=True, cmap="YlGnBu", fmt='d')
+        plt.tight_layout()
+
+    return accuracy
 
 
 def create_folders(dataset_base_dir, training_dir, test_dir):
@@ -260,6 +315,13 @@ def build_datasets():
                   "./resources/datasets/feeding-surface-dataset/train-samples/",
                   "./resources/datasets/feeding-surface-dataset/test-samples/")
 
+    # go pro - bottom feeding
+    build_dataset(["./resources/videos/feeding-v4.mp4"],
+                  [[(14940, 21600)]], (80, 50),
+                  "./resources/datasets/gopro-feeding-dataset/",
+                  "./resources/datasets/gopro-feeding-dataset/train-samples/",
+                  "./resources/datasets/gopro-feeding-dataset/test-samples/")
+
 
 def train_and_evaluate(train_data, test_data):
     # define model
@@ -276,10 +338,7 @@ def train_and_evaluate(train_data, test_data):
     model_evaluation(model, x_test, y_test)
 
 
-def main():
-    # datasets
-    build_datasets()
-
+def baseline_results():
     # bottom dataset
     bottom_data = read_dataset("./resources/datasets/feeding-dataset/train-samples/",
                                "./resources/datasets/feeding-dataset/test-samples/")
@@ -287,12 +346,53 @@ def main():
     train_and_evaluate(bottom_data[0], bottom_data[1])
 
     # surface dataset
-    surface_data = read_dataset("./resources/datasets/feeding-surface-dataset/train-samples/",
-                                "./resources/datasets/feeding-surface-dataset/test-samples/")
+    surface_data = read_dataset(
+        "./resources/datasets/feeding-surface-dataset/train-samples/",
+        "./resources/datasets/feeding-surface-dataset/test-samples/"
+    )
     plot_class_balance(surface_data)
     train_and_evaluate(surface_data[0], surface_data[1])
 
+    # go pro - bottom dataset
+    gopro_bottom_data = read_dataset(
+        "./resources/datasets/gopro-feeding-dataset/train-samples/",
+        "./resources/datasets/gopro-feeding-dataset/test-samples/"
+    )
+    x_train = np.vstack((bottom_data[0][0], bottom_data[1][0]))
+    y_train = np.hstack((bottom_data[0][1], bottom_data[1][1]))
+    x_test = np.vstack((gopro_bottom_data[0][0], gopro_bottom_data[1][0]))
+    y_test = np.hstack((gopro_bottom_data[0][1], gopro_bottom_data[1][1]))
+    plot_class_balance([(x_train, y_train), (x_test, y_test)])
+    train_and_evaluate((x_train, y_train), (x_test, y_test))
+
     plt.show()
+
+
+def tuning_results():
+    # bottom dataset
+    # parameters = [(1, 2, 3), (1, 2, 3), (80, 100, 120), (5, 10, 15)]
+    # bottom_data = read_dataset("./resources/datasets/feeding-dataset/train-samples/",
+    #                            "./resources/datasets/feeding-dataset/test-samples/")
+    # check_different_architectures(parameters, bottom_data[0], bottom_data[1])
+
+    # surface dataset
+    parameters = [(1, 2, 3), (1, 2, 3), (80, 100, 120), (5, 10, 15)]
+    bottom_data = read_dataset(
+        "./resources/datasets/feeding-surface-dataset/train-samples/",
+        "./resources/datasets/feeding-surface-dataset/test-samples/"
+    )
+    check_different_architectures(parameters, bottom_data[0], bottom_data[1])
+
+
+def main():
+    # datasets
+    # build_datasets()
+
+    # baseline results for the different datasets
+    # baseline_results()
+
+    # tuning
+    tuning_results()
 
 
 if __name__ == '__main__':
