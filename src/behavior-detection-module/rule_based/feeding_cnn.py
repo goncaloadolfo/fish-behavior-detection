@@ -2,11 +2,24 @@ import os
 
 import cv2
 from keras.models import Sequential
-from keras.layers import Conv2D, MaxPooling2D, Flatten, Dense
+from keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Dropout
+from keras.losses import MeanSquaredError, BinaryCrossentropy
+from keras.activations import relu, sigmoid
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn
 from sklearn.model_selection._split import train_test_split
+
+
+# important keys
+NR_CONV_LAYERS = "nr-conv-layers"
+NR_FC_LAYERS = "nr-fc-layers"
+HL_NR_NEURONS = "hl-nr-neurons"
+CONV_NR_FILTERS = "conv-nr-filters"
+LEARNING_RATE = "learning-rate"
+DROPOUT_RATE = "dropout-rate"
+ACTIVATION_FUNCTION = "activation-function"
+LOSS_FUNCTION = "loss-function"
 
 
 def build_dataset(videos, ground_truth, resize_resolution,
@@ -124,25 +137,30 @@ def define_layers():
     return model
 
 
-def define_custom_layers(nr_conv_layers, nr_fc_layers, nr_perceptrons, nr_filters):
+def define_custom_layers(nr_conv_layers, nr_fc_layers, nr_perceptrons, nr_filters,
+                         learning_rate=0.001, dropout_rate=None,
+                         activation_function=relu, loss_function=MeanSquaredError.name):
     # create a custom model
     model = Sequential()
 
     # convolutional layers
     for _ in range(nr_conv_layers):
         model.add(Conv2D(nr_filters, kernel_size=5,
-                         activation='relu', input_shape=(50, 80, 3)))
+                         activation=activation_function,
+                         input_shape=(50, 80, 3)))
         model.add(MaxPooling2D(pool_size=(2, 2)))
 
     # classification layers
     model.add(Flatten())
     for _ in range(nr_fc_layers):
-        model.add(Dense(nr_perceptrons, activation='relu'))
+        if dropout_rate is not None:
+            model.add(Dropout(dropout_rate))
+        model.add(Dense(nr_perceptrons, activation=activation_function))
     model.add(Dense(1))
 
     # compile model
-    model.compile(optimizer="adam", loss="mean_squared_error",
-                  metrics=["accuracy"])
+    model.compile(learning_rate=learning_rate, optimizer="adam",
+                  loss=loss_function, metrics=["accuracy"])
 
     return model
 
@@ -180,6 +198,49 @@ def check_different_architectures(arch_parameters, train_data, test_data):
                     acc = model_evaluation(model, test_data[0],
                                            test_data[1], plot=False)
                     results.append((ncl, nfl, nrp, nrf, acc))
+                    current_model += 1
+
+    # print all results
+    results.sort(key=lambda x: x[-1])
+    print("--- Search Results ---")
+    for model_results in results:
+        print(f"\t- {model_results}")
+
+
+def check_different_hyperparameters(architecture_params, hyperparameters,
+                                    train_data, test_data):
+    # architecture params
+    nr_conv_layers = architecture_params[NR_CONV_LAYERS]
+    nr_fc_layers = architecture_params[NR_FC_LAYERS]
+    hl_nr_neurons = architecture_params[HL_NR_NEURONS]
+    conv_nr_filters = architecture_params[CONV_NR_FILTERS]
+
+    # hyparameters grid
+    learning_rate_list = hyperparameters[LEARNING_RATE]
+    dropout_rate_list = hyperparameters[DROPOUT_RATE]
+    activation_function_list = hyperparameters[ACTIVATION_FUNCTION]
+    loss_function_list = hyperparameters[LOSS_FUNCTION]
+
+    # status vars
+    total_models = len(learning_rate_list) * len(dropout_rate_list) * \
+        len(activation_function_list) * len(loss_function_list)
+    current_model = 1
+    results = []
+
+    # grid search
+    for lr in learning_rate_list:
+        for dr in dropout_rate_list:
+            for af in activation_function_list:
+                for lf in loss_function_list:
+                    print(f"model [{current_model}/{total_models}]")
+                    model = define_custom_layers(nr_conv_layers, nr_fc_layers,
+                                                 hl_nr_neurons, conv_nr_filters,
+                                                 lr, dr, af, lf)
+                    model.fit(train_data[0], train_data[1],
+                              epochs=10, batch_size=40)
+                    acc = model_evaluation(model, test_data[0],
+                                           test_data[1], plot=False)
+                    results.append((lr, dr, af, lf, acc))
                     current_model += 1
 
     # print all results
@@ -369,27 +430,55 @@ def baseline_results():
 
 
 def tuning_results():
+    # grids of parameters
+    architecture_parameters = [(1, 2), (1, 2), (80, 120), (5, 15)]
+    hyperparameters = {
+        LEARNING_RATE: [0.001, 0.01],
+        DROPOUT_RATE: [None, 0.2],
+        ACTIVATION_FUNCTION: [relu, sigmoid],
+        LOSS_FUNCTION: [MeanSquaredError.name, BinaryCrossentropy.name]
+    }
+
     # bottom dataset
-    # parameters = [(1, 2, 3), (1, 2, 3), (80, 100, 120), (5, 10, 15)]
-    # bottom_data = read_dataset("./resources/datasets/feeding-dataset/train-samples/",
-    #                            "./resources/datasets/feeding-dataset/test-samples/")
-    # check_different_architectures(parameters, bottom_data[0], bottom_data[1])
+    bottom_data = read_dataset("./resources/datasets/feeding-dataset/train-samples/",
+                               "./resources/datasets/feeding-dataset/test-samples/")
+    check_different_architectures(architecture_parameters,
+                                  bottom_data[0], bottom_data[1])
+
+    best_archicture = {
+        NR_CONV_LAYERS: 1,
+        NR_FC_LAYERS: 2,
+        HL_NR_NEURONS: 120,
+        CONV_NR_FILTERS: 5
+    }
+    check_different_hyperparameters(best_archicture, hyperparameters,
+                                    bottom_data[0], bottom_data[1])
 
     # surface dataset
-    parameters = [(1, 2, 3), (1, 2, 3), (80, 100, 120), (5, 10, 15)]
-    bottom_data = read_dataset(
+    surface_data = read_dataset(
         "./resources/datasets/feeding-surface-dataset/train-samples/",
         "./resources/datasets/feeding-surface-dataset/test-samples/"
     )
-    check_different_architectures(parameters, bottom_data[0], bottom_data[1])
+    check_different_architectures(architecture_parameters,
+                                  surface_data[0], surface_data[1])
+
+    # todo - to change!
+    best_archicture = {
+        NR_CONV_LAYERS: 1,
+        NR_FC_LAYERS: 2,
+        HL_NR_NEURONS: 120,
+        CONV_NR_FILTERS: 5
+    }
+    check_different_hyperparameters(best_archicture, hyperparameters,
+                                    surface_data[0], surface_data[1])
 
 
 def main():
     # datasets
-    # build_datasets()
+    build_datasets()
 
     # baseline results for the different datasets
-    # baseline_results()
+    baseline_results()
 
     # tuning
     tuning_results()
