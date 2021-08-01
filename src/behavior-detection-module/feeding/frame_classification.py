@@ -3,13 +3,13 @@ import os
 import cv2
 from keras.models import Sequential
 from keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Dropout
-from keras.losses import MeanSquaredError, BinaryCrossentropy
 from keras.activations import relu, sigmoid
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn
 from sklearn.model_selection._split import train_test_split
 
+from feeding.error_tracker import ErrorTracker
 
 # important keys
 NR_CONV_LAYERS = "nr-conv-layers"
@@ -139,7 +139,7 @@ def define_layers():
 
 def define_custom_layers(nr_conv_layers, nr_fc_layers, nr_perceptrons, nr_filters,
                          learning_rate=0.001, dropout_rate=None,
-                         activation_function=relu, loss_function=MeanSquaredError.name):
+                         activation_function=relu, loss_function="mean_squared_error"):
     # create a custom model
     model = Sequential()
 
@@ -253,12 +253,21 @@ def check_different_hyperparameters(architecture_params, hyperparameters,
 def model_evaluation(model, x_test, y_test, plot=True):
     # evaluate model on a testing set and plot confusion matrix
 
+    # error tracker
+    error_tracker = ErrorTracker()
+
     # calculate confusion matrix and accuracy
     predictions = model.predict(x_test)
     confusion_matrix = np.zeros((2, 2))
     for i in range(len(predictions)):
         classification_label = 1 if predictions[i][0] > 0.5 else 0
-        confusion_matrix[int(y_test[i])][classification_label] += 1
+        true_label = int(y_test[i])
+        confusion_matrix[true_label][classification_label] += 1
+
+        # error
+        if true_label != classification_label:
+            error_tracker.append_new_timestamp(i+1)
+
     accuracy = (confusion_matrix[0][0] +
                 confusion_matrix[1][1]) / len(predictions)
 
@@ -271,6 +280,13 @@ def model_evaluation(model, x_test, y_test, plot=True):
         seaborn.heatmap(confusion_matrix.astype(np.int),
                         annot=True, cmap="YlGnBu", fmt='d')
         plt.tight_layout()
+
+        # errors timeline
+        feeding_start = np.where(y_test == 1)
+        feeding_start = feeding_start[0][0] if len(
+            feeding_start[0]) != 0 else None
+        error_tracker.draw_errors_timeline(1, len(predictions),
+                                           "Errors Timeline", feeding_start)
 
     return accuracy
 
@@ -406,25 +422,25 @@ def baseline_results():
     plot_class_balance(bottom_data)
     train_and_evaluate(bottom_data[0], bottom_data[1])
 
-    # surface dataset
-    surface_data = read_dataset(
-        "./resources/datasets/feeding-surface-dataset/train-samples/",
-        "./resources/datasets/feeding-surface-dataset/test-samples/"
-    )
-    plot_class_balance(surface_data)
-    train_and_evaluate(surface_data[0], surface_data[1])
+    # # surface dataset
+    # surface_data = read_dataset(
+    #     "./resources/datasets/feeding-surface-dataset/train-samples/",
+    #     "./resources/datasets/feeding-surface-dataset/test-samples/"
+    # )
+    # plot_class_balance(surface_data)
+    # train_and_evaluate(surface_data[0], surface_data[1])
 
-    # go pro - bottom dataset
-    gopro_bottom_data = read_dataset(
-        "./resources/datasets/gopro-feeding-dataset/train-samples/",
-        "./resources/datasets/gopro-feeding-dataset/test-samples/"
-    )
-    x_train = np.vstack((bottom_data[0][0], bottom_data[1][0]))
-    y_train = np.hstack((bottom_data[0][1], bottom_data[1][1]))
-    x_test = np.vstack((gopro_bottom_data[0][0], gopro_bottom_data[1][0]))
-    y_test = np.hstack((gopro_bottom_data[0][1], gopro_bottom_data[1][1]))
-    plot_class_balance([(x_train, y_train), (x_test, y_test)])
-    train_and_evaluate((x_train, y_train), (x_test, y_test))
+    # # go pro - bottom dataset
+    # gopro_bottom_data = read_dataset(
+    #     "./resources/datasets/gopro-feeding-dataset/train-samples/",
+    #     "./resources/datasets/gopro-feeding-dataset/test-samples/"
+    # )
+    # x_train = np.vstack((bottom_data[0][0], bottom_data[1][0]))
+    # y_train = np.hstack((bottom_data[0][1], bottom_data[1][1]))
+    # x_test = np.vstack((gopro_bottom_data[0][0], gopro_bottom_data[1][0]))
+    # y_test = np.hstack((gopro_bottom_data[0][1], gopro_bottom_data[1][1]))
+    # plot_class_balance([(x_train, y_train), (x_test, y_test)])
+    # train_and_evaluate((x_train, y_train), (x_test, y_test))
 
     plt.show()
 
@@ -436,7 +452,7 @@ def tuning_results():
         LEARNING_RATE: [0.001, 0.01],
         DROPOUT_RATE: [None, 0.2],
         ACTIVATION_FUNCTION: [relu, sigmoid],
-        LOSS_FUNCTION: [MeanSquaredError.name, BinaryCrossentropy.name]
+        LOSS_FUNCTION: ["mean_squared_error", "binary_crossentropy"]
     }
 
     # bottom dataset
@@ -475,13 +491,13 @@ def tuning_results():
 
 def main():
     # datasets
-    build_datasets()
+    # build_datasets()
 
     # baseline results for the different datasets
     baseline_results()
 
     # tuning
-    tuning_results()
+    # tuning_results()
 
 
 if __name__ == '__main__':

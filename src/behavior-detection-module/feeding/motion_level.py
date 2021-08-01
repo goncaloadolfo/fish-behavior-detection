@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 
 from trajectory_features.trajectory_feature_extraction import (exponential_weights,
                                                                TrajectoryFeatureExtraction)
+from feeding.error_tracker import ErrorTracker
 
 
 def active_pixels(frame_t1, frame_t2, motion_thr, return_frame=False):
@@ -110,12 +111,16 @@ def evaluate_motion_method(video_capture, motion_thr, feeding_thr, duration, gro
                                                 duration*30)
     total_frames = video_capture.get(cv2.CAP_PROP_FRAME_COUNT)
 
+    error_tracker = ErrorTracker()
     for t in range(len(smoothed_y)):
         predicted_class = _get_predicted_class(t, feeding_warnings)
         true_class = _get_true_class(t, ground_truth)
         confusion_matrix[predicted_class][true_class] += 1
 
-    return confusion_matrix
+        if true_class != predicted_class:
+            error_tracker.append_new_timestamp(t+1)
+
+    return confusion_matrix, error_tracker
 
 
 def analyze_training_results(video_capture, motion_thr, feeding_thr, duration,
@@ -204,21 +209,24 @@ if __name__ == "__main__":
     video_test1 = cv2.VideoCapture("resources/videos/feeding-v1-trim2.mp4")
     video_test2 = cv2.VideoCapture("resources/videos/feeding-v2.mp4")
 
-    tune_motion_thr(video_capture, [40, 50, 60, 70])
+    # tune_motion_thr(video_capture, [40, 50, 60, 70])
+    # video_capture.set(cv2.CAP_PROP_POS_FRAMES, 0)
 
-    video_capture.set(cv2.CAP_PROP_POS_FRAMES, 0)
-    analyze_training_results(video_capture, 40, 625_000, 20,
-                             show_frames=True, show_feeding_results=True)
+    # analyze_training_results(video_capture, 40, 625_000, 20,
+    #                          show_frames=True, show_feeding_results=True)
 
-    results = evaluate_motion_method(video_test1, 40, 650_000, 20, [])
-    results2 = evaluate_motion_method(video_test2, 40, 650_000, 20,
-                                      [(0, 16500)])
+    results, error_tracker = evaluate_motion_method(video_test1, 40,
+                                                    650_000, 20, [])
+    results2, error_tracker2 = evaluate_motion_method(video_test2, 40, 650_000, 20,
+                                                      [(0, 16500)])
 
     plt.figure()
     plt.title("Results Test Video 1")
     plt.xlabel("true class")
     plt.ylabel("predicted class")
     seaborn.heatmap(results.astype(np.int), annot=True, cmap="YlGnBu", fmt='d')
+    error_tracker.draw_errors_timeline(1, np.sum(results),
+                                       "Test Video 1 Errors Timeline")
 
     plt.figure()
     plt.title("Results Test Video 2")
@@ -226,6 +234,8 @@ if __name__ == "__main__":
     plt.ylabel("predicted class")
     seaborn.heatmap(results2.astype(np.int),
                     annot=True, cmap="YlGnBu", fmt='d')
+    error_tracker2.draw_errors_timeline(1, np.sum(results2),
+                                        "Test Video 2 Errors Timeline", 16500)
 
     plt.show()
     video_capture.release()
