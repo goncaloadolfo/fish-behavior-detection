@@ -125,6 +125,36 @@ def plot_magnitudes_time_series(magnitudes_time_series, feeding_period=None,
     plt.legend()
 
 
+def optical_flow_video(src_video, resolution, optical_points):
+    # input and output sources
+    input_video = cv2.VideoCapture(src_video)
+    input_fps = int(input_video.get(cv2.CAP_PROP_FPS))
+    output_path = src_video.split('.')[0] + "-of.mp4"
+    output_video = cv2.VideoWriter(output_path, apiPreference=cv2.CAP_FFMPEG,
+                                   fourcc=cv2.VideoWriter_fourcc(*"mp4v"),
+                                   fps=input_fps, frameSize=resolution)
+
+    _, previous_frame = input_video.read()
+    for i in itertools.count():
+        # read frame
+        _, current_frame = input_video.read()
+        if current_frame is None:
+            break
+        print("processing frame ", i)
+
+        # optical flow
+        motion_vectors, found = calculate_motion_vectors(previous_frame, current_frame,
+                                                         optical_points, resolution)
+        vectors_frame = draw_vectors_frame(current_frame, resolution,
+                                           motion_vectors, optical_points, found, 7)
+        output_video.write(vectors_frame)
+        previous_frame = current_frame
+
+    # release resources
+    input_video.release()
+    output_video.release()
+
+
 def two_frames_test():
     # general settings
     resolution = (1280, 720)
@@ -178,6 +208,20 @@ def time_series_test():
     plt.show()
 
 
+def optical_flow_video_test():
+    # general settings
+    input_video_path = "resources/videos/feeding-v1-trim.mp4"
+    resolution = (1280, 720)
+    optical_points = define_optical_points(
+        [(0, resolution[0]), (0, resolution[1])],
+        (30, 15)
+    )
+
+    # save optical flow video
+    optical_flow_video(input_video_path, resolution, optical_points)
+
+
 if __name__ == "__main__":
     # two_frames_test()
-    time_series_test()
+    # time_series_test()
+    optical_flow_video_test()
