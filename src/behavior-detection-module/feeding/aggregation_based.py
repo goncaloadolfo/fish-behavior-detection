@@ -170,7 +170,7 @@ class FeedingBaseline:
         min_y = self.__positions.min(axis=0)[1]
         max_y = self.__positions.max(axis=0)[1]
         vertical_distance = max_y - min_y
-        
+
         if vertical_distance < self.__mesh_thr or len(self.__positions) - len(self.__outliers) <= 3:
             self.__line_mesh()
         else:
@@ -232,11 +232,12 @@ def fiffb_time_series(fishes, initial_t, final_t):
 
             if feeding_baseline_obj.flocking_index != -1:
                 fiffbs[t] = feeding_baseline_obj.flocking_index
-                outliers[t] = np.array(feeding_baseline_obj.outlier_positions).tolist()
-                
+                outliers[t] = np.array(
+                    feeding_baseline_obj.outlier_positions).tolist()
+
                 if isinstance(feeding_baseline_obj.mesh[0], Triangle):
-                    meshes[t] = np.array([edge for triangle in feeding_baseline_obj.mesh 
-                                for edge in triangle.edges]).tolist()
+                    meshes[t] = np.array([edge for triangle in feeding_baseline_obj.mesh
+                                          for edge in triangle.edges]).tolist()
                 else:
                     meshes[t] = np.array(feeding_baseline_obj.mesh).tolist()
 
@@ -284,9 +285,9 @@ def delaunay_real_data_test():
 
     # read GT and video file
     fishes = read_detections(
-        "../resources/detections/detections-v37.txt").values()
+        "resources/detections/detections-v37.txt").values()
     feeding_baseline_logger.debug(f"number of trajectories: {len(fishes)}")
-    video_capture = cv2.VideoCapture("../resources/videos/v37.m4v")
+    video_capture = cv2.VideoCapture("resources/videos/v37.m4v")
 
     # pre process trajectories
     for fish in fishes:
@@ -363,8 +364,8 @@ def mesh_calculation_errors_test():
 
 if __name__ == "__main__":
     random.seed(0)
-    delaunay_test((1, 480))  # triangular mesh
+    # delaunay_test((1, 480))  # triangular mesh
     # delaunay_test((200, 240))  # line
-    # delaunay_real_data_test()
+    delaunay_real_data_test()
     # fiffb_analysis_test()
     # mesh_calculation_errors_test()
