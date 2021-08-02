@@ -22,7 +22,7 @@ def segment_trajectory(fish, descontinuity_points):
     original_bbs = copy.deepcopy(original_bbs)
     original_positions = fish.positions
     segment_motifs = [aux[1] for aux in descontinuity_points]
-    
+
     if len(descontinuity_points) > 2:
         fishes = []
         for i in range(len(descontinuity_points) - 1):
@@ -41,7 +41,8 @@ def segment_trajectory(fish, descontinuity_points):
                 segment_bbs[segment_tf] = original_bbs[segment_tf]
                 segment_positions[segment_tf] = original_positions[segment_tf]
 
-            fishes.append(Fish(fish.fish_id, segment, segment_bbs, segment_positions))
+            fishes.append(Fish(fish.fish_id, segment,
+                               segment_bbs, segment_positions))
         return fishes, segment_motifs
 
     else:
@@ -309,8 +310,8 @@ def _plot_time_series(fe_objs, descriptions, features_of_interest, trajectory_ts
 
             if len(trajectory_ts) > len(time_series):
                 trajectory_ts = trajectory_ts[
-                                len(trajectory_ts) - len(time_series):
-                                ]
+                    len(trajectory_ts) - len(time_series):
+                ]
 
             simple_line_plot(ax, trajectory_ts, time_series,
                              f"{feature}", "value", "t", label=descriptions[j])
@@ -378,8 +379,8 @@ def smooth_positions_dp_test(fish, regions, distance_thr, speed_thr, angle_thr):
 
 def douglass_peucker_test(distance_thr, speed_thr, angle_thr, seed):
     example_fish = get_random_fish(
-        "../resources/detections/v29-fishes.json", seed)
-    regions = read_regions("../resources/regions-example.json")
+        "resources/detections/v29-fishes.json", seed)
+    regions = read_regions("resources/regions-example.json")
     fill_gaps_linear(example_fish.trajectory, example_fish)
 
     _dp_feature_tuning(example_fish, regions, [distance_thr], DISTANCE_TAG)
@@ -388,14 +389,14 @@ def douglass_peucker_test(distance_thr, speed_thr, angle_thr, seed):
 
     descontinuity_points = smooth_positions_dp_test(example_fish, regions,
                                                     distance_thr, speed_thr, angle_thr)
-    play_trajectory_segments("../resources/videos/v29.m4v",
-                             example_fish, descontinuity_points, "../resources/segmentation-example.mp4")
+    play_trajectory_segments("resources/videos/v29.m4v",
+                             example_fish, descontinuity_points, "resources/segmentation-example.mp4")
 
 
 def positions_filtering_test(window_size, alpha, features_of_interest, seed):
     example_fish = get_random_fish(
-        "../resources/detections/v29-fishes.json", seed)
-    regions = read_regions("../resources/regions-example.json")
+        "resources/detections/v29-fishes.json", seed)
+    regions = read_regions("resources/regions-example.json")
     fill_gaps_linear(example_fish.trajectory, example_fish)
 
     fig, axs = plt.subplots(ncols=2, nrows=2)
@@ -423,6 +424,7 @@ def positions_filtering_test(window_size, alpha, features_of_interest, seed):
         example_fish.trajectory, frame_size=(480, 720), color=(0, 255, 0)
     )
     _plot_positions(axs, example_fish.trajectory, ts, filtered=True)
+    plt.tight_layout()
 
     _plot_time_series((fe_obj_original, fe_obj_filtered),
                       ("original trajectory", "filtered trajectory"),

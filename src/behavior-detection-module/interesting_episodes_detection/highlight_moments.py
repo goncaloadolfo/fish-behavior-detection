@@ -42,8 +42,8 @@ class Rule:
     TRANSITION = "transition"
 
     RECOGNIZED_FEATURES = [SPEED, XSPEED, YSPEED, ACCELERATION, XACCELERATION, YACCELERATION,
-                            DIRECTION, CURVATURE, ASPECT_RATIO, REGION, TRANSITION]
-    
+                           DIRECTION, CURVATURE, ASPECT_RATIO, REGION, TRANSITION]
+
     def __init__(self, feature, values, duration):
         self.feature = feature
         self.values = values
@@ -154,7 +154,8 @@ def _search_moments_time_series(time_series, rule):
         for t, value in time_series:
             if (not rule.pass_the_rule(value) or t == time_series[-1][0]) and duration > 0:
                 if duration > rule.duration:
-                    highlight_moments_set.add(HighlightMoment(t - duration, t - 1, rule))
+                    highlight_moments_set.add(
+                        HighlightMoment(t - duration, t - 1, rule))
                 duration = 0
 
             elif rule.pass_the_rule(value):
@@ -197,7 +198,7 @@ def _search_moments_regions(trajectory, regions_time_series, pass_by_results, ru
 
             if rule.values[0] == transition[0] and rule.values[1] == transition[1]:
                 total_transitions = pass_by_results[(transition[0], transition[1])] + \
-                                    pass_by_results[(transition[1], transition[0])]
+                    pass_by_results[(transition[1], transition[0])]
 
                 if total_transitions >= rule.duration:
                     highlight_moments_set.add(
@@ -209,10 +210,10 @@ def _search_moments_regions(trajectory, regions_time_series, pass_by_results, ru
 
 def highlight_moments_test(rules):
     # random.seed(10000)
-    fishes = list(tr.read_fishes("../resources/detections/v29-fishes.json"))
+    fishes = list(tr.read_fishes("resources/detections/v29-fishes.json"))
     fishes.sort(key=lambda x: x.fish_id)
-    regions = read_regions("../resources/regions-example.json")
-    species_gt = read_species_gt("../resources/classification/species-gt-v29.csv")
+    regions = read_regions("resources/regions-example.json")
+    species_gt = read_species_gt("resources/classification/species-gt-v29.csv")
 
     highlight_fishes = {}
     for fish in fishes:

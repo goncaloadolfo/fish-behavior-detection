@@ -87,7 +87,7 @@ class TrajectoryFeatureExtraction:
         self.__pass_by = {k: 0 for k in self.__pass_by_description}
         self.__normalized_bounding_boxes = []
         self.__regions_time_series = []
-        self.__features_order  = ["speed", "acceleration", "turning-angle",
+        self.__features_order = ["speed", "acceleration", "turning-angle",
                                  "curvature", "centered-distance", "normalized-bb"]
         self.__time_series_list = [self.__speeds, self.__accelerations, self.__turning_angles,
                                    self.__curvatures, self.__centered_distances, self.__normalized_bounding_boxes]
@@ -246,29 +246,29 @@ class TrajectoryFeatureExtraction:
     @staticmethod
     def statistical_features(time_series, feature_label):
         return ([
-                    f"mean-{feature_label}",
-                    f"median-{feature_label}",
-                    f"std-{feature_label}",
-                    f"min-{feature_label}",
-                    f"max-{feature_label}",
-                    f"quartile1-{feature_label}",
-                    f"quartile3-{feature_label}",
-                    f"autocorr-{feature_label}",
-                ],
-                [
-                    np.mean(time_series),
-                    np.median(time_series),
-                    np.std(time_series),
-                    np.min(time_series),
-                    np.max(time_series),
-                    np.percentile(time_series, 25),
-                    np.percentile(time_series, 75),
-                    np.median([1.0] + [np.corrcoef(time_series[:-i], time_series[i:])[0, 1]
-                                       for i in range(1, len(time_series) - 1)
-                                       if not np.isnan(np.corrcoef(time_series[:-i], time_series[i:])[0, 1])
-                                       ]
-                              )
-                ])
+            f"mean-{feature_label}",
+            f"median-{feature_label}",
+            f"std-{feature_label}",
+            f"min-{feature_label}",
+            f"max-{feature_label}",
+            f"quartile1-{feature_label}",
+            f"quartile3-{feature_label}",
+            f"autocorr-{feature_label}",
+        ],
+            [
+            np.mean(time_series),
+            np.median(time_series),
+            np.std(time_series),
+            np.min(time_series),
+            np.max(time_series),
+            np.percentile(time_series, 25),
+            np.percentile(time_series, 75),
+            np.median([1.0] + [np.corrcoef(time_series[:-i], time_series[i:])[0, 1]
+                               for i in range(1, len(time_series) - 1)
+                               if not np.isnan(np.corrcoef(time_series[:-i], time_series[i:])[0, 1])
+                               ]
+                      )
+        ])
 
     @staticmethod
     def exponential_sliding_average(time_series, sliding_window, weights):
@@ -552,9 +552,9 @@ def read_dataset(dataset_file_path):
 
 # region experiences
 def analyze_trajectory_demo():
-    fishes = read_fishes("../resources/detections/v29-fishes.json")
-    regions = read_regions("../resources/regions-example.json")
-    analyze_trajectory("../resources/videos/v29.m4v",
+    fishes = read_fishes("resources/detections/v29-fishes.json")
+    regions = read_regions("resources/regions-example.json")
+    analyze_trajectory("resources/videos/v29.m4v",
                        regions,
                        fishes.pop(),
                        calculation_period=1,
@@ -564,8 +564,8 @@ def analyze_trajectory_demo():
 
 
 def frequency_impact_demo():
-    fishes = read_fishes("../resources/detections/v29-fishes.json")
-    regions = read_regions("../resources/regions-example.json")
+    fishes = read_fishes("resources/detections/v29-fishes.json")
+    regions = read_regions("resources/regions-example.json")
     frequency_analysis(fishes.pop(), regions, calculation_periods=[1, 12, 24])
 
 
