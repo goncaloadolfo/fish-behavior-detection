@@ -4,6 +4,8 @@ import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 from trajectory_features.trajectory_feature_extraction import TrajectoryFeatureExtraction, exponential_weights
+from feeding.utils import ErrorTracker, extract_feeding_warnings, _get_predicted_class, _get_true_class
+import seaborn
 
 
 def define_optical_points(region, nr_points):
@@ -106,6 +108,7 @@ def plot_magnitudes_histogram(magnitudes):
 
 def plot_magnitudes_time_series(magnitudes_time_series, feeding_period=None,
                                 smooth=False):
+    magnitudes_time_series = magnitudes_time_series[::30]
     magnitudes_time_series = magnitudes_time_series.tolist()
     if smooth:
         TrajectoryFeatureExtraction.exponential_sliding_average(magnitudes_time_series, 30,
@@ -119,8 +122,10 @@ def plot_magnitudes_time_series(magnitudes_time_series, feeding_period=None,
     plt.plot(magnitudes_time_series, label="normal")
 
     # feeding period
-    plt.plot(range(feeding_period[0], feeding_period[1]-1),
-             magnitudes_time_series[feeding_period[0]: feeding_period[1]],
+    start_index = int(feeding_period[0]/30)
+    end_index = int(feeding_period[1]/30)
+    plt.plot(range(start_index, end_index),
+             magnitudes_time_series[start_index: end_index],
              label="feeding")
     plt.legend()
 
@@ -153,6 +158,37 @@ def optical_flow_video(src_video, resolution, optical_points):
     # release resources
     input_video.release()
     output_video.release()
+
+
+def evaluate_optical_flow(video_capture, resolution, region, nr_points,
+                          feeding_threshold, min_duration, ground_truth):
+    # calculate optical flow timeseries
+    average_magnitude_ts = average_magnitude_timeseries(video_capture, region,
+                                                        nr_points, resolution)
+
+    # subsample and smooth
+    average_magnitude_ts = average_magnitude_ts.tolist()
+    TrajectoryFeatureExtraction.exponential_sliding_average(average_magnitude_ts, 30,
+                                                            exponential_weights(30, 0.1,
+                                                                                forward_only=True))
+
+    # find feeding moments
+    feeding_moments = extract_feeding_warnings(average_magnitude_ts,
+                                               feeding_threshold, min_duration)
+
+    # evaluation
+    error_tracker = ErrorTracker()
+    confusion_matrix = np.zeros((2, 2))
+
+    for t in range(len(average_magnitude_ts)):
+        predicted_class = _get_predicted_class(t, feeding_moments)
+        true_class = _get_true_class(t, ground_truth)
+        confusion_matrix[predicted_class][true_class] += 1
+
+        if predicted_class != true_class:
+            error_tracker.append_new_timestamp(t)
+
+    return confusion_matrix, error_tracker
 
 
 def two_frames_test():
@@ -193,6 +229,7 @@ def two_frames_test():
     plt.show()
 
 
+# region imperative/tests code
 def time_series_test():
     # settings
     video_capture = cv2.VideoCapture("resources/videos/feeding-v1-trim.mp4")
@@ -221,7 +258,45 @@ def optical_flow_video_test():
     optical_flow_video(input_video_path, resolution, optical_points)
 
 
+def optical_flow_evaluation_test():
+    # general settings
+    test_video1 = cv2.VideoCapture("resources/videos/feeding-v1-trim2.mp4")
+    test_video2 = cv2.VideoCapture("resources/videos/feeding-v2.mp4")
+
+    gt_video_1 = []
+    gt_video_2 = [(0, 16500)]
+
+    resolution = (1280, 720)
+    nr_points = (30, 15)
+    all_image_region = [(0, resolution[0]), (0, resolution[1])]
+
+    # results
+    confusion_matrix, error_tracker = evaluate_optical_flow(test_video1, resolution,
+                                                            all_image_region, nr_points, 2.8, 30, gt_video_1)
+    confusion_matrix2, error_tracker2 = evaluate_optical_flow(test_video2, resolution,
+                                                              all_image_region, nr_points, 2.8, 30, gt_video_1)
+
+    # visualization
+    plt.figure()
+    plt.title("Test video 1 results")
+    seaborn.heatmap(confusion_matrix.astype(np.int),
+                    annot=True, cmap="YlGnBu", fmt='d')
+    error_tracker.draw_errors_timeline(0, int(test_video1.get(cv2.CAP_PROP_POS_FRAMES)),
+                                       "Video test 1 errors")
+
+    plt.figure()
+    plt.title("Test video 2 results")
+    seaborn.heatmap(confusion_matrix2.astype(np.int),
+                    annot=True, cmap="YlGnBu", fmt='d')
+    error_tracker2.draw_errors_timeline(0, int(test_video1.get(cv2.CAP_PROP_POS_FRAMES)),
+                                        "Video test 2 errors")
+
+    plt.show()
+# endregion
+
+
 if __name__ == "__main__":
     # two_frames_test()
     # time_series_test()
-    optical_flow_video_test()
+    # optical_flow_video_test()
+    optical_flow_evaluation_test()

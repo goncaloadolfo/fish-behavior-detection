@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 
 from trajectory_features.trajectory_feature_extraction import (exponential_weights,
                                                                TrajectoryFeatureExtraction)
-from feeding.error_tracker import ErrorTracker
+from feeding.utils import ErrorTracker, extract_feeding_warnings, _get_predicted_class, _get_true_class
 
 
 def active_pixels(frame_t1, frame_t2, motion_thr, return_frame=False):
@@ -39,33 +39,6 @@ def calculate_motion_time_series(video_capture, motion_thr):
         t += 1
 
     return time_series
-
-
-def extract_feeding_warnings(motion_time_series, feeding_thr, duration):
-    feeding_warnings = []
-    feeding_flag = False
-    feeding_duration = 0
-
-    for t in range(len(motion_time_series)):
-        nr_active_pixels = motion_time_series[t]
-
-        if nr_active_pixels >= feeding_thr:
-            feeding_duration += 1
-            feeding_flag = True
-
-        elif feeding_flag and feeding_duration >= duration:
-            feeding_warnings.append((t - 1 - feeding_duration, t - 1))
-            feeding_duration = 0
-            feeding_flag = False
-
-        else:
-            feeding_duration = 0
-            feeding_flag = False
-
-        if t == len(motion_time_series) - 1 and feeding_flag:
-            feeding_warnings.append((t - feeding_duration, t))
-
-    return feeding_warnings
 
 
 def tune_motion_thr(video_capture, motion_thrs):
@@ -172,28 +145,6 @@ def analyze_training_results(video_capture, motion_thr, feeding_thr, duration,
                                                                               motion_thr, feeding_warnings)
         cv2.imshow("normal motion frame", normal_motion_frame)
         cv2.imshow("feeding motion frame", feeding_motion_frame)
-
-
-def _get_predicted_class(frame, predicted_warnings):
-    for t_initial, t_final in predicted_warnings:
-        if t_initial <= frame <= t_final:
-            return 1
-
-        if frame < t_initial:
-            break
-
-    return 0
-
-
-def _get_true_class(frame, true_feeding_period):
-    for t_initial, t_final in true_feeding_period:
-        if t_initial <= frame <= t_final:
-            return 1
-
-        if frame < t_initial:
-            break
-
-    return 0
 
 
 def _calculate_diff_frame(video_capture, motion_thr, t):

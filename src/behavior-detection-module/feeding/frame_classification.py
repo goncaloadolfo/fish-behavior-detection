@@ -9,7 +9,7 @@ import numpy as np
 import seaborn
 from sklearn.model_selection._split import train_test_split
 
-from feeding.error_tracker import ErrorTracker
+from feeding.utils import ErrorTracker
 
 # important keys
 NR_CONV_LAYERS = "nr-conv-layers"
