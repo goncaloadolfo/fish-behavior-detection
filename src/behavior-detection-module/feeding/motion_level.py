@@ -10,29 +10,66 @@ from trajectory_features.trajectory_feature_extraction import (exponential_weigh
 from feeding.utils import ErrorTracker, extract_feeding_warnings, _get_predicted_class, _get_true_class
 
 
-def active_pixels(frame_t1, frame_t2, motion_thr, return_frame=False):
+def active_pixels(frame_t1, frame_t2, motion_thr, return_frame=False, region=None):
+    # convert to gray scale
     frame_t1_gray_scale = cv2.cvtColor(frame_t1, cv2.COLOR_BGR2GRAY)
     frame_t2_gray_scale = cv2.cvtColor(frame_t2, cv2.COLOR_BGR2GRAY)
+
+    # calculate motion frame
     diff_frame = np.abs(frame_t2_gray_scale - frame_t1_gray_scale)
     _, motion_frame = cv2.threshold(diff_frame, motion_thr,
                                     255.0, cv2.THRESH_BINARY)
-    return np.sum(motion_frame == 255) if not return_frame else np.sum(motion_frame == 255), motion_frame
+
+    # number of active pixels
+    if region is not None:
+        x_limits, y_limits = region
+        nap = np.sum(motion_frame[y_limits[0]: y_limits[1],
+                                  x_limits[0]: x_limits[1]] == 255)
+    else:
+        nap = np.sum(motion_frame == 255)
+
+    # motion frame personalization
+    if region is not None and return_frame:
+        x_limits, y_limits = region
+        frame_copy = frame_t1.copy()
+
+        # convert motion frame to the right 3D shape
+        motion_frame_3d = np.zeros((motion_frame.shape[0],
+                                    motion_frame.shape[1],
+                                    3), dtype=np.uint8)
+        for i in range(motion_frame.shape[0]):
+            for j in range(motion_frame.shape[1]):
+                value = motion_frame[i][j]
+                if value != 0:
+                    motion_frame_3d[i, j, :] = [value, value, value]
+
+        # replace motion region with motion frame results
+        frame_copy[y_limits[0]:y_limits[1], x_limits[0]:x_limits[1], :
+                   ] = motion_frame_3d[y_limits[0]:y_limits[1], x_limits[0]:x_limits[1], :]
+
+        # red box in this area
+        cv2.rectangle(frame_copy, (x_limits[0], y_limits[0]),
+                      (x_limits[1]-1, y_limits[1]-1), (0, 0, 255), 5)
+        motion_frame = frame_copy
+
+    return nap if not return_frame else nap, motion_frame
 
 
-def calculate_motion_time_series(video_capture, motion_thr):
+def calculate_motion_time_series(video_capture, motion_thr, region=None):
     time_series = []
     total_frames = int(video_capture.get(cv2.CAP_PROP_FRAME_COUNT))
     _, previous_frame = video_capture.read()
     t = 0
 
+    # calculate number of active pixels at each frame
     while True:
         print(f"processing frame {t}/{total_frames}")
         _, current_frame = video_capture.read()
         if current_frame is None:
             break
 
-        nr_active_pixels, _ = active_pixels(previous_frame,
-                                            current_frame, motion_thr)
+        nr_active_pixels, _ = active_pixels(previous_frame, current_frame,
+                                            motion_thr, return_frame=False, region=region)
         time_series.append(nr_active_pixels)
 
         previous_frame = current_frame
@@ -62,19 +99,26 @@ def tune_motion_thr(video_capture, motion_thrs):
     plt.plot(motion_thrs, max_min_diffs, "-o")
 
 
-def get_example_motion_frames(video_capture, motion_thr, feeding_warnings):
+def get_example_motion_frames(video_capture, motion_thr, feeding_warnings, region=None):
+    # if no feeding moments were detected
+    if len(feeding_warnings) == 0:
+        return _calculate_diff_frame(video_capture, motion_thr, 0, region)
+
+    # get timestamps for each of the phases
     first_feeding_warning = feeding_warnings[0]
     t_normal = int(first_feeding_warning[0]/2 * 30)
     t_feeding = int(
         (first_feeding_warning[1] + first_feeding_warning[0])/2 * 30)
-    return (_calculate_diff_frame(video_capture, motion_thr, t_normal),
-            _calculate_diff_frame(video_capture, motion_thr, t_feeding))
+
+    # motion frames
+    return (_calculate_diff_frame(video_capture, motion_thr, t_normal, region),
+            _calculate_diff_frame(video_capture, motion_thr, t_feeding, region))
 
 
-def evaluate_motion_method(video_capture, motion_thr, feeding_thr, duration, ground_truth):
+def evaluate_motion_method(video_capture, motion_thr, feeding_thr, duration, ground_truth, region=None):
     confusion_matrix = np.zeros((2, 2), dtype=np.int)
     motion_time_series = calculate_motion_time_series(video_capture,
-                                                      motion_thr)
+                                                      motion_thr, region)
     y = motion_time_series
     smoothed_y = y.copy()
     TrajectoryFeatureExtraction.exponential_sliding_average(smoothed_y, 30,
@@ -97,17 +141,23 @@ def evaluate_motion_method(video_capture, motion_thr, feeding_thr, duration, gro
 
 
 def analyze_training_results(video_capture, motion_thr, feeding_thr, duration,
-                             show_frames=False, show_feeding_results=False):
+                             show_frames=False, show_feeding_results=False, region=None):
+    # motion timeseries
     motion_time_series = calculate_motion_time_series(video_capture,
-                                                      motion_thr)
+                                                      motion_thr, region)
+
+    # smooth timeseries
     y = motion_time_series[::30]
     smoothed_y = y.copy()
     TrajectoryFeatureExtraction.exponential_sliding_average(smoothed_y, 30,
                                                             exponential_weights(30, 0.1,
                                                                                 forward_only=True))
+
+    # extract feeding moments
     feeding_warnings = extract_feeding_warnings(smoothed_y, feeding_thr,
                                                 duration)
 
+    # plot motion timeseries - original and smoothed
     x = np.arange(1, video_capture.get(cv2.CAP_PROP_FRAME_COUNT)) / 30.0
     plt.figure()
     plt.title("Motion Variance")
@@ -125,6 +175,7 @@ def analyze_training_results(video_capture, motion_thr, feeding_thr, duration,
     plt.xlabel("#active pixels")
     plt.hist(smoothed_y)
 
+    # plot feeding results
     if show_feeding_results:
         plt.figure()
         plt.title("Feeding Periods")
@@ -140,37 +191,64 @@ def analyze_training_results(video_capture, motion_thr, feeding_thr, duration,
                      label="feeding period")
         plt.legend()
 
+    # example motion frames
     if show_frames:
-        normal_motion_frame, feeding_motion_frame = get_example_motion_frames(video_capture,
-                                                                              motion_thr, feeding_warnings)
-        cv2.imshow("normal motion frame", normal_motion_frame)
-        cv2.imshow("feeding motion frame", feeding_motion_frame)
+        try:
+            normal_frame, feeding_frame = get_example_motion_frames(video_capture, motion_thr,
+                                                                    feeding_warnings, region)
+            cv2.imshow("normal motion frame", normal_frame)
+            cv2.imshow("feeding motion frame", feeding_frame)
+        # could not unpack
+        except (TypeError, ValueError):
+            normal_frame = get_example_motion_frames(video_capture, motion_thr,
+                                                     feeding_warnings, region)
+            cv2.imshow("normal motion frame", normal_frame)
 
 
-def _calculate_diff_frame(video_capture, motion_thr, t):
+def _calculate_diff_frame(video_capture, motion_thr, t, region):
     video_capture.set(cv2.CAP_PROP_POS_FRAMES, t)
     _, frame_t1 = video_capture.read()
     _, frame_t2 = video_capture.read()
-    frame = active_pixels(frame_t1, frame_t2, motion_thr, return_frame=True)[1]
+    frame = active_pixels(frame_t1, frame_t2, motion_thr,
+                          return_frame=True, region=region)[1]
     return cv2.resize(frame, (1280, 720))
 
 
-if __name__ == "__main__":
+# region imperative/tests code
+def motion_thr_tunning_test():
+    # impact of motion threshold on timeseries
     video_capture = cv2.VideoCapture("resources/videos/feeding-v1-trim.mp4")
+    tune_motion_thr(video_capture, [40, 50, 60, 70])
+    video_capture.release()
+    plt.show()
+
+
+def baseline_results_test(region, feeding_thr, show_results=True):
+    # baseline results - timeseries + frame examples
+    video_capture = cv2.VideoCapture("resources/videos/feeding-v1-trim.mp4")
+    analyze_training_results(video_capture, 40, feeding_thr, 30,
+                             show_frames=True, show_feeding_results=show_results,
+                             region=region)
+    video_capture.release()
+    plt.show()
+
+
+def evaluation_results_test(region, feeding_thr):
+    # test videos
     video_test1 = cv2.VideoCapture("resources/videos/feeding-v1-trim2.mp4")
     video_test2 = cv2.VideoCapture("resources/videos/feeding-v2.mp4")
 
-    # tune_motion_thr(video_capture, [40, 50, 60, 70])
-    # video_capture.set(cv2.CAP_PROP_POS_FRAMES, 0)
-
-    # analyze_training_results(video_capture, 40, 625_000, 20,
-    #                          show_frames=True, show_feeding_results=True)
-
+    # evaluate feeding results
     results, error_tracker = evaluate_motion_method(video_test1, 40,
-                                                    650_000, 20, [])
-    results2, error_tracker2 = evaluate_motion_method(video_test2, 40, 650_000, 20,
-                                                      [(0, 16500)])
+                                                    feeding_thr, 20, [], region)
+    results2, error_tracker2 = evaluate_motion_method(video_test2, 40, feeding_thr, 20,
+                                                      [(0, 16500)], region)
 
+    # release resources
+    video_test1.release()
+    video_test2.release()
+
+    # plot results
     plt.figure()
     plt.title("Results Test Video 1")
     plt.xlabel("true class")
@@ -189,6 +267,13 @@ if __name__ == "__main__":
                                         "Test Video 2 Errors Timeline", 16500)
 
     plt.show()
-    video_capture.release()
-    video_test1.release()
-    video_test2.release()
+# endregion
+
+
+if __name__ == "__main__":
+    # motion_thr_tunning_test()
+    # baseline_results_test(None, 625_000)
+    baseline_results_test([(0, 1920), (440, 1080)], 394_000,
+                          show_results=True)
+    # evaluation_results_test(None, 625_000)
+    # evaluation_results_test([(0, 1920), (440, 1080)], 394_000)

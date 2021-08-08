@@ -10,7 +10,7 @@ import sys
 
 import cv2
 
-CONF_DIR_NAME = "../resources"
+CONF_DIR_NAME = "resources"
 FRAME_NAME = "regions selector"
 SELECTION_COLOR = (0, 0, 255)
 regions_selector_logger = logging.getLogger(__name__)
@@ -151,7 +151,8 @@ def regions_decoder(region_dict):
     # region obj
     if "region-id" in region_dict:
         # instantiate new region
-        region_obj = Region(region_dict['region-id'], region_dict['region-tag'])
+        region_obj = Region(
+            region_dict['region-id'], region_dict['region-tag'])
         region_obj.color = tuple(region_dict['color'])
         # decode region rectangles
         rectangles = region_dict['rectangles']

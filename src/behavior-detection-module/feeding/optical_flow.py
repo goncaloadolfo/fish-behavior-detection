@@ -3,9 +3,10 @@ import itertools
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
+import seaborn
+
 from trajectory_features.trajectory_feature_extraction import TrajectoryFeatureExtraction, exponential_weights
 from feeding.utils import ErrorTracker, extract_feeding_warnings, _get_predicted_class, _get_true_class
-import seaborn
 
 
 def define_optical_points(region, nr_points):
@@ -191,13 +192,9 @@ def evaluate_optical_flow(video_capture, resolution, region, nr_points,
     return confusion_matrix, error_tracker
 
 
-def two_frames_test():
+def two_frames_test(resolution, region):
     # general settings
-    resolution = (1280, 720)
-    optical_points = define_optical_points(
-        [(0, resolution[0]), (0, resolution[1])],
-        (30, 15)
-    )
+    optical_points = define_optical_points(region, (30, 15))
     print("optical points")
     print(optical_points)
     print("shape: ", optical_points.shape)
@@ -224,17 +221,17 @@ def two_frames_test():
     # show vectors frame
     frame = draw_vectors_frame(frame1, resolution, motion_vectors,
                                optical_points, found, 7)
+    cv2.rectangle(frame, (region[0][0], region[1][0]),
+                  (region[0][1]-1, region[1][1]-1), (0, 0, 255), 5)
     plot_magnitudes_histogram(magnitudes)
     cv2.imshow("optical flow", frame)
     plt.show()
 
 
 # region imperative/tests code
-def time_series_test():
+def time_series_test(resolution, region):
     # settings
     video_capture = cv2.VideoCapture("resources/videos/feeding-v1-trim.mp4")
-    resolution = (1280, 720)
-    region = [(0, resolution[0]), (0, resolution[1])]
     nr_points = (30, 15)
 
     # time series
@@ -245,12 +242,11 @@ def time_series_test():
     plt.show()
 
 
-def optical_flow_video_test():
+def optical_flow_video_test(resolution, region):
     # general settings
     input_video_path = "resources/videos/feeding-v1-trim.mp4"
-    resolution = (1280, 720)
     optical_points = define_optical_points(
-        [(0, resolution[0]), (0, resolution[1])],
+        region,
         (30, 15)
     )
 
@@ -258,23 +254,20 @@ def optical_flow_video_test():
     optical_flow_video(input_video_path, resolution, optical_points)
 
 
-def optical_flow_evaluation_test():
+def optical_flow_evaluation_test(resolution, region):
     # general settings
     test_video1 = cv2.VideoCapture("resources/videos/feeding-v1-trim2.mp4")
     test_video2 = cv2.VideoCapture("resources/videos/feeding-v2.mp4")
 
     gt_video_1 = []
     gt_video_2 = [(0, 16500)]
-
-    resolution = (1280, 720)
     nr_points = (30, 15)
-    all_image_region = [(0, resolution[0]), (0, resolution[1])]
 
     # results
     confusion_matrix, error_tracker = evaluate_optical_flow(test_video1, resolution,
-                                                            all_image_region, nr_points, 2.8, 30, gt_video_1)
+                                                            region, nr_points, 2.8, 30, gt_video_1)
     confusion_matrix2, error_tracker2 = evaluate_optical_flow(test_video2, resolution,
-                                                              all_image_region, nr_points, 2.8, 30, gt_video_1)
+                                                              region, nr_points, 2.8, 30, gt_video_1)
 
     # visualization
     plt.figure()
@@ -291,12 +284,17 @@ def optical_flow_evaluation_test():
     error_tracker2.draw_errors_timeline(0, int(test_video1.get(cv2.CAP_PROP_POS_FRAMES)),
                                         "Video test 2 errors")
 
+    test_video1.release()
+    test_video2.release()
     plt.show()
 # endregion
 
 
 if __name__ == "__main__":
-    # two_frames_test()
-    # time_series_test()
-    # optical_flow_video_test()
-    optical_flow_evaluation_test()
+    # two_frames_test((1280, 720), [(0, 1280), (0, 720)])
+    # two_frames_test((1280, 720), [(0, 1280), (290, 720)])
+    # time_series_test((1280, 720), [(0, 1280), (0, 720)])
+    # time_series_test((1280, 720), [(0, 1280), (290, 720)])
+    # optical_flow_video_test((1280, 720), [(0, 1280), (0, 720)])
+    # optical_flow_evaluation_test((1280, 720), [(0, 1280), (0, 720)])
+    optical_flow_evaluation_test((1280, 720), [(0, 1280), (290, 720)])
