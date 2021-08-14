@@ -126,7 +126,7 @@ def main():
     #                      ("shark", "manta-ray"), parameters_grid)
 
     # seed 1
-    random_forest_pipelines("../resources/datasets/v29-dataset1.csv", ("shark", "manta-ray"),
+    random_forest_pipelines("resources/datasets/v29-dataset1.csv", ("shark", "manta-ray"),
                             {"n_estimators": 5,
                              "criterion": "entropy",
                              "max_depth": 5,

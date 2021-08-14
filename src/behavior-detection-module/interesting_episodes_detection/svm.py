@@ -118,7 +118,7 @@ def svm_pipelines(dataset, svm_params):
     plt.grid()
     plt.tight_layout()
     plt.xlim(0, 1)
-    analyze_errors(pipelines_predictions, scores, original_y, dataset)
+    # analyze_errors(pipelines_predictions, scores, original_y, dataset)
 
 
 def analyze_errors(predictions, scores, true_y, dataset):
@@ -213,7 +213,7 @@ def main():
         "gamma": [0.01, 0.1, 1],
         "random_state": [0, 1, 2, 3, 4]
     }
-    svm_tuning("resources/datasets/v29-dataset1.csv", param_grid)
+    # svm_tuning("resources/datasets/v29-dataset1.csv", param_grid)
     svm_pipelines("resources/datasets/v29-dataset1.csv",
                   {"c": 0.01, "kernel": "poly", "degree": 3, "gamma": 1, "random_state": 0})
     plt.show()

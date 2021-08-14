@@ -111,7 +111,7 @@ def knn_pipelines(dataset, species, parameters):
 
 
 def main():
-    dataset = "../resources/datasets/v29-dataset1.csv"
+    dataset = "resources/datasets/v29-dataset1.csv"
     species = ("shark", "manta-ray")
     knn_tuning(dataset, species,
                {

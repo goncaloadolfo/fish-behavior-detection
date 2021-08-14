@@ -75,7 +75,7 @@ def compare_gnb_pipelines(path_dataset, species, balance=False):
 
 if __name__ == "__main__":
     np.random.seed(0)
-    dataset = "../resources/datasets/v29-dataset1.csv"
+    dataset = "resources/datasets/v29-dataset1.csv"
 
     compare_gnb_pipelines(dataset, ("shark", "manta-ray"))
     # compare_gnb_pipelines(dataset, ("shark",))

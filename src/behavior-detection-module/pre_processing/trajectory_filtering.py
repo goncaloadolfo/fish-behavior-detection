@@ -32,9 +32,9 @@ def segment_trajectory(fish, descontinuity_points):
             segment = [data_point for data_point in original_trajectory
                        if segment_tf > data_point[0] >= segment_t0]
             segment_bbs = {t: bb for t, bb in original_bbs.items()
-                           if segment_tf < t >= segment_t0}
+                           if segment_tf > t >= segment_t0}
             segment_positions = {t: position for t, position in original_bbs.items()
-                                 if segment_tf < t >= segment_t0}
+                                 if segment_tf > t >= segment_t0}
 
             if i == len(descontinuity_points) - 1:
                 segment.append(original_trajectory[-1])
