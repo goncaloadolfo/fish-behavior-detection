@@ -4,6 +4,7 @@ import cv2
 from keras.models import Sequential
 from keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Dropout
 from keras.activations import relu, sigmoid
+from keras.optimizers import Adam
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn
@@ -159,7 +160,7 @@ def define_custom_layers(nr_conv_layers, nr_fc_layers, nr_perceptrons, nr_filter
     model.add(Dense(1))
 
     # compile model
-    model.compile(learning_rate=learning_rate, optimizer="adam",
+    model.compile(optimizer=Adam(learning_rate=learning_rate),
                   loss=loss_function, metrics=["accuracy"])
 
     return model
@@ -456,29 +457,28 @@ def tuning_results():
     }
 
     # bottom dataset
-    bottom_data = read_dataset("./resources/datasets/feeding-dataset/train-samples/",
-                               "./resources/datasets/feeding-dataset/test-samples/")
-    check_different_architectures(architecture_parameters,
-                                  bottom_data[0], bottom_data[1])
+    # bottom_data = read_dataset("./resources/datasets/feeding-dataset/train-samples/",
+    #                            "./resources/datasets/feeding-dataset/test-samples/")
+    # check_different_architectures(architecture_parameters,
+    #                               bottom_data[0], bottom_data[1])
 
-    best_archicture = {
-        NR_CONV_LAYERS: 1,
-        NR_FC_LAYERS: 2,
-        HL_NR_NEURONS: 120,
-        CONV_NR_FILTERS: 5
-    }
-    check_different_hyperparameters(best_archicture, hyperparameters,
-                                    bottom_data[0], bottom_data[1])
+    # best_archicture = {
+    #     NR_CONV_LAYERS: 1,
+    #     NR_FC_LAYERS: 2,
+    #     HL_NR_NEURONS: 120,
+    #     CONV_NR_FILTERS: 5
+    # }
+    # check_different_hyperparameters(best_archicture, hyperparameters,
+    #                                 bottom_data[0], bottom_data[1])
 
     # surface dataset
     surface_data = read_dataset(
         "./resources/datasets/feeding-surface-dataset/train-samples/",
         "./resources/datasets/feeding-surface-dataset/test-samples/"
     )
-    check_different_architectures(architecture_parameters,
-                                  surface_data[0], surface_data[1])
+    # check_different_architectures(architecture_parameters,
+    #                               surface_data[0], surface_data[1])
 
-    # todo - to change!
     best_archicture = {
         NR_CONV_LAYERS: 1,
         NR_FC_LAYERS: 2,
@@ -494,10 +494,10 @@ def main():
     # build_datasets()
 
     # baseline results for the different datasets
-    baseline_results()
+    # baseline_results()
 
     # tuning
-    # tuning_results()
+    tuning_results()
 
 
 if __name__ == '__main__':
