@@ -16,6 +16,7 @@ from scipy.spatial.qhull import QhullError
 from pre_processing.interpolation import fill_gaps_linear
 from trajectory_reader.trajectories_reader import read_detections
 from trajectory_reader.visualization import draw_fishes, simple_line_plot
+from trajectory_features.trajectory_feature_extraction import TrajectoryFeatureExtraction, exponential_weights
 
 feeding_baseline_logger = logging.getLogger(__name__)
 feeding_baseline_logger.addHandler(logging.StreamHandler())
@@ -72,14 +73,14 @@ class FeedingBaseline:
         cv2.circle(frame,
                    (int(self.__center_of_mass[0]),
                     int(self.__center_of_mass[1])),
-                   radius=4,
+                   radius=8,
                    color=(0, 255, 0),
                    thickness=-1)
         # draw outliers
         for outlier in self.__outliers:
             cv2.circle(frame,
                        (outlier[0], outlier[1]),
-                       radius=2,
+                       radius=4,
                        color=(0, 0, 255),
                        thickness=-1)
         # triangular mesh
@@ -88,7 +89,7 @@ class FeedingBaseline:
                 for point in triangle.points:
                     cv2.circle(frame,
                                (point[0], point[1]),
-                               radius=3,
+                               radius=6,
                                color=(255, 0, 0),
                                thickness=-1)
                 for edge in triangle.edges:
@@ -96,7 +97,7 @@ class FeedingBaseline:
                              pt1=(edge[0][0], edge[0][1]),
                              pt2=(edge[1][0], edge[1][1]),
                              color=(175, 0, 0),
-                             thickness=2)
+                             thickness=4)
         # line mesh
         else:
             for i in range(len(self.__mesh) - 1):
@@ -104,7 +105,7 @@ class FeedingBaseline:
                          pt1=(self.__mesh[i][0], self.__mesh[i][1]),
                          pt2=(self.__mesh[i + 1][0], self.__mesh[i + 1][1]),
                          color=(175, 0, 0),
-                         thickness=2)
+                         thickness=4)
         return frame
 
     @property
@@ -129,15 +130,17 @@ class FeedingBaseline:
         # distance from every point to the center of mass
         distances = [np.linalg.norm(position - self.__center_of_mass)
                      for position in self.__positions]
-        # distances third quartile
-        q3 = np.percentile(distances, 75)
-        # detect outlier positions
-        non_outlier_mask = np.ones((len(self.__positions),), dtype=bool)
-        for i in range(len(self.__positions)):
-            if distances[i] > 1.5 * q3:
-                self.__outliers.append(self.__positions[i])
-                non_outlier_mask[i] = False
-        self.__positions = self.__positions[non_outlier_mask]
+        
+        if len(distances) > 0:
+            # distances third quartile
+            q3 = np.percentile(distances, 75)
+            # detect outlier positions
+            non_outlier_mask = np.ones((len(self.__positions),), dtype=bool)
+            for i in range(len(self.__positions)):
+                if distances[i] > 1.5 * q3:
+                    self.__outliers.append(self.__positions[i])
+                    non_outlier_mask[i] = False
+            self.__positions = self.__positions[non_outlier_mask]
 
     def __triangular_mesh(self):
         # calculate triangles
@@ -167,14 +170,15 @@ class FeedingBaseline:
             )
 
     def __calculate_flocking_index(self):
-        min_y = self.__positions.min(axis=0)[1]
-        max_y = self.__positions.max(axis=0)[1]
-        vertical_distance = max_y - min_y
+        if len(self.__positions) > 0:
+            min_y = self.__positions.min(axis=0)[1]
+            max_y = self.__positions.max(axis=0)[1]
+            vertical_distance = max_y - min_y
 
-        if vertical_distance < self.__mesh_thr or len(self.__positions) - len(self.__outliers) <= 3:
-            self.__line_mesh()
-        else:
-            self.__triangular_mesh()
+            if vertical_distance < self.__mesh_thr or len(self.__positions) - len(self.__outliers) <= 3:
+                self.__line_mesh()
+            else:
+                self.__triangular_mesh()
 
 
 def detections_at_t(fishes, t):
@@ -211,6 +215,11 @@ def analyze_fiffb(gt_path, initial_t, final_t):
         f"Calculating FIFFB frame {final_t}/{final_t}")
     # plot results
     plt.figure()
+    fiffbs = fiffbs[::30]
+    ts = ts[::30]
+    TrajectoryFeatureExtraction.exponential_sliding_average(fiffbs, 24,
+                                                            exponential_weights(24, 0.1,
+                                                                                forward_only=True))
     simple_line_plot(plt.gca(), ts, fiffbs, "Aggregation Index", "FIFFB", "t")
 
 
@@ -279,15 +288,14 @@ def delaunay_test(vertical_range, logging_level=logging.DEBUG, show=True):
     return feeding_baseline_obj.flocking_index
 
 
-def delaunay_real_data_test():
-    random.seed(4)
+def delaunay_real_data_test(video_path, detections_path, resolution):
+    # random.seed(4)
     feeding_baseline_logger.setLevel(logging.DEBUG)
 
     # read GT and video file
-    fishes = read_detections(
-        "resources/detections/detections-v37.txt").values()
+    fishes = read_detections(detections_path).values()
     feeding_baseline_logger.debug(f"number of trajectories: {len(fishes)}")
-    video_capture = cv2.VideoCapture("resources/videos/v37.m4v")
+    video_capture = cv2.VideoCapture(video_path)
 
     # pre process trajectories
     for fish in fishes:
@@ -319,15 +327,22 @@ def delaunay_real_data_test():
     print(
         f"flocking index: {feeding_baseline_obj.flocking_index}"
     )
-    cv2.imshow("mesh result", feeding_baseline_obj.results_frame(720, 480))
-    cv2.imshow("test frame", draw_fishes(frame, fishes_at_t, random_t))
+    
+    mesh_frame = feeding_baseline_obj.results_frame(resolution[0], resolution[1])
+    test_frame = draw_fishes(frame, fishes_at_t, random_t)
+    
+    resized_mesh_frame = cv2.resize(mesh_frame, (720, 480))
+    resized_test_frame = cv2.resize(test_frame, (720, 480))
+    
+    cv2.imshow("mesh result", resized_mesh_frame)
+    cv2.imshow("test frame", resized_test_frame)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 
 
-def fiffb_analysis_test():
+def fiffb_analysis_test(detection_path):
     feeding_baseline_logger.setLevel(logging.INFO)
-    analyze_fiffb("../resources/detections/detections-v37.txt", 0, 6400)
+    analyze_fiffb(detection_path, 0, 6400)
     plt.show()
 
 
@@ -362,10 +377,21 @@ def mesh_calculation_errors_test():
     )
 
 
-if __name__ == "__main__":
-    random.seed(0)
-    # delaunay_test((1, 480))  # triangular mesh
+def main():
+    # random.seed(0)
+    delaunay_test((1, 480))  # triangular mesh
     # delaunay_test((200, 240))  # line
-    delaunay_real_data_test()
-    # fiffb_analysis_test()
+    # delaunay_real_data_test("resources/videos/v37.m4v",
+    #                         "resources/detections/detections-v37.txt", (720, 480))
+    # delaunay_real_data_test("resources/videos/GP011844_Trim.mp4",
+    #                         "resources/detections/GP011844_Trim_gt.txt", (1920, 1440))
+    # delaunay_real_data_test("resources/videos/v29.m4v",
+    #                         "resources/detections/detections-v29-sharks-mantas.txt", (720, 480))
+    # fiffb_analysis_test("resources/detections/detections-v37.txt")
+    # fiffb_analysis_test("resources/detections/GP011844_Trim_gt.txt")
+    # fiffb_analysis_test("resources/detections/detections-v29-sharks-mantas.txt")
     # mesh_calculation_errors_test()
+
+
+if __name__ == "__main__":
+    main()    
