@@ -22,6 +22,68 @@ PRECISION_KEY = "precision"
 RECALL_KEY = "recall"
 
 
+def check_segmentation_impact(model, data, fishes_path, regions_path, episodes_path, 
+                              distance_thr, speed_thr, angle_thr, apply_balance):
+    # segments dataset
+    fishes = read_fishes(fishes_path)
+    x, y = segments_dataset(fishes, regions_path, episodes_path,
+                            distance_thr, speed_thr, angle_thr, True)
+    print("samples shape: ", x.shape)
+    print("gt shape: ", len(y))
+    
+    # predictions using segments
+    nr_samples = len(x)
+    if apply_balance:
+        x, y = SMOTE().fit_resample(x, y)
+    print("samples shape (after balance): ", x.shape)
+    print("gt shape (after balance): ", len(y))
+    predictions = holdout_prediction(model, x, y)
+    
+    # predictions using original samples
+    original_x, original_y, _ = data
+    if apply_balance:
+        original_x, original_y = SMOTE().fit_resample(original_x, original_y)
+    original_predictions = holdout_prediction(model, original_x, original_y)
+    
+    # evaluation
+    segments_acc = accuracy_score(y, predictions)
+    segments_precision = precision_score(y, predictions)
+    segments_recall = recall_score(y, predictions)
+    
+    original_acc = accuracy_score(original_y, original_predictions)
+    original_precision = precision_score(original_y, original_predictions)
+    original_recall = recall_score(original_y, original_predictions)
+    
+    # plot metrics
+    original_results = [original_acc, original_precision, original_recall]
+    segments_results = [segments_acc, segments_precision, segments_recall]
+    plot_segmentation_impact(original_results, segments_results)
+
+
+def check_model_by_species_impact(model, dataset_path, apply_balance):
+    case_scenarios = [("shark", "manta-ray"), ("shark"), ("manta-ray")]
+    cases_metric_results = {}
+    
+    for species_case in case_scenarios:
+        # load data
+        x, y, _ = load_data(dataset_path, species_case)
+        
+        # predictions
+        if apply_balance:
+            x, y = SMOTE().fit_resample(x, y)
+        predictions = holdout_prediction(model, x, y)
+        
+        # extract metrics    
+        cases_metric_results[species_case] = {
+            ACCURACY_KEY: accuracy_score(y, predictions),
+            PRECISION_KEY: precision_score(y, predictions),
+            RECALL_KEY: recall_score(y, predictions)   
+        }
+    
+    # plot results    
+    plot_model_by_species_results(cases_metric_results)
+
+
 def segments_dataset(fishes, regions_path, episodes_path,
                      distance_thr, speed_thr, angle_thr, plot_class_balance=False):
     # new samples and ground truth
@@ -79,62 +141,12 @@ def is_interesting_segment(segment, episodes):
     return 0
 
 
-def setup_svm_pipeline():
-    normalizer = StandardScaler()
-    svm = SVC(C=0.01, kernel="poly", gamma=1)
-    return Pipeline([("normalizer", normalizer), ("svm", svm)])
-
-
-# region imperative/tests
-
-def segmentation_performance_impact():
-    # general settings
-    fishes_path = "resources/detections/v29-fishes.json"
-    regions_path = "resources/regions-example.json"
-    episodes_path = "resources/classification/v29-interesting-moments.csv"
-    distance_thr = 30
-    speed_thr = 2
-    angle_thr = 50
-    
-    # segments dataset
-    fishes = read_fishes(fishes_path)
-    x, y = segments_dataset(fishes, regions_path, episodes_path,
-                            distance_thr, speed_thr, angle_thr, True)
-    nr_samples = x.shape[0]
-    print("samples shape: ", x.shape)
-    print("gt shape: ", len(y))
-    
-    # predictions using segments
-    new_x, new_y = SMOTE().fit_resample(x, y)
-    print("samples shape (after balance): ", new_x.shape)
-    print("gt shape (after balance): ", len(new_y))
-    svm_pipeline = setup_svm_pipeline()
-    predictions = holdout_prediction(svm_pipeline, new_x, new_y)[:nr_samples]
-    
-    # predictions using original samples
-    original_x, original_y, _ = load_data("resources/datasets/v29-dataset1.csv",
-                                       ("shark", "manta-ray"))
-    nr_original_samples = original_x.shape[0]
-    new_original_x, new_original_y = SMOTE().fit_resample(original_x, original_y)
-    original_predictions = holdout_prediction(svm_pipeline, new_original_x, 
-                                              new_original_y)[:nr_original_samples]
-    
-    # evaluation
-    segments_acc = accuracy_score(y, predictions)
-    segments_precision = precision_score(y, predictions)
-    segments_recall = recall_score(y, predictions)
-    
-    original_acc = accuracy_score(original_y, original_predictions)
-    original_precision = precision_score(original_y, original_predictions)
-    original_recall = recall_score(original_y, original_predictions)
-
+def plot_segmentation_impact(original_results, segments_results):
     # plot metrics
     labels = ["acc", "prec", "rec"]
-    original_results = [original_acc, original_precision, original_recall]
-    segments_results = [segments_acc, segments_precision, segments_recall]
-    
     x = np.arange(len(labels))
     width = 0.35
+    
     plt.figure()
     plt.title("Segmentation Impact")
     plt.ylim([0, 1])
@@ -144,31 +156,9 @@ def segmentation_performance_impact():
     plt.gca().set_xticks(x)
     plt.gca().set_xticklabels(labels)
     plt.legend()
-    
-    plt.show()
-    
-    
-def models_by_species_impact():
-    svm_pipeline = setup_svm_pipeline()
-    case_scenarios = [("shark", "manta-ray"), ("shark"), ("manta-ray")]
-    cases_metric_results = {}
-    
-    for species_case in case_scenarios:
-        # load data
-        x, y, _ = load_data("resources/datasets/v29-dataset1.csv", species_case)
-        nr_samples = x.shape[0]
-        
-        # predictions
-        balanced_x, balanced_y = SMOTE().fit_resample(x, y)
-        predictions = holdout_prediction(svm_pipeline, balanced_x, balanced_y)[:nr_samples]
-        
-        # extract metrics    
-        cases_metric_results[species_case] = {
-            ACCURACY_KEY: accuracy_score(y, predictions),
-            PRECISION_KEY: precision_score(y, predictions),
-            RECALL_KEY: recall_score(y, predictions)   
-        }
-    
+
+
+def plot_model_by_species_results(cases_metric_results):
     # plot results
     labels = ["acc", "prec", "rec"]
     x = np.arange(len(labels))
@@ -194,12 +184,48 @@ def models_by_species_impact():
     plt.gca().set_xticks(x)
     plt.gca().set_xticklabels(labels)
     plt.legend()
+
+def setup_svm_pipeline():
+    normalizer = StandardScaler()
+    svm = SVC(C=0.01, kernel="poly", gamma=1)
+    return Pipeline([("normalizer", normalizer), ("svm", svm)])
+
+
+# region imperative/tests
+
+def segmentation_performance_impact():
+    # general settings
+    fishes_path = "resources/detections/v29-fishes.json"
+    regions_path = "resources/regions-example.json"
+    episodes_path = "resources/classification/v29-interesting-moments.csv"
+    distance_thr = 30
+    speed_thr = 2
+    angle_thr = 50
+    
+    # segmentation impact
+    svm_pipeline = setup_svm_pipeline()
+    data = load_data("resources/datasets/v29-dataset1.csv",
+                                       ("shark", "manta-ray"))
+    check_segmentation_impact(svm_pipeline, data, fishes_path, regions_path,
+                              episodes_path, distance_thr, speed_thr, angle_thr,
+                              apply_balance=True)
+    
+    plt.show()
+    
+    
+def models_by_species_impact():
+    # settings
+    svm_pipeline = setup_svm_pipeline()
+    dataset_path = "resources/datasets/v29-dataset1.csv"
+    
+    # modeling by species
+    check_model_by_species_impact(svm_pipeline, dataset_path, apply_balance=True)
     plt.show()
 
 
 def main():
-    segmentation_performance_impact()
-    # models_by_species_impact()
+    # segmentation_performance_impact()
+    models_by_species_impact()
     
 # endregion
 
