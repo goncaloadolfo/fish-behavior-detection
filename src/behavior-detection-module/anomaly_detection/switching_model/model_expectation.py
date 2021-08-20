@@ -149,14 +149,20 @@ def test_forward_backward_procedure(video_path, fishes_path, species_path, nr_no
         plt.ylabel("smooth probability")
         plt.plot(smooth_probs[i])
     plt.show()
+    
+
+def main():
+    # tests
+    test_joint_probability("resources/videos/v29.m4v",
+                           "resources/detections/v29-fishes.json",
+                           "resources/classification/species-gt-v29.csv",
+                           36, 4)
+    
+    # test_forward_backward_procedure("resources/videos/v29.m4v",
+    #                                 "resources/detections/v29-fishes.json",
+    #                                 "resources/classification/species-gt-v29.csv",
+    #                                 36, 4)
 
 
 if __name__ == "__main__":
-    # test_joint_probability("resources/videos/v29.m4v",
-    #                        "resources/detections/v29-fishes.json",
-    #                        "resources/classification/species-gt-v29.csv",
-    #                        36, 4)
-    test_forward_backward_procedure("resources/videos/v29.m4v",
-                                    "resources/detections/v29-fishes.json",
-                                    "resources/classification/species-gt-v29.csv",
-                                    36, 4)
+    main()

@@ -208,12 +208,12 @@ def main():
         [("normalizer", StandardScaler()),
          ("cr", CorrelatedVariablesRemoval(0.9)), ("dbscan", DBSCAN())]
     ]
-    # analyze_distances_pipelines(dataset, species, 7, pipelines)
+    # analyze_distances_pipelines(dataset, species, pipelines)
 
-    # dbscan_tuning(dataset, species, [5, 7, 9],
-    #               np.arange(290, 580, 71), "manhattan",  pipelines[0][:-1])
-    # dbscan_tuning(dataset, species, [5, 7, 9],
-    #               np.arange(83, 186, 23), "euclidean", pipelines[0][:-1])
+    dbscan_tuning(dataset, species, [5, 7, 9],
+                  np.arange(290, 580, 71), "manhattan",  pipelines[0][:-1])
+    dbscan_tuning(dataset, species, [5, 7, 9],
+                  np.arange(83, 186, 23), "euclidean", pipelines[0][:-1])
 
     # dbscan_tuning(dataset, species, [5, 7, 9],
     #               np.arange(58, 108, 11), "manhattan",  pipelines[1][:-1])
@@ -235,8 +235,8 @@ def main():
     # dbscan_tuning(dataset, species, [5, 7, 9],
     #               np.arange(8, 14, 1.4), "euclidean", pipelines[4][:-1])
 
-    apply_dbscan(video_path, fishes, dataset, species, 5, 29,
-                 "manhattan", pipelines[3][:-1])
+    # apply_dbscan(video_path, fishes, dataset, species, 5, 29,
+    #              "manhattan", pipelines[3][:-1])
     # apply_dbscan(video_path, fishes, dataset, species, 7, 11,
     #              "euclidean", pipelines[2][:-1])
     plt.show()

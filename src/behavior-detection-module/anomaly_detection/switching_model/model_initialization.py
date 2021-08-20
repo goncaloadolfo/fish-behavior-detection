@@ -378,15 +378,20 @@ def test_model_saving(video_path, fishes_path, species_path, nr_nodes, nr_fields
     save_model_to_file(grid, "resources/models/test-model.model")
     model = load_model_from_file("resources/models/test-model.model")
     pretty_print_parameters(model)
+    
+
+def main():
+    # tests
+    test_initialization("resources/videos/v29.m4v",
+                        "resources/detections/v29-fishes.json",
+                        "resources/classification/species-gt-v29.csv",
+                        16, 4)
+
+    # test_model_saving("resources/videos/v29.m4v",
+    #                   "resources/detections/v29-fishes.json",
+    #                   "resources/classification/species-gt-v29.csv",
+    #                   16, 4)
 
 
 if __name__ == "__main__":
-    # test_initialization("resources/videos/v29.m4v",
-    #                     "resources/detections/v29-fishes.json",
-    #                     "resources/classification/species-gt-v29.csv",
-    #                     16, 4)
-
-    test_model_saving("resources/videos/v29.m4v",
-                      "resources/detections/v29-fishes.json",
-                      "resources/classification/species-gt-v29.csv",
-                      16, 4)
+    main()
