@@ -251,7 +251,7 @@ def v29_all_species():
     """
     # read samples
     samples, gt, descriptions = read_dataset(
-        "../resources/datasets/v29-dataset1.csv"
+        "resources/datasets/v29-dataset1.csv"
     )
 
     # pre processing
@@ -269,7 +269,7 @@ def v29_all_species():
                                                max_steps=300, n_init=1, seed=2286868185)
 
     # analysis
-    draw_cluster_trajectories("../resources/detections/v29-fishes.json",
+    draw_cluster_trajectories("resources/detections/v29-fishes.json",
                               resulting_clusters)
     species_distribution(gt, resulting_clusters)
     plot_most_different_features({label: centroid

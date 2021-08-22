@@ -130,7 +130,7 @@ class FeedingBaseline:
         # distance from every point to the center of mass
         distances = [np.linalg.norm(position - self.__center_of_mass)
                      for position in self.__positions]
-        
+
         if len(distances) > 0:
             # distances third quartile
             q3 = np.percentile(distances, 75)
@@ -327,13 +327,14 @@ def delaunay_real_data_test(video_path, detections_path, resolution):
     print(
         f"flocking index: {feeding_baseline_obj.flocking_index}"
     )
-    
-    mesh_frame = feeding_baseline_obj.results_frame(resolution[0], resolution[1])
+
+    mesh_frame = feeding_baseline_obj.results_frame(
+        resolution[0], resolution[1])
     test_frame = draw_fishes(frame, fishes_at_t, random_t)
-    
+
     resized_mesh_frame = cv2.resize(mesh_frame, (720, 480))
     resized_test_frame = cv2.resize(test_frame, (720, 480))
-    
+
     cv2.imshow("mesh result", resized_mesh_frame)
     cv2.imshow("test frame", resized_test_frame)
     cv2.waitKey(0)
@@ -389,9 +390,10 @@ def main():
     #                         "resources/detections/detections-v29-sharks-mantas.txt", (720, 480))
     # fiffb_analysis_test("resources/detections/detections-v37.txt")
     # fiffb_analysis_test("resources/detections/GP011844_Trim_gt.txt")
-    # fiffb_analysis_test("resources/detections/detections-v29-sharks-mantas.txt")
+    # fiffb_analysis_test(
+    #     "resources/detections/detections-v29-sharks-mantas.txt")
     # mesh_calculation_errors_test()
 
 
 if __name__ == "__main__":
-    main()    
+    main()

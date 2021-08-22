@@ -1,4 +1,5 @@
 import os
+import random
 
 import cv2
 from keras.models import Sequential
@@ -424,6 +425,7 @@ def baseline_results():
     train_and_evaluate(bottom_data[0], bottom_data[1])
 
     # # surface dataset
+    # random.seed(0)
     # surface_data = read_dataset(
     #     "./resources/datasets/feeding-surface-dataset/train-samples/",
     #     "./resources/datasets/feeding-surface-dataset/test-samples/"
@@ -432,6 +434,7 @@ def baseline_results():
     # train_and_evaluate(surface_data[0], surface_data[1])
 
     # # go pro - bottom dataset
+    # random.seed(0)
     # gopro_bottom_data = read_dataset(
     #     "./resources/datasets/gopro-feeding-dataset/train-samples/",
     #     "./resources/datasets/gopro-feeding-dataset/test-samples/"
@@ -494,10 +497,10 @@ def main():
     # build_datasets()
 
     # baseline results for the different datasets
-    # baseline_results()
+    baseline_results()
 
     # tuning
-    tuning_results()
+    # tuning_results()
 
 
 if __name__ == '__main__':

@@ -270,10 +270,14 @@ def evaluation_results_test(region, feeding_thr):
 # endregion
 
 
-if __name__ == "__main__":
-    # motion_thr_tunning_test()
+def main():
+    motion_thr_tunning_test()
     # baseline_results_test(None, 625_000)
-    baseline_results_test([(0, 1920), (440, 1080)], 394_000,
-                          show_results=True)
+    # baseline_results_test([(0, 1920), (440, 1080)], 394_000,
+    #                       show_results=True)
     # evaluation_results_test(None, 625_000)
     # evaluation_results_test([(0, 1920), (440, 1080)], 394_000)
+
+
+if __name__ == "__main__":
+    main()
