@@ -10,8 +10,8 @@ from trajectory_reader.visualization import simple_line_plot
 
 def video_resolution(video_path):
     video_capture = cv2.VideoCapture(video_path)
-    resolution = (video_capture.get(cv2.CAP_PROP_FRAME_HEIGHT), 
-                  video_capture.get(cv2.CAP_PROP_FRAME_WIDTH)) 
+    resolution = (video_capture.get(cv2.CAP_PROP_FRAME_HEIGHT),
+                  video_capture.get(cv2.CAP_PROP_FRAME_WIDTH))
     video_capture.release()
     return resolution
 
@@ -140,15 +140,19 @@ def apply_pca(samples, n_components):
     return pca.fit_transform(samples)
 
 
-if __name__ == "__main__":
+def main():
     x_all, _, _ = load_data(
-        "../resources/datasets/v29-dataset1.csv", ("shark",))
+        "resources/datasets/v29-dataset1.csv", ("shark",))
     x_sharks, _, _ = load_data(
-        "../resources/datasets/v29-dataset1.csv", ("shark",))
+        "resources/datasets/v29-dataset1.csv", ("shark",))
     x_mantas, _, _ = load_data(
-        "../resources/datasets/v29-dataset1.csv", ("manta-ray",))
+        "resources/datasets/v29-dataset1.csv", ("manta-ray",))
 
     analyze_pca_components(x_all, "- all species")
     analyze_pca_components(x_sharks, "- sharks")
     analyze_pca_components(x_mantas, "- mantas")
     plt.show()
+
+
+if __name__ == "__main__":
+    main()

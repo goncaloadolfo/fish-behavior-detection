@@ -4,7 +4,7 @@ Implements linear and newton interpolation.
 """
 
 from collections import defaultdict
-from random import randint
+from random import randint, seed
 
 import cv2
 import matplotlib.pyplot as plt
@@ -469,7 +469,7 @@ def newton_interpolation_test():
 def draw_estimation_test():
     # read trajectories and choose an example one
     trajectories = tr.read_detections(
-        "../resources/detections/detections-v29-sharks-mantas.txt"
+        "resources/detections/detections-v29-sharks-mantas.txt"
     )
     example_fish = list(trajectories.values())[0]
 
@@ -483,7 +483,7 @@ def draw_estimation_test():
     fill_gaps_linear(trajectory_with_gap, None)
 
     # visualize video, showing interpolation results
-    show_trajectory("../resources/videos/v29.m4v",
+    show_trajectory("resources/videos/v29.m4v",
                     example_fish, trajectory_with_gap, [gap_interval])  # , "interpolation-example1.mp4")
     plt.show()
     cv2.destroyAllWindows()
@@ -491,21 +491,22 @@ def draw_estimation_test():
 
 def evaluation_test():
     # evaluation results of the different methods
+    seed(33)
     linear_performance(
-        "../resources/detections/detections-v29-sharks-mantas.txt",
+        "resources/detections/detections-v29-sharks-mantas.txt",
         range(1, 30, 3)
     )
-    newton_performance("../resources/detections/detections-v29-sharks-mantas.txt",
+    newton_performance("resources/detections/detections-v29-sharks-mantas.txt",
                        equidistant_interpolation_points,
                        [4, 5, 6], range(1, 10, 2))
-    newton_performance("../resources/detections/detections-v29-sharks-mantas.txt",
+    newton_performance("resources/detections/detections-v29-sharks-mantas.txt",
                        near_interpolation_points,
                        [4, 5, 6], range(1, 10, 1))
     plt.show()
 
 
 if __name__ == "__main__":
-    # linear_interpolation_test()
-    newton_interpolation_test()
+    linear_interpolation_test()
+    # newton_interpolation_test()
     # draw_estimation_test()
     # evaluation_test()

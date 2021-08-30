@@ -320,8 +320,8 @@ def _plot_time_series(fe_objs, descriptions, features_of_interest, trajectory_ts
 
 def douglass_peucker_tuning(distance_thrs, speed_thrs, angle_thrs, seed):
     example_fish = get_random_fish(
-        "../resources/detections/v29-fishes.json", seed)
-    regions = read_regions("../resources/regions-example.json")
+        "resources/detections/v29-fishes.json", seed)
+    regions = read_regions("resources/regions-example.json")
     fill_gaps_linear(example_fish.trajectory, example_fish)
 
     _dp_feature_tuning(example_fish, regions, distance_thrs, DISTANCE_TAG)
@@ -435,16 +435,16 @@ def positions_filtering_test(window_size, alpha, features_of_interest, seed):
 
 
 if __name__ == '__main__':
-    # positions_filtering_test(window_size=24, alpha=0.01,
-    #                          features_of_interest=(
-    #                              TrajectoryFeatureExtraction.SPEEDS_ATR_NAME,
-    #                              TrajectoryFeatureExtraction.CURVATURES_ATR_NAME,
-    #                              TrajectoryFeatureExtraction.TAS_ATR_NAME,
-    #                              TrajectoryFeatureExtraction.CDS_ATR_NAME
-    #                          ), seed=1
-    #                          )
+    positions_filtering_test(window_size=24, alpha=0.01,
+                             features_of_interest=(
+                                 TrajectoryFeatureExtraction.SPEEDS_ATR_NAME,
+                                 TrajectoryFeatureExtraction.CURVATURES_ATR_NAME,
+                                 TrajectoryFeatureExtraction.TAS_ATR_NAME,
+                                 TrajectoryFeatureExtraction.CDS_ATR_NAME
+                             ), seed=1
+                             )
 
-    douglass_peucker_test(30, 2, 50, 1)
+    # douglass_peucker_test(30, 2, 50, 1)
 
     # douglass_peucker_tuning([10, 20, 30], [0.5, 1, 2], [10, 30, 50], 1)
 
