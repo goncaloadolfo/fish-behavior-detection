@@ -53,10 +53,10 @@ def compare_gnb_pipelines(path_dataset, species, balance=False):
         # bar positions
         if i < nr_pipelines / 2:
             bar_positions = x_positions - bar_width * \
-                            (nr_metrics / 2 - i) + bar_width / 2
+                (nr_metrics / 2 - i) + bar_width / 2
         else:
             bar_positions = x_positions + bar_width * \
-                            (i + 1 - nr_metrics / 2) - bar_width / 2
+                (i + 1 - nr_metrics / 2) - bar_width / 2
 
         plot_metrics(results, bar_positions,
                      '+'.join(pipeline.named_steps.keys()),

@@ -47,7 +47,8 @@ def svm_tuning(dataset, param_grid):
                             best_random_state = random_state
                             best_accuracy = accuracy
 
-                    models.append((c, kernel, degree, gamma, best_random_state))
+                    models.append(
+                        (c, kernel, degree, gamma, best_random_state))
                     scores.append(best_accuracy)
 
     best_score = np.max(scores)
@@ -118,7 +119,7 @@ def svm_pipelines(dataset, svm_params):
     plt.grid()
     plt.tight_layout()
     plt.xlim(0, 1)
-    # analyze_errors(pipelines_predictions, scores, original_y, dataset)
+    analyze_errors(pipelines_predictions, scores, original_y, dataset)
 
 
 def analyze_errors(predictions, scores, true_y, dataset):

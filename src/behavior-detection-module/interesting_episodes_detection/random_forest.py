@@ -114,19 +114,20 @@ def plot_features_importance(pipelines, scores, features_description, n):
 
 
 def main():
-    # parameters_grid = {"n_estimators": [5, 10, 20],
-    #                    "criterion": ["gini", "entropy"],
-    #                    "max_depth": [5, 10, 20],
-    #                    "max_features": ["sqrt", "log2"],
-    #                    "min_samples_leaf": [3, 5, 7],
-    #                    "min_samples_split": [2, 4, 6],
-    #                    "bootstrap": [False, True],
-    #                    "random_state": [0, 1, 2, 3, 4]}
-    # random_forest_tuning("../resources/datasets/v29-dataset1.csv",
+    parameters_grid = {"n_estimators": [5, 10, 20],
+                       "criterion": ["gini", "entropy"],
+                       "max_depth": [5, 10, 20],
+                       "max_features": ["sqrt", "log2"],
+                       "min_samples_leaf": [3, 5, 7],
+                       "min_samples_split": [2, 4, 6],
+                       "bootstrap": [False, True],
+                       "random_state": [0, 1, 2, 3, 4]}
+    # random_forest_tuning("resources/datasets/v29-dataset1.csv",
     #                      ("shark", "manta-ray"), parameters_grid)
 
     # seed 1
-    random_forest_pipelines("resources/datasets/v29-dataset1.csv", ("shark", "manta-ray"),
+    random_forest_pipelines("resources/datasets/v29-dataset1.csv",
+                            ("shark", "manta-ray"),
                             {"n_estimators": 5,
                              "criterion": "entropy",
                              "max_depth": 5,
