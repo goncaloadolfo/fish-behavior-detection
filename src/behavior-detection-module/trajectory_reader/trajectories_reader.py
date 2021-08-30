@@ -221,7 +221,7 @@ def get_random_fish(fishes_file_path, seed=None):
 
 def read_trajectory_test():
     trajectories = read_detections(
-        "../resources/detections/detections-v29-sharks-mantas.txt"
+        "resources/detections/detections-v29-sharks-mantas.txt"
     )
     example_fish = list(trajectories.values())[0]
     # print(example_trajectory)

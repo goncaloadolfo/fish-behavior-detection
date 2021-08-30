@@ -452,7 +452,7 @@ def frequency_analysis(fish, regions, calculation_periods):
 
         # draw speed
         draw_time_series(fe_obj.speed_time_series, descriptions=[
-            f"Speed frequency={frequency}"])
+            f"Speed period={frequency}"])
     plt.show()
 
 
@@ -470,7 +470,7 @@ def moving_average_analysis(fish, sliding_window, alphas, regions, video_path=No
 
     # show trajectory and plot
     if video_path is not None and regions is not None:
-        trajectory_illustration("../resources/videos/v29.m4v", regions, fish)
+        trajectory_illustration("resources/videos/v29.m4v", regions, fish)
     plt.show()
 
 
@@ -575,13 +575,13 @@ def moving_average_illustration():
     alphas = [1, 0.5, 0.3, 0.1, 0.01]
 
     # get an example fish
-    fishes = read_fishes("../resources/detections/v29-fishes.json")
-    regions = read_regions("../resources/regions-example.json")
+    fishes = read_fishes("resources/detections/v29-fishes.json")
+    regions = read_regions("resources/regions-example.json")
     example_fish = random.choice(list(fishes))
 
     # analyze results
     moving_average_analysis(example_fish, sliding_window,
-                            alphas, regions, "../resources/videos/v29.m4v")
+                            alphas, regions, "resources/videos/v29.m4v")
 
 
 # endregion
@@ -593,9 +593,9 @@ if __name__ == "__main__":
     # moving_average_illustration()
 
     # dataset 1
-    # build_dataset("../resources/detections/v29-fishes.json",
-    #               "../resources/classification/species-gt-v29.csv",
-    #               "../resources/regions-example.json",
+    # build_dataset("resources/detections/v29-fishes.json",
+    #               "resources/classification/species-gt-v29.csv",
+    #               "resources/regions-example.json",
     #               1, 24, 0.3,
-    #               "../resources/datasets/v29-dataset2.csv",
+    #               "resources/datasets/v29-dataset2.csv",
     #               True)
