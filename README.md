@@ -1,7 +1,27 @@
-# Fish Behavior Detection
+# Behavior Detection Module (BDM)
 
-System that aims to detect a set of fish behaviors, focusing on sharks and manta rays: swallow air, feeding period, lack of interest and abnormal movements.
+## What is it?
 
-## Files that are not in the repository
+The Behavior Detection Module (BDM) is a library that was developed to detect fish behaviors: abnormal behaviors, interesting behaviors, feeding behaviors, and swallowing air behavior. The focus species were manta rays and sharks, so the algorithms are based on the way these species behave. It was implemented to be included in the Lisbon Oceanarium domain but the idea was to be generic enough to be integrated into other systems and species, although that the code examples use data from this oceanarium and for these species.
 
-- Video files: resources/videos
+## Main Packages - Source Structure
+
+- **trajectory_reader**: read trajectories from files; union trajectories from different source files; visualization base functions
+- **trajectory_features**: extract features from trajectories; build datasets; data exploration
+- **pre_processing**: fill gaps of trajectories; smooth trajectories; segmentation; feature vector pre-processing
+- **anomaly_detection**: detect outlier trajectories (clustering, switching vector model)
+- **feeding**: detect feeding periods (aggregation-based, motion/optical flow-based, CNN)
+- **interesting_episodes_detection**: classify trajectories that might be interesting to analyze
+- **swallow air**: detect swallow air behaviors (region-based, patterns based)
+- **labeling**: utility code to help on the labeling task (define regions, label behavior episodes, specify species information)
+- **resources**: all the data needed for the development/testing process
+
+## Documentation
+
+Work in progress. Some motivational videos:
+
+<figure class="video_container">
+  <video controls="true" allowfullscreen="true">
+    <source src="./results-summary/pre-processing/trajectory-filtering-and-segmentation/segmentation/segmentation-example.mp4" type="video/mp4">
+  </video>
+</figure>
