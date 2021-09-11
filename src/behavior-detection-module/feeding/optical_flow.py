@@ -267,7 +267,7 @@ def optical_flow_evaluation_test(resolution, region):
     confusion_matrix, error_tracker = evaluate_optical_flow(test_video1, resolution,
                                                             region, nr_points, 2.8, 30, gt_video_1)
     confusion_matrix2, error_tracker2 = evaluate_optical_flow(test_video2, resolution,
-                                                              region, nr_points, 2.8, 30, gt_video_1)
+                                                              region, nr_points, 2.8, 30, gt_video_2)
 
     # visualization
     plt.figure()
@@ -281,8 +281,8 @@ def optical_flow_evaluation_test(resolution, region):
     plt.title("Test video 2 results")
     seaborn.heatmap(confusion_matrix2.astype(np.int),
                     annot=True, cmap="YlGnBu", fmt='d')
-    error_tracker2.draw_errors_timeline(0, int(test_video1.get(cv2.CAP_PROP_POS_FRAMES)),
-                                        "Video test 2 errors")
+    error_tracker2.draw_errors_timeline(0, int(test_video2.get(cv2.CAP_PROP_POS_FRAMES)),
+                                        "Video test 2 errors", 16500)
 
     test_video1.release()
     test_video2.release()
@@ -291,13 +291,13 @@ def optical_flow_evaluation_test(resolution, region):
 
 
 def main():
-    two_frames_test((1280, 720), [(0, 1280), (0, 720)])
+    # two_frames_test((1280, 720), [(0, 1280), (0, 720)])
     # two_frames_test((1280, 720), [(0, 1280), (290, 720)])
     # time_series_test((1280, 720), [(0, 1280), (0, 720)])
     # time_series_test((1280, 720), [(0, 1280), (290, 720)])
     # optical_flow_video_test((1280, 720), [(0, 1280), (0, 720)])
     # optical_flow_evaluation_test((1280, 720), [(0, 1280), (0, 720)])
-    # optical_flow_evaluation_test((1280, 720), [(0, 1280), (290, 720)])
+    optical_flow_evaluation_test((1280, 720), [(0, 1280), (290, 720)])
 
 
 if __name__ == "__main__":
