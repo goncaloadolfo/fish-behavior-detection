@@ -1,16 +1,16 @@
-	- (0.001, None, <function sigmoid at 0x0000022CCA479558>, 'binary_crossentropy', 0.3891229125921468)
-        - (0.001, 0.2, <function sigmoid at 0x0000022CCA479558>, 'binary_crossentropy', 0.3891229125921468)
-        - (0.01, 0.2, <function relu at 0x0000022CCA4791F8>, 'binary_crossentropy', 0.3891229125921468)
-        - (0.001, None, <function relu at 0x0000022CCA4791F8>, 'mean_squared_error', 0.5981645855273056)
-        - (0.001, None, <function relu at 0x0000022CCA4791F8>, 'binary_crossentropy', 0.6108770874078532)
-        - (0.001, None, <function sigmoid at 0x0000022CCA479558>, 'mean_squared_error', 0.6108770874078532)
-        - (0.001, 0.2, <function relu at 0x0000022CCA4791F8>, 'binary_crossentropy', 0.6108770874078532)
-        - (0.001, 0.2, <function sigmoid at 0x0000022CCA479558>, 'mean_squared_error', 0.6108770874078532)
-        - (0.01, None, <function relu at 0x0000022CCA4791F8>, 'mean_squared_error', 0.6108770874078532)
-        - (0.01, None, <function relu at 0x0000022CCA4791F8>, 'binary_crossentropy', 0.6108770874078532)
-        - (0.01, None, <function sigmoid at 0x0000022CCA479558>, 'mean_squared_error', 0.6108770874078532)
-        - (0.01, None, <function sigmoid at 0x0000022CCA479558>, 'binary_crossentropy', 0.6108770874078532)
-        - (0.01, 0.2, <function relu at 0x0000022CCA4791F8>, 'mean_squared_error', 0.6108770874078532)
-        - (0.01, 0.2, <function sigmoid at 0x0000022CCA479558>, 'mean_squared_error', 0.6108770874078532)
-        - (0.01, 0.2, <function sigmoid at 0x0000022CCA479558>, 'binary_crossentropy', 0.6108770874078532)
-        - (0.001, 0.2, <function relu at 0x0000022CCA4791F8>, 'mean_squared_error', 0.6133594102602677)
+0.001, None, sigmoid, 'binary_crossentropy', 0.3891229125921468
+0.001, 0.2, sigmoid, 'binary_crossentropy', 0.3891229125921468
+0.01, 0.2, relu, 'binary_crossentropy', 0.3891229125921468
+0.001, None, relu, 'mean_squared_error', 0.5981645855273056
+0.001, None, relu, 'binary_crossentropy', 0.6108770874078532
+0.001, None, sigmoid, 'mean_squared_error', 0.6108770874078532
+0.001, 0.2, relu, 'binary_crossentropy', 0.6108770874078532
+0.001, 0.2, sigmoid, 'mean_squared_error', 0.6108770874078532
+0.01, None, relu, 'mean_squared_error', 0.6108770874078532
+0.01, None, relu, 'binary_crossentropy', 0.6108770874078532
+0.01, None, sigmoid, 'mean_squared_error', 0.6108770874078532
+0.01, None, sigmoid, 'binary_crossentropy', 0.6108770874078532
+0.01, 0.2, relu, 'mean_squared_error', 0.6108770874078532
+0.01, 0.2, sigmoid, 'mean_squared_error', 0.6108770874078532
+0.01, 0.2, sigmoid, 'binary_crossentropy', 0.6108770874078532
+0.001, 0.2, relu, 'mean_squared_error', 0.6133594102602677

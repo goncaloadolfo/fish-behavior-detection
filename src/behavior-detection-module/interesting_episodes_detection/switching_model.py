@@ -186,8 +186,8 @@ def evaluate_models():
     fishes_path = "resources/detections/v29-fishes.json"
     species_path = "resources/classification/species-gt-v29.csv"
     episodes_path = "resources/classification/v29-interesting-moments.csv"
-    normal_trajectories_model = "resources/models/normal-n16-f4-d250-a1.model"
-    interesting_trajectories_model = "resources/models/interesting-n16-f4-d250-a1.model"
+    normal_trajectories_model = "resources/models/normal-n25-f4-d125-a2.model"
+    interesting_trajectories_model = "resources/models/interesting-n25-f4-d125-a1.model"
 
     models = {
         "normal": load_model_from_file(normal_trajectories_model),
