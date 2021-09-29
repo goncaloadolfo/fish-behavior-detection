@@ -152,7 +152,7 @@ def plot_segmentation_impact(original_results, segments_results):
     plt.figure()
     plt.title("Segmentation Impact")
     plt.ylim([0, 1])
-    plt.bar(x - width/2, original_results, width, label='original')
+    plt.bar(x - width/2, original_results, width, label='whole trajectory')
     plt.bar(x + width/2, segments_results, width, label='using segmentation')
 
     plt.gca().set_xticks(x)
