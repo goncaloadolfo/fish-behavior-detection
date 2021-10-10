@@ -362,7 +362,7 @@ def mse(true_trajectory, output_trajectory, gaps):
 
 def newton_performance(trajectories_file_path, sample_points_method, degrees, gap_sizes):
     fishes = tr.read_detections(trajectories_file_path)
-    plt.figure()
+    # plt.figure()
     results = defaultdict(lambda: [])
     for gap_size in gap_sizes:
         # reuse generated gap to allow comparasion
@@ -388,8 +388,8 @@ def newton_performance(trajectories_file_path, sample_points_method, degrees, ga
     # plot it
     for degree, mses in results.items():
         simple_line_plot(plt.gca(), gap_sizes, mses,
-                         f"Newton Interpolation Performance\n{sample_points_method.__name__}", "mean MSE", "gap size",
-                         marker="o:", label=f"degree={degree}")
+                         f"Interpolation Performance", "mean MSE", "gap size",
+                         marker="o:", label=f"{sample_points_method.__name__} degree={degree}")
     plt.gca().legend()
 
 
@@ -412,9 +412,10 @@ def linear_performance(trajectories_file_path, gap_sizes):
         results.append(total_mse / len(fishes))
 
     # plot results
-    plt.figure()
+    # plt.figure()
     simple_line_plot(plt.gca(), gap_sizes, results,
-                     "Linear Interpolation Performance", "mean MSE", "gap size", "o:r")
+                     "Interpolation Performance", "mean MSE", "gap size",
+                     "o:r",  label="linear")
 
 
 # endregion
@@ -466,6 +467,56 @@ def newton_interpolation_test():
     cv2.destroyAllWindows()
 
 
+def interpolation_methods_comparasion():
+    # read trajectories and choose an example one
+    trajectories = tr.read_detections(
+        "resources/detections/detections-v29-sharks-mantas.txt"
+    )
+    example_fish = list(trajectories.values())[0]
+
+    # generate a gap
+    trajectory_with_gap, gap_interval = simulate_gap(example_fish, 20)
+    frame = draw_trajectory(example_fish.trajectory, (480, 720), (0, 0, 0))
+
+    # fill gaps with the different approaches
+    trajectory_linear = trajectory_with_gap.copy()
+    trajectory_newton_equidistant = trajectory_with_gap.copy()
+    trajectory_newton_near = trajectory_with_gap.copy()
+
+    fill_gaps_linear(trajectory_linear, None)
+    fill_gaps_newton(
+        trajectory_newton_equidistant, 5, equidistant_interpolation_points
+    )
+    fill_gaps_newton(
+        trajectory_newton_near, 5, near_interpolation_points
+    )
+
+    # plot predicted trajectory
+    ts = [point[0] for point in trajectory_linear]
+    xs_linear = [point[1] for point in trajectory_linear]
+    xs_newton_equidistant = [point[1]
+                             for point in trajectory_newton_equidistant]
+    xs_newton_near = [point[1] for point in trajectory_newton_near]
+
+    plt.figure()
+    simple_line_plot(plt.gca(), ts, xs_linear,
+                     "Interpolation Example", "x position", "t",
+                     label="linear")
+    simple_line_plot(plt.gca(), ts, xs_newton_equidistant,
+                     "Interpolation Example", "x position", "t",
+                     label="newton with equidistant points")
+    simple_line_plot(plt.gca(), ts, xs_newton_near,
+                     "Interpolation Example", "x position", "t",
+                     label="newton with nearest points")
+
+    plt.scatter(gap_interval[0], xs_linear[ts.index(
+        gap_interval[0])], s=10, c="r", marker="o")
+    plt.scatter(gap_interval[1], xs_linear[ts.index(
+        gap_interval[1])], s=10, c="r", marker="o")
+    plt.legend()
+    plt.show()
+
+
 def draw_estimation_test():
     # read trajectories and choose an example one
     trajectories = tr.read_detections(
@@ -491,22 +542,23 @@ def draw_estimation_test():
 
 def evaluation_test():
     # evaluation results of the different methods
-    seed(33)
+    seed(99)
     linear_performance(
         "resources/detections/detections-v29-sharks-mantas.txt",
-        range(1, 30, 3)
+        range(1, 10, 2)
     )
     newton_performance("resources/detections/detections-v29-sharks-mantas.txt",
                        equidistant_interpolation_points,
-                       [4, 5, 6], range(1, 10, 2))
+                       [5], range(1, 10, 2))
     newton_performance("resources/detections/detections-v29-sharks-mantas.txt",
                        near_interpolation_points,
-                       [4, 5, 6], range(1, 10, 1))
+                       [5], range(1, 10, 1))
     plt.show()
 
 
 if __name__ == "__main__":
-    linear_interpolation_test()
+    # linear_interpolation_test()
     # newton_interpolation_test()
+    # interpolation_methods_comparasion()
     # draw_estimation_test()
-    # evaluation_test()
+    evaluation_test()
