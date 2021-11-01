@@ -291,13 +291,13 @@ def optical_flow_evaluation_test(resolution, region):
 
 
 def main():
-    # two_frames_test((1280, 720), [(0, 1280), (0, 720)])
+    two_frames_test((1280, 720), [(0, 1280), (0, 720)])
     # two_frames_test((1280, 720), [(0, 1280), (290, 720)])
     # time_series_test((1280, 720), [(0, 1280), (0, 720)])
     # time_series_test((1280, 720), [(0, 1280), (290, 720)])
     # optical_flow_video_test((1280, 720), [(0, 1280), (0, 720)])
     # optical_flow_evaluation_test((1280, 720), [(0, 1280), (0, 720)])
-    optical_flow_evaluation_test((1280, 720), [(0, 1280), (290, 720)])
+    # optical_flow_evaluation_test((1280, 720), [(0, 1280), (290, 720)])
 
 
 if __name__ == "__main__":

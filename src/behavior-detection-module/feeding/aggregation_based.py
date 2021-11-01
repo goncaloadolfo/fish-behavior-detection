@@ -289,7 +289,7 @@ def delaunay_test(vertical_range, logging_level=logging.DEBUG, show=True):
 
 
 def delaunay_real_data_test(video_path, detections_path, resolution):
-    # random.seed(4)
+    random.seed(5)
     feeding_baseline_logger.setLevel(logging.DEBUG)
 
     # read GT and video file
@@ -380,12 +380,12 @@ def mesh_calculation_errors_test():
 
 def main():
     # random.seed(0)
-    delaunay_test((1, 480))  # triangular mesh
+    # delaunay_test((1, 480))  # triangular mesh
     # delaunay_test((200, 240))  # line
     # delaunay_real_data_test("resources/videos/v37.m4v",
     #                         "resources/detections/detections-v37.txt", (720, 480))
-    # delaunay_real_data_test("resources/videos/GP011844_Trim.mp4",
-    #                         "resources/detections/GP011844_Trim_gt.txt", (1920, 1440))
+    delaunay_real_data_test("resources/videos/GP011844_Trim.mp4",
+                            "resources/detections/GP011844_Trim_gt.txt", (1920, 1440))
     # delaunay_real_data_test("resources/videos/v29.m4v",
     #                         "resources/detections/detections-v29-sharks-mantas.txt", (720, 480))
     # fiffb_analysis_test("resources/detections/detections-v37.txt")

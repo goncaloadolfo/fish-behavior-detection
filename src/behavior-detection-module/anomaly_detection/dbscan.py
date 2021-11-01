@@ -225,8 +225,8 @@ def main():
     # dbscan_tuning(dataset, species, [5, 7, 9],
     #               np.arange(7, 13, 2), "euclidean", pipelines[2][:-1])
 
-    # dbscan_tuning(dataset, species, [5, 7, 9],
-    #               np.arange(19, 42, 5), "manhattan",  pipelines[3][:-1])
+    dbscan_tuning(dataset, species, [5, 7, 9],
+                  np.arange(19, 42, 5), "manhattan",  pipelines[3][:-1])
     # dbscan_tuning(dataset, species, [5, 7, 9],
     #               np.arange(4.5, 10.5, 1.2), "euclidean", pipelines[3][:-1])
 
@@ -235,10 +235,10 @@ def main():
     # dbscan_tuning(dataset, species, [5, 7, 9],
     #               np.arange(8, 14, 1.4), "euclidean", pipelines[4][:-1])
 
-    # apply_dbscan(video_path, fishes, dataset, species, 5, 29,
-    #              "manhattan", pipelines[3][:-1])
-    apply_dbscan(video_path, fishes, dataset, species, 7, 11,
-                 "euclidean", pipelines[2][:-1])
+    apply_dbscan(video_path, fishes, dataset, species, 5, 29,
+                 "manhattan", pipelines[3][:-1])
+    # apply_dbscan(video_path, fishes, dataset, species, 7, 11,
+    #              "euclidean", pipelines[2][:-1])
     plt.show()
     cv2.destroyAllWindows()
 

@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import seaborn
 from sklearn.model_selection._split import train_test_split
+import tensorflow as tf
 
 from feeding.utils import ErrorTracker
 
@@ -22,6 +23,13 @@ LEARNING_RATE = "learning-rate"
 DROPOUT_RATE = "dropout-rate"
 ACTIVATION_FUNCTION = "activation-function"
 LOSS_FUNCTION = "loss-function"
+
+
+def set_seed(seed):
+    os.environ['PYTHONHASHSEED'] = str(seed)
+    tf.random.set_seed(seed)
+    np.random.seed(seed)
+    random.seed(seed)
 
 
 def build_dataset(videos, ground_truth, resize_resolution,
@@ -492,15 +500,63 @@ def tuning_results():
                                     surface_data[0], surface_data[1])
 
 
+def evaluation():
+    set_seed(7)
+    data = read_dataset("./resources/datasets/feeding-dataset/train-samples/",
+                        "./resources/datasets/feeding-dataset/test-samples/")
+    model = define_custom_layers(1, 2, 120, 5, 0.001, None,
+                                 relu, "mean_squared_error")
+
+    # set_seed(0)
+    # data = read_dataset(
+    #     "./resources/datasets/feeding-surface-dataset/train-samples/",
+    #     "./resources/datasets/feeding-surface-dataset/test-samples/"
+    # )
+    # model = define_custom_layers(1, 2, 120, 5, 0.001, 0.2,
+    #                              relu, "mean_squared_error")
+
+    # set_seed(7)
+    # bottom_data = read_dataset("./resources/datasets/feeding-dataset/train-samples/",
+    #                            "./resources/datasets/feeding-dataset/test-samples/")
+    # gopro_bottom_data = read_dataset(
+    #     "./resources/datasets/gopro-feeding-dataset/train-samples/",
+    #     "./resources/datasets/gopro-feeding-dataset/test-samples/"
+    # )
+    # x_train = np.vstack((bottom_data[0][0], bottom_data[1][0]))
+    # y_train = np.hstack((bottom_data[0][1], bottom_data[1][1]))
+    # x_test = np.vstack((gopro_bottom_data[0][0], gopro_bottom_data[1][0]))
+    # y_test = np.hstack((gopro_bottom_data[0][1], gopro_bottom_data[1][1]))
+    # model = define_custom_layers(1, 2, 120, 5, 0.001, None,
+    #                              relu, "mean_squared_error")
+
+    plot_class_balance(data)
+    train_data = data[0]
+    test_data = data[1]
+
+    # train
+    model.summary()
+    x_train, y_train = train_data
+    x_test, y_test = test_data
+    training_history = model.fit(x_train, y_train, epochs=10, batch_size=40)
+
+    # evaluate
+    training_plots(training_history)
+    model_evaluation(model, x_test, y_test)
+
+    plt.show()
+
+
 def main():
     # datasets
     # build_datasets()
 
     # baseline results for the different datasets
-    baseline_results()
+    # baseline_results()
 
     # tuning
     # tuning_results()
+
+    evaluation()
 
 
 if __name__ == '__main__':

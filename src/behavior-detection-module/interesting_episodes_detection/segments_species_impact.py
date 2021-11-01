@@ -34,7 +34,7 @@ def check_segmentation_impact(model, data, fishes_path, regions_path, episodes_p
     # predictions using segments
     nr_samples = len(x)
     if apply_balance:
-        x, y = SMOTE().fit_resample(x, y)
+        x, y = SMOTE(random_state=0).fit_resample(x, y)
     print("samples shape (after balance): ", x.shape)
     print("gt shape (after balance): ", len(y))
     predictions = holdout_prediction(model, x, y)
@@ -71,7 +71,7 @@ def check_model_by_species_impact(model, dataset_path, apply_balance):
 
         # predictions
         if apply_balance:
-            x, y = SMOTE().fit_resample(x, y)
+            x, y = SMOTE(random_state=0).fit_resample(x, y)
         predictions = holdout_prediction(model, x, y)
 
         # extract metrics
@@ -104,10 +104,10 @@ def segments_dataset(fishes, regions_path, episodes_path,
 
         for segment in fish_segments:
             segment_size = len(segment.trajectory)
-            print("segment len: ", segment_size)
 
             # at least segments of more less 1 sec
             if segment_size > 30:
+                print("segment len: ", segment_size)
                 # extract features
                 _, segment_features_vector = extract_features(
                     segment, regions, 1, 24, 0.01).get_feature_vector()
@@ -150,14 +150,14 @@ def plot_segmentation_impact(original_results, segments_results):
     width = 0.35
 
     plt.figure()
-    plt.title("Segmentation Impact")
+    plt.title("Segmentation Impact", fontsize=14)
     plt.ylim([0, 1])
     plt.bar(x - width/2, original_results, width, label='whole trajectory')
     plt.bar(x + width/2, segments_results, width, label='using segmentation')
 
     plt.gca().set_xticks(x)
-    plt.gca().set_xticklabels(labels)
-    plt.legend()
+    plt.gca().set_xticklabels(labels, fontsize=14)
+    plt.legend(fontsize=14)
 
 
 def plot_model_by_species_results(cases_metric_results):
@@ -167,7 +167,7 @@ def plot_model_by_species_results(cases_metric_results):
     width = 0.2
 
     plt.figure()
-    plt.title("Model by Species Impact")
+    plt.title("Model by Species Impact", fontsize=14)
     plt.ylim([0, 1])
 
     counter = 1
@@ -185,8 +185,8 @@ def plot_model_by_species_results(cases_metric_results):
         counter += 1
 
     plt.gca().set_xticks(x)
-    plt.gca().set_xticklabels(labels)
-    plt.legend()
+    plt.gca().set_xticklabels(labels, fontsize=14)
+    plt.legend(fontsize=14)
 
 
 def setup_svm_pipeline():
@@ -229,8 +229,8 @@ def models_by_species_impact():
 
 
 def main():
-    segmentation_performance_impact()
-    # models_by_species_impact()
+    # segmentation_performance_impact()
+    models_by_species_impact()
 
 # endregion
 

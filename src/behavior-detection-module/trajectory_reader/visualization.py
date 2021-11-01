@@ -12,16 +12,16 @@ def simple_line_plot(ax, xs, ys, title, ylabel, xlabel, marker='-', label=None):
     """
     Draws a line plot on the received axes.
     """
-    ax.set_title(title)
-    ax.set_ylabel(ylabel)
-    ax.set_xlabel(xlabel)
+    ax.set_title(title, fontsize=14)
+    ax.set_ylabel(ylabel, fontsize=14)
+    ax.set_xlabel(xlabel, fontsize=14)
     ax.plot(xs, ys, marker, label=label)
 
 
 def simple_bar_chart(ax, xs, ys, title, ylabel, xlabel, label=None, width=0.8):
-    ax.set_title(title)
-    ax.set_ylabel(ylabel)
-    ax.set_xlabel(xlabel)
+    ax.set_title(title, fontsize=14)
+    ax.set_ylabel(ylabel, fontsize=14)
+    ax.set_xlabel(xlabel, fontsize=14)
     ax.bar(xs, ys, align="center", label=label, width=width)
 
 
@@ -59,14 +59,19 @@ def histogram2d(ax, values, values2, title, ylabel, xlabel, bins_range, colormap
 
         for row in range(counts.shape[0]):
             for col in range(counts.shape[1]):
-                text_position = (int(binsx[row] + x_interval / 2), int(binsy[col] + y_interval / 2))
+                text_position = (
+                    int(binsx[row] + x_interval / 2), int(binsy[col] + y_interval / 2))
                 cell_count = int(counts[row, col])
-                ax.text(text_position[0], text_position[1], cell_count, color="black", ha="center", va="center")
+                ax.text(text_position[0], text_position[1],
+                        cell_count, color="black", ha="center", va="center")
 
                 if frame is not None:
-                    color = cmap((cell_count - min_value) / (max_value - min_value))
-                    bgr = (int(color[2] * 255), int(color[1] * 255.0), int(color[0] * 255.0))
-                    cv2.putText(frame, str(cell_count), text_position, cv2.FONT_HERSHEY_COMPLEX, 0.5, bgr, thickness=2)
+                    color = cmap((cell_count - min_value) /
+                                 (max_value - min_value))
+                    bgr = (int(color[2] * 255), int(color[1]
+                                                    * 255.0), int(color[0] * 255.0))
+                    cv2.putText(frame, str(cell_count), text_position,
+                                cv2.FONT_HERSHEY_COMPLEX, 0.5, bgr, thickness=2)
 
     return counts, binsx, binsy, quad_image, frame
 
@@ -154,7 +159,8 @@ def draw_position_plots(trajectory, gap_interval, interpolation_points, with_gap
         ys.insert(gap_interval[0] + 1, np.nan)
 
     return plot_variation(ts, xs, "X Position", "x value", "frame", interpolation_points), \
-           plot_variation(ts, ys, "Y Position", "y value", "frame", interpolation_points)
+        plot_variation(ts, ys, "Y Position", "y value",
+                       "frame", interpolation_points)
 
 
 def show_trajectory(video_path, fish, estimated_trajectory, simulated_gaps,

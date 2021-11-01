@@ -262,7 +262,7 @@ def v29_all_species():
 
     # tuning
     model_tunning(input_data, ks=range(2, 33), max_steps=300, n_init=10)
-    best_seed(input_data, n=10000, k=7, max_steps=300)
+    # best_seed(input_data, n=10000, k=7, max_steps=300)
 
     # evaluation
     model, resulting_clusters = evaluate_model(input_data, k=7,

@@ -468,6 +468,8 @@ def newton_interpolation_test():
 
 
 def interpolation_methods_comparasion():
+    np.random.seed(7)
+    seed(7)
     # read trajectories and choose an example one
     trajectories = tr.read_detections(
         "resources/detections/detections-v29-sharks-mantas.txt"
@@ -488,7 +490,7 @@ def interpolation_methods_comparasion():
         trajectory_newton_equidistant, 5, equidistant_interpolation_points
     )
     fill_gaps_newton(
-        trajectory_newton_near, 5, near_interpolation_points
+        trajectory_newton_near, 2, near_interpolation_points
     )
 
     # plot predicted trajectory
@@ -513,7 +515,7 @@ def interpolation_methods_comparasion():
         gap_interval[0])], s=10, c="r", marker="o")
     plt.scatter(gap_interval[1], xs_linear[ts.index(
         gap_interval[1])], s=10, c="r", marker="o")
-    plt.legend()
+    plt.legend(fontsize=14)
     plt.show()
 
 

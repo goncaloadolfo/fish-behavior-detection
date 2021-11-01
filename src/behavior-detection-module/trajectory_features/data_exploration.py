@@ -316,7 +316,7 @@ def v29_episodes_analysis(species):
 
 
 if __name__ == "__main__":
-    v29_analysis("resources/datasets/v29-dataset1.csv")
+    # v29_analysis("resources/datasets/v29-dataset1.csv")
     # v29_episodes_analysis(("shark", "manta-ray"))
     # v29_episodes_analysis(("shark", ))
     # v29_episodes_analysis(("manta-ray", ))
@@ -325,9 +325,9 @@ if __name__ == "__main__":
     #                                 "resources/classification/species-gt-v29.csv",
     #                                 ("shark", "manta-ray"),
     #                                 "resources/videos/v29.m4v")
-    # analyze_trajectories_by_species("resources/detections/v29-fishes.json",
-    #                                 "resources/classification/species-gt-v29.csv",
-    #                                 ("shark", "manta-ray"),
-    #                                 "resources/videos/v29.m4v", True)
+    analyze_trajectories_by_species("resources/detections/v29-fishes.json",
+                                    "resources/classification/species-gt-v29.csv",
+                                    ("shark", "manta-ray"),
+                                    "resources/videos/v29.m4v", True)
     plt.show()
     cv2.destroyAllWindows()

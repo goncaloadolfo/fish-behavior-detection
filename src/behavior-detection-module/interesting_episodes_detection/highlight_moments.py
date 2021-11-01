@@ -209,7 +209,7 @@ def _search_moments_regions(trajectory, regions_time_series, pass_by_results, ru
 
 
 def highlight_moments_test(rules):
-    # random.seed(10000)
+    random.seed(10000)
     fishes = list(tr.read_fishes("resources/detections/v29-fishes.json"))
     fishes.sort(key=lambda x: x.fish_id)
     regions = read_regions("resources/regions-example.json")

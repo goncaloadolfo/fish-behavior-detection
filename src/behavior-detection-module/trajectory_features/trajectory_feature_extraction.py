@@ -552,6 +552,7 @@ def read_dataset(dataset_file_path):
 
 # region experiences
 def analyze_trajectory_demo():
+    np.random.seed(77)
     fishes = read_fishes("resources/detections/v29-fishes.json")
     regions = read_regions("resources/regions-example.json")
     analyze_trajectory("resources/videos/v29.m4v",
@@ -570,6 +571,7 @@ def frequency_impact_demo():
 
 
 def moving_average_illustration():
+    np.random.seed(7)
     # sliding window and alphas
     sliding_window = 24
     alphas = [1, 0.5, 0.3, 0.1, 0.01]
@@ -588,8 +590,8 @@ def moving_average_illustration():
 
 
 if __name__ == "__main__":
-    analyze_trajectory_demo()
-    # frequency_impact_demo()
+    # analyze_trajectory_demo()
+    frequency_impact_demo()
     # moving_average_illustration()
 
     # dataset 1
