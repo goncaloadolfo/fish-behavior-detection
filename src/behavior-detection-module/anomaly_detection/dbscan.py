@@ -25,6 +25,23 @@ from trajectory_reader.visualization import (draw_trajectory, histogram,
 
 def apply_dbscan(video_path, fishes_dataset, dataset, species, min_samples, epsilon,
                  metric, dp_pipeline, show_feature_diffs=False):
+    """
+    1. Load the fishes in a features vector format
+    2. Apply DBScan algorithm
+    3. Analyze output labels: distribution, main features, video segments
+
+    Args:
+        video_path (str): path to the video file
+        fishes_dataset (str): path to the trajectories file
+        dataset (str): path to the features vector format file
+        species (str): path to the species ground truth file
+        min_samples (int): DBScan min_samples parameter
+        epsilon (float): epsilon DBScan parameter
+        metric (str): distance metric
+        dp_pipeline (list): pre-processing nodes
+        show_feature_diffs (bool, optional): plot significant features for each cluster. 
+            Defaults to False.
+    """
     x, y, feature_descriptions = load_data(dataset, species)
     for _, dp_node in dp_pipeline:
         x = dp_node.fit_transform(x, y)
@@ -85,6 +102,18 @@ def apply_dbscan(video_path, fishes_dataset, dataset, species, min_samples, epsi
 
 
 def dbscan_tuning(dataset, species, min_samples, epsilons, metric, data_preparation_pipeline):
+    """
+    Plot of the silhouette value and the number of outliers detected 
+    for different parameters of the DBScan algorithm: epsilon + min samples.
+
+    Args:
+        dataset (str): path to the features vector format file
+        species (str): path to the species ground truth file
+        min_samples ([int]): list of min_samples parameter values
+        epsilons ([float]): list of epsilon parameter values
+        metric (str): distance metric
+        data_preparation_pipeline (list): pre-processing nodes
+    """
     x, y, _ = load_data(dataset, species)
     for _, dp_node in data_preparation_pipeline:
         x = dp_node.fit_transform(x, y)

@@ -123,11 +123,12 @@ def plot_magnitudes_time_series(magnitudes_time_series, feeding_period=None,
     plt.plot(magnitudes_time_series, label="normal")
 
     # feeding period
-    start_index = int(feeding_period[0]/30)
-    end_index = int(feeding_period[1]/30)
-    plt.plot(range(start_index, end_index),
-             magnitudes_time_series[start_index: end_index],
-             label="feeding")
+    if feeding_period is not None:
+        start_index = int(feeding_period[0]/30)
+        end_index = int(feeding_period[1]/30)
+        plt.plot(range(start_index, end_index),
+                 magnitudes_time_series[start_index: end_index],
+                 label="feeding")
     plt.legend()
 
 
@@ -231,14 +232,14 @@ def two_frames_test(resolution, region):
 # region imperative/tests code
 def time_series_test(resolution, region):
     # settings
-    video_capture = cv2.VideoCapture("resources/videos/feeding-v1-trim.mp4")
+    video_capture = cv2.VideoCapture("resources/videos/feeding-v2.mp4")
     nr_points = (30, 15)
 
     # time series
     magnitudes_time_series = average_magnitude_timeseries(video_capture, region,
                                                           nr_points, resolution)
     plot_magnitudes_time_series(
-        magnitudes_time_series, (5400, 9067), smooth=True)
+        magnitudes_time_series, smooth=True)
     plt.show()
 
 
@@ -291,9 +292,9 @@ def optical_flow_evaluation_test(resolution, region):
 
 
 def main():
-    two_frames_test((1280, 720), [(0, 1280), (0, 720)])
+    # two_frames_test((1280, 720), [(0, 1280), (0, 720)])
     # two_frames_test((1280, 720), [(0, 1280), (290, 720)])
-    # time_series_test((1280, 720), [(0, 1280), (0, 720)])
+    time_series_test((1280, 720), [(0, 1280), (0, 720)])
     # time_series_test((1280, 720), [(0, 1280), (290, 720)])
     # optical_flow_video_test((1280, 720), [(0, 1280), (0, 720)])
     # optical_flow_evaluation_test((1280, 720), [(0, 1280), (0, 720)])

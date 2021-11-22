@@ -8,6 +8,17 @@ from trajectory_reader.visualization import simple_line_plot
 
 
 def identify_outlier_clusters(cluster_labels, percentage_thr):
+    """
+    Identify which clusters are outlier clusters, from a minimal percentage 
+    of samples relative to the total number of samples.
+
+    Args:
+        cluster_labels (array): label of each cluster
+        percentage_thr (array): percentage threshold
+
+    Returns:
+        set: labels of outlier clusters
+    """
     # count number of samples in each cluster
     n_total = len(cluster_labels)
     labels, counts = np.unique(cluster_labels, return_counts=True)
@@ -26,6 +37,14 @@ def identify_outlier_clusters(cluster_labels, percentage_thr):
 
 
 def outliers_thr_analysis(labels, thrs):
+    """
+    Draws a line plot with the variation in the number of 
+    outliers detected depending on the defined percentage threshold.
+
+    Args:
+        labels (array): label of each cluster
+        thrs (list): list of percentage thresholds
+    """
     # count how many outlier samples are identified using different thresholds
     outliers_found = []
     for thr in thrs:
@@ -42,6 +61,15 @@ def outliers_thr_analysis(labels, thrs):
 
 
 def visualize_outlier_trajectories(video_path, fishes, labels, thr):
+    """
+    Show the video segment of the fish considered as outlier.
+
+    Args:
+        video_path (str): path to the video file
+        fishes (list): list of fish instances
+        labels (array): output clustering labels 
+        thr (float): outlier percentage threshold
+    """
     # detect outlier clusters
     outlier_labels = identify_outlier_clusters(labels, thr)
 
@@ -56,6 +84,17 @@ def visualize_outlier_trajectories(video_path, fishes, labels, thr):
 
 
 def most_different_features(centroid, remaining_centroids, feature_descriptions):
+    """
+    Identify the most characterizing features of a given cluster.
+
+    Args:
+        centroid (array): cluster centroid
+        remaining_centroids ([array]): other centroids
+        feature_descriptions ([str]): feature description of each dimension
+
+    Returns:
+        [float]: difference value for each feature
+    """
     # mean difference
     differences = np.array([np.abs(centroid - remaining_centroid)
                             for remaining_centroid in remaining_centroids])
