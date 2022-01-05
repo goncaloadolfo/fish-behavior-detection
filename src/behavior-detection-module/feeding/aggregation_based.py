@@ -193,13 +193,18 @@ def detections_at_t(fishes, t):
 
 
 def analyze_fiffb(gt_path, initial_t, final_t):
+    # fish objs for a given video ground truth
     fishes = read_detections(gt_path).values()
     ts = range(initial_t, final_t + 1)
+
+    # aggregation calculation obj
     fiffbs = []
-    feeding_baseline_obj = FeedingBaseline(mesh_thr=50)
+    feeding_baseline_obj = FeedingBaseline(mesh_thr=0)
+
     for t in ts:
         # get positions of the fishes at that instant
         _, positions = detections_at_t(fishes, t)
+
         # calculate aggregation index
         feeding_baseline_obj.reset()
         feeding_baseline_obj.set_positions(positions)
@@ -211,8 +216,10 @@ def analyze_fiffb(gt_path, initial_t, final_t):
         if t % 500 == 0:
             feeding_baseline_logger.info(
                 f"Calculating FIFFB frame {t}/{final_t}")
+
     feeding_baseline_logger.info(
         f"Calculating FIFFB frame {final_t}/{final_t}")
+
     # plot results
     plt.figure()
     fiffbs = fiffbs[::30]
@@ -221,6 +228,8 @@ def analyze_fiffb(gt_path, initial_t, final_t):
                                                             exponential_weights(24, 0.1,
                                                                                 forward_only=True))
     simple_line_plot(plt.gca(), ts, fiffbs, "Aggregation Index", "FIFFB", "t")
+
+    return fishes
 
 
 def fiffb_time_series(fishes, initial_t, final_t):
@@ -251,6 +260,42 @@ def fiffb_time_series(fishes, initial_t, final_t):
                     meshes[t] = np.array(feeding_baseline_obj.mesh).tolist()
 
     return fiffbs, meshes, outliers
+
+
+def calculate_confusion_matrix(fishes, initial_t, final_t, aggregation_thr, is_feeding):
+    # resulting confusion matrix
+    confusion_matrix = np.zeros((2, 2))
+
+    # aggregation calculation obj
+    feeding_baseline_obj = FeedingBaseline(mesh_thr=0)
+
+    # timestamps of interest
+    ts = range(initial_t, final_t + 1)
+    is_feeding_int = int(is_feeding)
+
+    for t in ts:
+        # centroids of the detected fish for that timestamp
+        _, positions = detections_at_t(fishes, t)
+
+        # enough positions for the triangulation
+        if len(positions) >= 3:
+            # calculate flocking value
+            feeding_baseline_obj.reset()
+            feeding_baseline_obj.set_positions(positions)
+            feeding_baseline_obj.predict()
+            aggregation_value = feeding_baseline_obj.flocking_index
+
+            # frame classification
+            prediction = 0 if aggregation_value >= aggregation_thr else 1
+
+        # otherwise considered to not being aggregated
+        else:
+            prediction = 0
+
+        # update confusion matrix
+        confusion_matrix[is_feeding_int][prediction] += 1
+
+    return confusion_matrix
 
 
 def delaunay_test(vertical_range, logging_level=logging.DEBUG, show=True):
@@ -378,14 +423,55 @@ def mesh_calculation_errors_test():
     )
 
 
+def evaluate_aggregation_method():
+    # video paths
+    normal_period_detections_path = ""
+    feeding_period_detections_path = ""
+
+    # draw aggregation index timeseries
+    normal_period_fish = analyze_fiffb(
+        normal_period_detections_path, 0, 6400
+    )
+    feeding_period_fish = analyze_fiffb(
+        feeding_period_detections_path, 0, 6400
+    )
+    plt.show()
+
+    # evaluation - confusion matrix
+    normal_period_confusion_matrix = calculate_confusion_matrix(
+        normal_period_fish, 0, 0, 0, False
+    )
+    feeding_period_confusion_matrix = calculate_confusion_matrix(
+        feeding_period_fish, 0, 0, 0, True
+    )
+    global_confusion_matrix = normal_period_confusion_matrix + \
+        feeding_period_confusion_matrix
+
+    # accuracy/precision/recall
+    tn = global_confusion_matrix[0][0]
+    tp = global_confusion_matrix[1][1]
+    fp = global_confusion_matrix[0][1]
+    fn = global_confusion_matrix[1][0]
+
+    acc = (tp + tn) / (tn + tp + fp + fn)
+    precision = tp / (tp + fp)
+    recall = tp / (tp + fn)
+
+    # print results
+    print("confusion matrix", global_confusion_matrix)
+    print("accuracy", acc)
+    print("precision", precision)
+    print("recall", recall)
+
+
 def main():
     # random.seed(0)
     # delaunay_test((1, 480))  # triangular mesh
     # delaunay_test((200, 240))  # line
     # delaunay_real_data_test("resources/videos/v37.m4v",
     #                         "resources/detections/detections-v37.txt", (720, 480))
-    delaunay_real_data_test("resources/videos/GP011844_Trim.mp4",
-                            "resources/detections/GP011844_Trim_gt.txt", (1920, 1440))
+    # delaunay_real_data_test("resources/videos/GP011844_Trim.mp4",
+    #                         "resources/detections/GP011844_Trim_gt.txt", (1920, 1440))
     # delaunay_real_data_test("resources/videos/v29.m4v",
     #                         "resources/detections/detections-v29-sharks-mantas.txt", (720, 480))
     # fiffb_analysis_test("resources/detections/detections-v37.txt")
@@ -393,6 +479,7 @@ def main():
     # fiffb_analysis_test(
     #     "resources/detections/detections-v29-sharks-mantas.txt")
     # mesh_calculation_errors_test()
+    evaluate_aggregation_method()
 
 
 if __name__ == "__main__":
