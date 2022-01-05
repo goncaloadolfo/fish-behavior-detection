@@ -209,7 +209,7 @@ def analyze_fiffb(gt_path, initial_t, final_t):
         feeding_baseline_obj.reset()
         feeding_baseline_obj.set_positions(positions)
         feeding_baseline_obj.predict()
-        fiffbs.append(feeding_baseline_obj.flocking_index
+        fiffbs.append(feeding_baseline_obj.flocking_index / len(positions)
                       if feeding_baseline_obj.flocking_index != -1
                       else np.nan
                       )
@@ -221,7 +221,6 @@ def analyze_fiffb(gt_path, initial_t, final_t):
         f"Calculating FIFFB frame {final_t}/{final_t}")
 
     # plot results
-    plt.figure()
     fiffbs = fiffbs[::30]
     ts = ts[::30]
     TrajectoryFeatureExtraction.exponential_sliding_average(fiffbs, 24,
@@ -283,7 +282,8 @@ def calculate_confusion_matrix(fishes, initial_t, final_t, aggregation_thr, is_f
             feeding_baseline_obj.reset()
             feeding_baseline_obj.set_positions(positions)
             feeding_baseline_obj.predict()
-            aggregation_value = feeding_baseline_obj.flocking_index
+            aggregation_value = feeding_baseline_obj.flocking_index / \
+                len(positions)
 
             # frame classification
             prediction = 0 if aggregation_value >= aggregation_thr else 1
@@ -425,24 +425,24 @@ def mesh_calculation_errors_test():
 
 def evaluate_aggregation_method():
     # video paths
-    normal_period_detections_path = ""
-    feeding_period_detections_path = ""
+    normal_period_detections_path = "resources/detections/feeding-v4-normal-period-gt.txt"
+    feeding_period_detections_path = "resources/detections/feeding-v4-feeding-period-gt.txt"
 
     # draw aggregation index timeseries
     normal_period_fish = analyze_fiffb(
-        normal_period_detections_path, 0, 6400
+        normal_period_detections_path, 4404, 5404
     )
     feeding_period_fish = analyze_fiffb(
-        feeding_period_detections_path, 0, 6400
+        feeding_period_detections_path, 4500, 5500
     )
     plt.show()
 
     # evaluation - confusion matrix
     normal_period_confusion_matrix = calculate_confusion_matrix(
-        normal_period_fish, 0, 0, 0, False
+        normal_period_fish, 0, 4404, 1500, False
     )
     feeding_period_confusion_matrix = calculate_confusion_matrix(
-        feeding_period_fish, 0, 0, 0, True
+        feeding_period_fish, 0, 4500, 1500, True
     )
     global_confusion_matrix = normal_period_confusion_matrix + \
         feeding_period_confusion_matrix
@@ -475,7 +475,7 @@ def main():
     # delaunay_real_data_test("resources/videos/v29.m4v",
     #                         "resources/detections/detections-v29-sharks-mantas.txt", (720, 480))
     # fiffb_analysis_test("resources/detections/detections-v37.txt")
-    # fiffb_analysis_test("resources/detections/GP011844_Trim_gt.txt")
+    # fiffb_analysis_test("resources/detections/feeding-v4-feeding-period-gt.txt")
     # fiffb_analysis_test(
     #     "resources/detections/detections-v29-sharks-mantas.txt")
     # mesh_calculation_errors_test()

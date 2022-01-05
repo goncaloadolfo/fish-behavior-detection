@@ -160,27 +160,27 @@ def analyze_training_results(video_capture, motion_thr, feeding_thr, duration,
     # plot motion timeseries - original and smoothed
     x = np.arange(1, video_capture.get(cv2.CAP_PROP_FRAME_COUNT)) / 30.0
     plt.figure()
-    plt.title("Motion Variance")
-    plt.xlabel("t(s)")
-    plt.ylabel("motion level")
+    plt.title("Motion Variance", fontsize=14)
+    plt.xlabel("t(s)", fontsize=14)
+    plt.ylabel("motion level", fontsize=14)
     x = x[::30]
 
     plt.plot(x, y, label="original")
     plt.plot(x, smoothed_y, label="smooth")
-    plt.legend()
+    plt.legend(fontsize=14)
 
     plt.figure()
-    plt.title("Number of Active Pixels")
-    plt.ylabel("counts")
-    plt.xlabel("#active pixels")
+    plt.title("Number of Active Pixels", fontsize=14)
+    plt.ylabel("counts", fontsize=14)
+    plt.xlabel("#active pixels", fontsize=14)
     plt.hist(smoothed_y)
 
     # plot feeding results
     if show_feeding_results:
         plt.figure()
-        plt.title("Feeding Periods")
-        plt.ylabel("motion level")
-        plt.xlabel("t(s)")
+        plt.title("Feeding Periods", fontsize=14)
+        plt.ylabel("motion level", fontsize=14)
+        plt.xlabel("t(s)", fontsize=14)
         plt.plot(x, smoothed_y)
 
         for t_initial, t_final in feeding_warnings:
@@ -189,7 +189,7 @@ def analyze_training_results(video_capture, motion_thr, feeding_thr, duration,
             plt.plot(x[start_index: end_index+1],
                      smoothed_y[start_index: end_index+1],
                      label="feeding period")
-        plt.legend()
+        plt.legend(fontsize=14)
 
     # example motion frames
     if show_frames:
@@ -272,10 +272,10 @@ def evaluation_results_test(region, feeding_thr):
 
 def main():
     # motion_thr_tunning_test()
-    # baseline_results_test(None, 625_000)
+    baseline_results_test(None, 625_000)
     # baseline_results_test([(0, 1920), (440, 1080)], 394_000,
     #                       show_results=True)
-    evaluation_results_test(None, 625_000)
+    # evaluation_results_test(None, 625_000)
     # evaluation_results_test([(0, 1920), (440, 1080)], 394_000)
 
 
