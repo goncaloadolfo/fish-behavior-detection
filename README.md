@@ -21,4 +21,5 @@ The Behavior Detection Module (BDM) is a library that was developed to detect fi
 ## Documentation
 - [Master thesis](https://github.com/goncaloadolfo/fish-behavior-detection/blob/main/97090-goncalo-adolfo-dissertacao.pdf)
 - [Extended Abstract](https://github.com/goncaloadolfo/fish-behavior-detection/blob/main/97090-goncalo-adolfo-resumo.pdf)
+- [Feeding Paper](https://github.com/goncaloadolfo/fish-behavior-detection/blob/main/goncalo-feeding-paper.pdf)
 - code snippets: work in progress :pensive:, will be updated soon
