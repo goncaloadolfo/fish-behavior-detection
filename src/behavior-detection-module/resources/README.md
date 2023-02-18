@@ -9,7 +9,6 @@ train and evaluate the detection models. It contains the following structure:
 
 
 ## Videos used to generate each data file
-  
 - `/classification` - `v29.m4v`
 - `/datasets`:
   - bottom cannon - `feeding-v1-trim.mp4` `feeding-v1-trim2.mp4` `feeding-v2.mp4`
@@ -22,6 +21,29 @@ train and evaluate the detection models. It contains the following structure:
   - feeding v4 feeding period gt - `feeding-v4.mp4`
   - feeding v4 normal period gt - `feeding-v4.mp4`
   - v29-fishes - `v29.m4v`
+
+## What is inside of each file? - Descriptions
+Classification
+- `species-gt-v29.csv` - ground truth of the species for each fish
+- `v29-interesting-moments.csv` - ground truth of interesting moments
+
+Datasets
+- feeding-dataset folder (bottom feeding with cannon camera) - low resolution frames (normal or during feeding) splitted in train/test folders
+- feeding-surface-dataset folder (surface feeding with cannon camera) - low resolution frames (normal or during feeding) splitted in train/test folders
+- gopro-feeding-dataset (bottom feeding with go pro camera) - low resolution frames (normal or during feeding) splitted in train/test folders
+- `v29-dataset1.csv` - feature vector based for each fish trajectory
+
+Detections
+- detections-joao-v29.txt - labeling of detected fishes on each video frame (v29)
+- detections-v29-sharks-mantas.txt - labeling of detected sharks and mantas on each video frame (v29)
+- detections-v37.txt - labeling of detected fishes on each video frame (v37)
+- feeding-v4-feeding-period-gt.txt - labeling of detected fishes on each video frame (feeding period of feeding-v4)
+- feeding-v4-normal-period-gt.txt - labeling of detected fishes on each video frame (normal period of feeding-v4)
+- v29-fishes.json - fishes from v29 in a more friendly structure
+
+Others
+- feeding-region.json - bottom feeding region defition
+- regions-example.json - definition of three different regions (surface, middle, and bottom), according to v29
 
 
 ## File Structure
@@ -115,8 +137,9 @@ frame#,n[,x1,y1,x2,y2,label]
 }
 ```
 
-- fish id: ID of the fish according to fishes GT (`/detections/v29-fishes.json`)
+- fish id: ID of the fish
 - t: frame number
+
 
 ### Region Definition Files
 
